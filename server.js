@@ -19,12 +19,14 @@ app.get("/hello", (req, res) => {
   res.send("Hello works!");
 });
 
+app.use("/getUsers", userRoutes);
+
 connectMongoDB()
   .then(() => {
-    app.use("/getUsers", userRoutes);
+    console.log("✅ Connessione a MongoDB riuscita!");
   })
   .catch((err) => {
-    console.error("Errore nella connessione al DB", err);
+    console.error("❌ Errore nella connessione al DB", err);
   });
 
 app.listen(PORT, () => {
