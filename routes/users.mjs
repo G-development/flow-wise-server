@@ -5,13 +5,13 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-const generateToken = (user) => { 
+const generateToken = (user) => {
   return jwt.sign(
     { id: user._id },
     // { id: User.email, password: User.password },
     process.env.JWT_SECRET,
     {
-      expiresIn: "1h",
+      expiresIn: "30Days",
     }
   );
 };
