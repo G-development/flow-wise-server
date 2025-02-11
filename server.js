@@ -7,6 +7,7 @@ import userRoutes from "./routes/users.mjs";
 import dashboardRoutes from "./routes/dashboard.mjs";
 import incomeRoutes from "./routes/income.mjs";
 import expenseRoutes from "./routes/expense.mjs";
+import categoryRoutes from "./routes/category.mjs";
 
 dotenv.config();
 
@@ -32,6 +33,8 @@ app.use("/dashboard", dashboardRoutes);
 app.use("/income", incomeRoutes);
 
 app.use("/expense", expenseRoutes);
+
+app.use("/category", categoryRoutes);
 
 connectMongoDB()
   .then(() => {
