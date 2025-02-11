@@ -11,7 +11,7 @@ router.post("/new", authMiddleware, async (req, res) => {
     const cat = await Category.findOne({ name: category });
 
     if (!cat) {
-      return res.status(400).json({ msg: "Categoria non trovata" });
+      return res.status(400).json({ msg: "Category not found" });
     }
 
     const newExpense = new Expense({
