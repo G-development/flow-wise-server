@@ -23,7 +23,7 @@ router.get("/all", async (req, res) => {
     res.json(users);
   } catch (error) {
     res.status(500).json({ msg: "users/all", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 
@@ -36,7 +36,7 @@ router.post("/register", async (req, res) => {
     res.status(201).json(newUser);
   } catch (error) {
     res.status(400).json({ msg: "users/register", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 
@@ -60,7 +60,7 @@ router.post("/login", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ msg: "users/login", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 

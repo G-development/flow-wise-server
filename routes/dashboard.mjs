@@ -5,24 +5,40 @@ import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
 
+const replaceCategoryIdsWithNames = (data, categoryMap) => {
+  if (!Array.isArray(data)) return data; // Se non è un array, restituisci com'è
+
+  return data.map((item) => ({
+    ...item.toObject(),
+    category: categoryMap[item.category?.toString()] || item.category,
+  }));
+};
+
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const user = await User.find({ _id: req.user.id }).select("-password");
-    if (!user) return res.status(404).json({ msg: "Utente non trovato" });
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ msg: "User not found" });
     // res.json({ user });
 
-    const income = await Income.find({ user: req.user.id });
-    const expense = await Expense.find({ user: req.user.id });
-    const category = await Category.find({ _id: req.user.id });
-    const budget = await Budget.find({ _id: req.user.id });
+    const categories = await Category.find({ user: req.user.id });
+    const categoryMap = categories.reduce((map, cat) => {
+      map[cat._id.toString()] = cat.name;
+      return map;
+    }, {});
 
-    const response = {
-      // user: user,
-      income: income,
-      expense: expense,
-      category: category,
-      budget: budget,
-    };
+    // res.json(filteredResponse);
+    const dataSources = { income: Income, expense: Expense, budget: Budget };
+    const results = await Promise.all(
+      Object.entries(dataSources).map(async ([key, model]) => {
+        const data = await model
+          .find({ user: req.user.id })
+          .select("-createdAt -updatedAt -__v");
+        return [key, replaceCategoryIdsWithNames(data, categoryMap)];
+      })
+    );
+
+    // Costruzione della risposta filtrata
+    const response = Object.fromEntries(results);
 
     const filteredResponse = Object.fromEntries(
       Object.entries(response).filter(
@@ -36,7 +52,7 @@ router.get("/", authMiddleware, async (req, res) => {
     res.json(filteredResponse);
   } catch (error) {
     res.status(500).json({ msg: "/dashboard", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 

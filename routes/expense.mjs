@@ -24,7 +24,7 @@ router.post("/new", authMiddleware, async (req, res) => {
     res.status(201).json(newExpense);
   } catch (error) {
     res.status(500).json({ msg: "expense/new", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 

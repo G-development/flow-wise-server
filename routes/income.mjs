@@ -5,6 +5,18 @@ import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
 
+// GET all incomes
+router.get("/all", authMiddleware, async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.user.id);
+    const allIncomes = await Income.findById(userId);
+    res.json(allIncomes);
+  } catch (error) {
+    res.status(500).json({ msg: "income/all", message: error.message });
+    console.error(error);
+  }
+});
+
 // POST new income
 router.post("/new", authMiddleware, async (req, res) => {
   const { amount, category } = req.body;
@@ -13,7 +25,7 @@ router.post("/new", authMiddleware, async (req, res) => {
     const cat = await Category.findOne({ name: category });
 
     if (!cat) {
-      return res.status(400).json({ msg: "Categoria non trovata" });
+      return res.status(400).json({ msg: "Category not found" });
     }
 
     const newIncome = new Income({
@@ -26,19 +38,7 @@ router.post("/new", authMiddleware, async (req, res) => {
     res.status(201).json(newIncome);
   } catch (error) {
     res.status(500).json({ msg: "income/new", message: error.message });
-    console.log(error.message);
-  }
-});
-
-// GET all incomes
-router.get("/all", authMiddleware, async (req, res) => {
-  try {
-    const userId = new mongoose.Types.ObjectId(req.user.id);
-    const allIncomes = await Income.find({ user: userId });
-    res.json(allIncomes);
-  } catch (error) {
-    res.status(500).json({ msg: "income/all", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 
@@ -76,7 +76,7 @@ router.get("/totals", authMiddleware, async (req, res) => {
     res.status(200).json(totalEntriesByCategory);
   } catch (error) {
     res.status(500).json({ msg: "income/totals", message: error.message });
-    console.log(error.message);
+    console.error(error);
   }
 });
 

@@ -44,6 +44,7 @@ const ExpenseSchema = new mongoose.Schema(
 
 const CategorySchema = new mongoose.Schema(
   {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     name: String,
     type: { type: String, enum: ["income", "expense"] },
   },
