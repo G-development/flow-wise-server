@@ -20,6 +20,43 @@ flow-wise-server/
 └── server.js
 ```
 
+## Mongoose models schema
+##### User
+```
+name: String, required
+email: String, required, unique
+password: String, required
+```
+##### Income (Entrate)
+```
+user: ref to User
+amount: Number
+description: String
+date: Data, default Date.now
+category: ref  Category
+```
+##### Expense (Spese)
+```
+user: ref to User
+amount: Number
+description: String
+date: Data, default Date.now
+category: ref to Category
+```
+##### Category
+```
+user: ref to User
+name: String
+type: String ("income" or "expense")
+```
+##### Budget
+```
+user: ref to User
+category: ref to Category
+limit: Number
+period: String (es. monthly, weekly - TBD)
+```
+
 ## Env config
 Create a `.env.local` in the project root, in which at least you should have this:
 ```
@@ -30,25 +67,25 @@ Create a `.env.local` in the project root, in which at least you should have thi
 
 
 ## Endpoints
-#### Users
+##### Users
 - `GET /users/all`  #to be deactivated
 - `POST /users/register`
 - `POST /users/login`
 
-#### Income
+##### Income
 - `GET /income/all`
 - `POST /income/new`
 - `GET /income/total`
 
-#### Expense
+##### Expense
 - `GET /expense/all`
 - `POST /expense/new`
 
-#### Category
+##### Category
 - `GET /category/all`
 - `POST /category/new`
 
-#### Budget
+##### Budget
 Not yet
 
 ## Deployment
