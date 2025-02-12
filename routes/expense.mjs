@@ -8,7 +8,7 @@ router.post("/new", authMiddleware, async (req, res) => {
   const { amount, category } = req.body;
 
   try {
-    const cat = await Category.findOne({ name: category });
+    const cat = await Category.findOne({ user: req.user.id, name: category });
 
     if (!cat) {
       return res.status(400).json({ msg: "Category not found" });
