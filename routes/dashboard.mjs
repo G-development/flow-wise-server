@@ -6,7 +6,7 @@ import { authMiddleware } from "./authMiddleware.mjs";
 const router = express.Router();
 
 const replaceCategoryIdsWithNames = (data, categoryMap) => {
-  if (!Array.isArray(data)) return data; // Se non è un array, restituisci com'è
+  if (!Array.isArray(data)) return data;
 
   return data.map((item) => ({
     ...item.toObject(),
@@ -18,7 +18,6 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) return res.status(404).json({ msg: "User not found" });
-    // res.json({ user });
 
     const categories = await Category.find({ user: req.user.id });
     const categoryMap = categories.reduce((map, cat) => {
@@ -26,7 +25,6 @@ router.get("/", authMiddleware, async (req, res) => {
       return map;
     }, {});
 
-    // res.json(filteredResponse);
     const dataSources = { income: Income, expense: Expense, budget: Budget };
     const results = await Promise.all(
       Object.entries(dataSources).map(async ([key, model]) => {
