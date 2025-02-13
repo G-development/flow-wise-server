@@ -9,17 +9,20 @@ const router = express.Router();
 router.get("/all", authMiddleware, async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
-    const allIncomes = await Income.findById(userId);
+    const allIncomes = await Income.find({ user: userId });
     res.json(allIncomes);
   } catch (error) {
-    res.status(500).json({ msg: "income/all", message: error.message });
-    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // POST new income
 router.post("/new", authMiddleware, async (req, res) => {
   const { amount, category } = req.body;
+
+  if (!amount || amount <= 0 || !category) {
+    return res.status(400).json({ error: "Invalid amount or category" });
+  }
 
   try {
     const cat = await Category.findOne({ user: req.user.id, name: category });
@@ -33,12 +36,88 @@ router.post("/new", authMiddleware, async (req, res) => {
       amount,
       category: cat._id,
     });
-    await newIncome.save();
 
+    await newIncome.save();
     res.status(201).json(newIncome);
   } catch (error) {
-    res.status(500).json({ msg: "income/new", message: error.message });
-    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET single income
+router.get("/:id", authMiddleware, async (req, res) => {
+  try {
+    const income = await Income.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!income) {
+      return res.status(404).json({ error: "Income not found" });
+    }
+
+    res.json(income);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// UPDATE income
+router.put("/:id", authMiddleware, async (req, res) => {
+  const { amount, category, date } = req.body;
+
+  try {
+    let income = await Income.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!income) {
+      return res.status(404).json({ error: "Income not found" });
+    }
+
+    // Da scommentare, momentaneamente disabilitato
+    // if (category) {
+    //   const cat = await Category.findOne({ user: req.user.id, name: category });
+    //   if (!cat) {
+    //     return res.status(400).json({ error: "Category not found" });
+    //   }
+    //   income.category = cat._id;
+    // }
+
+    if (amount && amount > 0) {
+      income.amount = amount;
+    } else if (amount) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    if (date) {
+      // income.date = new Date(date).toLocaleDateString();
+      income.date = new Date(date);
+    }
+
+    await income.save();
+    res.json(income);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE income
+router.delete("/delete/:id", authMiddleware, async (req, res) => {
+  try {
+    const deletedIncome = await Income.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user.id,
+    });
+
+    if (!deletedIncome) {
+      return res.status(404).json({ error: "Income not found" });
+    }
+
+    res.json({ message: "Income deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -64,8 +143,6 @@ router.get("/totals", authMiddleware, async (req, res) => {
         },
       },
     ]);
-
-    console.log(totalEntriesByCategory);
 
     if (!totalEntriesByCategory || totalEntriesByCategory.length === 0) {
       return res
