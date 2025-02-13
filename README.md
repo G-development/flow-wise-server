@@ -66,27 +66,69 @@ Create a `.env.local` in the project root, in which at least you should have thi
    ```
 
 
-## Endpoints
-##### Users
-- `GET /users/all`  #to be deactivated
-- `POST /users/register`
-- `POST /users/login`
+## API Structure
 
-##### Income
-- `GET /income/all`
-- `POST /income/new`
-- `GET /income/total`
+### 1️⃣ Entrate (`/income`)
 
-##### Expense
-- `GET /expense/all`
-- `POST /expense/new`
+Gestisce le entrate registrate.
 
-##### Category
-- `GET /category/all`
-- `POST /category/new`
+| Metodo | Endpoint | Descrizione |
+|--------|---------|------------|
+| `GET`  | `/income/all` | Ottiene tutte le entrate |
+| `GET`  | `/income/:id` | Ottiene una singola entrata |
+| `POST` | `/income/new` | Crea una nuova entrata |
+| `PUT`  | `/income/:id` | Modifica un'entrata |
+| `DELETE` | `/income/delete/:id` | Elimina un'entrata |
 
-##### Budget
-Not yet
+---
+
+### 2️⃣ Uscite (`/expense`)
+
+Gestisce le spese effettuate.
+
+| Metodo | Endpoint | Descrizione |
+|--------|---------|------------|
+| `GET`  | `/expense/all` | Ottiene tutte le uscite |
+| `GET`  | `/expense/:id` | Ottiene una singola uscita |
+| `POST` | `/expense/new` | Crea una nuova uscita |
+| `PUT`  | `/expense/:id` | Modifica un'uscita |
+| `DELETE` | `/expense/delete/:id` | Elimina un'uscita |
+
+---
+
+### 3️⃣ Categorie (`/category`) - <span style="color:red">TBD </span>
+
+Gestisce le categorie di entrate/uscite.
+
+| Metodo | Endpoint | Descrizione |
+|--------|---------|------------|
+| `GET`  | `/category/all` | Ottiene tutte le categorie |
+| `POST` | `/category/new` | Crea una nuova categoria |
+
+---
+
+### 4️⃣ Budget (`/budget`) - <span style="color:red">TBD </span>
+
+Gestisce il budget per ogni categoria.
+
+| Metodo | Endpoint | Descrizione |
+|--------|---------|------------|
+| `GET`  | `/budget/all` | Ottiene il budget per tutte le categorie |
+| `GET`  | `/budget/:categoryId` | Ottiene il budget per una singola categoria |
+| `POST` | `/budget/new` | Definisce un budget per una categoria |
+| `PUT`  | `/budget/:categoryId` | Modifica il budget di una categoria |
+
+---
+
+### 5️⃣ Riepilogo e Statistiche (`/summary`) - <span style="color:red">TBD </span>
+
+Questa API calcola i totali, l'avanzo e genera dati per i grafici.
+
+| Metodo | Endpoint | Descrizione |
+|--------|---------|------------|
+| `GET`  | `/summary` | Ottiene il riepilogo generale (entrate, uscite, avanzo) |
+| `GET`  | `/summary/monthly/:year/:month` | Ottiene il riepilogo mensile |
+| `GET`  | `/summary/category/:categoryId` | Ottiene il riepilogo di una categoria |
 
 ## Deployment
-Deployed using Vercel at https://flow-wise-server.vercel.app/
+Deployed using Vercel at [Flow Wise (Server)](https://flow-wise-server.vercel.app/)
