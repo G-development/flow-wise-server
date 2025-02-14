@@ -53,7 +53,7 @@ type: String ("income" or "expense")
 ```
 user: ref to User
 category: ref to Category
-limit: Number
+amount: Number
 period: String (es. monthly, weekly - TBD)
 ```
 
