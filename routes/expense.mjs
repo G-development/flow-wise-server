@@ -9,7 +9,10 @@ const router = express.Router();
 router.get("/all", authMiddleware, async (req, res) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
-    const allExpense = await Expense.find({ user: userId });
+    const allExpense = await Expense.find({ user: userId }).populate(
+      "category",
+      "name"
+    );
     res.json(allExpense);
   } catch (error) {
     res.status(500).json({ error: error.message });
