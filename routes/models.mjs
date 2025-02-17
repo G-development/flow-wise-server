@@ -56,7 +56,11 @@ const BudgetSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     amount: Number,
-    period: { type: String, default: "always" }, // es. 'monthly', 'weekly'
+    period: {
+      type: String,
+      enum: ["weekly", "monthly", "yearly"],
+      default: "monthly",
+    },
   },
   { timestamps: true }
 );
