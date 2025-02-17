@@ -24,8 +24,13 @@ flow-wise-server/
 ##### User
 ```
 name: String, required
+username: String, required
 email: String, required, unique
 password: String, required
+profilePic: String
+currency: String, default "EUR"
+notifications: Boolean, default True
+authMethod: String, ("credentials", "google", "github"), default "credentials"
 ```
 ##### Income (Entrate)
 ```
@@ -96,7 +101,7 @@ Gestisce le spese effettuate.
 
 ---
 
-### 3️⃣ Categorie (`/category`) - <span style="color:red">TBD </span>
+### 3️⃣ Categorie (`/category`) 
 
 Gestisce le categorie di entrate/uscite.
 
@@ -107,16 +112,16 @@ Gestisce le categorie di entrate/uscite.
 
 ---
 
-### 4️⃣ Budget (`/budget`) - <span style="color:red">TBD </span>
+### 4️⃣ Budget (`/budget`) 
 
 Gestisce il budget per ogni categoria.
 
 | Metodo | Endpoint | Descrizione |
 |--------|---------|------------|
 | `GET`  | `/budget/all` | Ottiene il budget per tutte le categorie |
-| `GET`  | `/budget/:categoryId` | Ottiene il budget per una singola categoria |
 | `POST` | `/budget/new` | Definisce un budget per una categoria |
-| `PUT`  | `/budget/:categoryId` | Modifica il budget di una categoria |
+| `GET`  | `/budget/:categoryId` <span style="color:red">TBD </span> | Ottiene il budget per una singola categoria |
+| `PUT`  | `/budget/:categoryId` <span style="color:red">TBD </span> | Modifica il budget di una categoria |
 
 ---
 

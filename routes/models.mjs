@@ -4,8 +4,17 @@ import bcrypt from "bcrypt";
 const UserSchema = new mongoose.Schema(
   {
     name: { required: true, type: String },
+    username: { required: true, type: String },
     email: { required: true, type: String, unique: true },
-    password: { required: true, type: String },
+    password: { type: String }, //optional if OAuth (TBD)
+    profilePic: { type: String },
+    currency: { type: String, default: "EUR" },
+    notifications: { type: Boolean, default: true },
+    authMethod: {
+      type: String,
+      enum: ["credentials", "google", "github"],
+      default: "credentials",
+    },
   },
   { timestamps: true }
 );
