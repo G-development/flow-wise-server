@@ -25,7 +25,7 @@ router.get("/", authMiddleware, async (req, res) => {
       return map;
     }, {});
 
-    const dataSources = { income: Income, expense: Expense, budget: Budget };
+    const dataSources = { income: Income, expense: Expense };
     const results = await Promise.all(
       Object.entries(dataSources).map(async ([key, model]) => {
         const data = await model
