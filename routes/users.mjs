@@ -2,6 +2,7 @@ import express from "express";
 import { User } from "./models.mjs";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
 
@@ -65,7 +66,7 @@ router.post("/login", async (req, res) => {
 });
 
 // GET profile
-router.get("/profile", async (req, res) => {
+router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password"); // Esclude la password dalla risposta
     if (!user) return res.status(404).json({ msg: "Utente non trovato" });
