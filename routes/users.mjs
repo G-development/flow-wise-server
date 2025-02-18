@@ -3,8 +3,12 @@ import { User } from "./models.mjs";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { authMiddleware } from "./authMiddleware.mjs";
+import cloudinary from "../config/cloudinary.js";
+import multer from "multer";
 
 const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -78,6 +82,42 @@ router.get("/profile", authMiddleware, async (req, res) => {
       .json({ msg: "Errore nel recupero del profilo", error: error.message });
   }
 });
+
+// POST /users/profile/photo → Aggiorna la foto profilo
+router.post(
+  "/profile/photo",
+  authMiddleware,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      if (!req.file)
+        return res.status(400).json({ message: "No image uploaded" });
+      console.log("reqfile", req.file);
+
+      const uploadStream = cloudinary.uploader
+        .upload_stream({ folder: "profile_pics" }, async (error, result) => {
+          if (error)
+            return res
+              .status(500)
+              .json({ message: "Cloudinary upload failed" });
+
+          const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { profilePic: result.secure_url },
+            { new: true }
+          ).select("-password");
+          res.json({
+            message: "Profile picture updated",
+            profilePic: user.profilePic,
+          });
+        })
+        .end(req.file.buffer);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 
 // GET a single user by ID
 // router.get('/:id', async (req, res) => {

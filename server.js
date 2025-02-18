@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import connectMongoDB from "./db/connection.mjs";
+import connectMongoDB from "./config/connection.mjs";
 
 import userRoutes from "./routes/users.mjs";
 import dashboardRoutes from "./routes/dashboard.mjs";

@@ -11,6 +11,7 @@ Backend part of **Flow-Wise project - Money tracker**. Created with **Express/No
 - **Mongoose**
 - **JWT**
 - **Dotenv**
+- **Cloudinary**
 
 ## Structure
 ```
@@ -63,17 +64,36 @@ period: String (es. monthly, weekly - TBD)
 ```
 
 ## Env config
-Create a `.env.local` in the project root, in which at least you should have this:
+Create a `.env` in the project root, in which at least you should have this:
 ```
    PORT=5000
+
    MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/database
+
    JWT_SECRET=supersecret
+
+   CLOUDINARY_CLOUD_NAME=HERE
+   CLOUDINARY_API_KEY=HERE
+   CLOUDINARY_API_SECRET=HERE
+   CLOUDINARY_API=CLOUDINARY_URL=HERE
    ```
 
 
 ## API Structure
 
-### 1️⃣ Entrate (`/income`)
+### 1️⃣ Utenti (`/users`)
+
+| Metodo | Endpoint | Descrizione |
+|--------|---------|------------|
+| `GET`  | `/users/all` | Ottiene tutti gli utenti (da disabilitare) |
+| `POST` | `/users/register` | Crea un nuovo utente |
+| `POST` | `/users/login` | Logga un utente |
+| `GET`  | `/users/profile` | Ottiene i dati dell'utente loggato |
+| `POST` | `/users/profile/photo` | Upload dell'avatar dell'utente <span style="color:red">TBD </span>  |
+
+---
+
+### 2️⃣ Entrate (`/income`)
 
 Gestisce le entrate registrate.
 
@@ -87,7 +107,7 @@ Gestisce le entrate registrate.
 
 ---
 
-### 2️⃣ Uscite (`/expense`)
+### 3️⃣ Uscite (`/expense`)
 
 Gestisce le spese effettuate.
 
@@ -101,7 +121,7 @@ Gestisce le spese effettuate.
 
 ---
 
-### 3️⃣ Categorie (`/category`) 
+### 4️⃣ Categorie (`/category`) 
 
 Gestisce le categorie di entrate/uscite.
 
@@ -112,7 +132,7 @@ Gestisce le categorie di entrate/uscite.
 
 ---
 
-### 4️⃣ Budget (`/budget`) 
+### 5️⃣ Budget (`/budget`) 
 
 Gestisce il budget per ogni categoria.
 
@@ -125,7 +145,7 @@ Gestisce il budget per ogni categoria.
 
 ---
 
-### 5️⃣ Riepilogo e Statistiche (`/summary`) - <span style="color:red">TBD </span>
+### 🔜 Riepilogo e Statistiche (`/summary`) - <span style="color:red">TBD </span>
 
 Questa API calcola i totali, l'avanzo e genera dati per i grafici.
 
