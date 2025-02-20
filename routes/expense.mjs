@@ -5,15 +5,35 @@ import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
 
-// GET all expenses
+// // GET all expenses
+// router.get("/all", authMiddleware, async (req, res) => {
+//   try {
+//     const userId = new mongoose.Types.ObjectId(req.user.id);
+//     const allExpense = await Expense.find({ user: userId }).populate(
+//       "category",
+//       "name"
+//     );
+//     res.json(allExpense);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// GET all incomes with optional date filter
 router.get("/all", authMiddleware, async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user.id);
-    const allExpense = await Expense.find({ user: userId }).populate(
-      "category",
-      "name"
-    );
-    res.json(allExpense);
+    const { startDate, endDate } = req.query;
+
+    let filter = { user: req.user.id };
+
+    if (startDate && endDate) {
+      filter.date = {};
+      if (startDate) filter.date.$gte = new Date(startDate);
+      if (endDate) filter.date.$lte = new Date(endDate);
+    }
+
+    const allIncomes = await Expense.find(filter).populate("category", "name");
+    res.json(allIncomes);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
