@@ -87,7 +87,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
 
 // UPDATE expense
 router.put("/:id", authMiddleware, async (req, res) => {
-  const { amount, category } = req.body;
+  const { amount, category, date} = req.body;
 
   try {
     let expense = await Expense.findOne({
@@ -99,18 +99,24 @@ router.put("/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Expense not found" });
     }
 
-    if (category) {
-      const cat = await Category.findOne({ user: req.user.id, name: category });
-      if (!cat) {
-        return res.status(400).json({ error: "Category not found" });
-      }
-      expense.category = cat._id;
-    }
+    // Da scommentare, momentaneamente disabilitato
+    // if (category) {
+    //   const cat = await Category.findOne({ user: req.user.id, name: category });
+    //   if (!cat) {
+    //     return res.status(400).json({ error: "Category not found" });
+    //   }
+    //   expense.category = cat._id;
+    // }
 
     if (amount && amount > 0) {
       expense.amount = amount;
     } else if (amount) {
       return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    if (date) {
+      // income.date = new Date(date).toLocaleDateString();
+      expense.date = new Date(date);
     }
 
     await expense.save();
