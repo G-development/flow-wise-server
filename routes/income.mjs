@@ -67,6 +67,46 @@ router.post("/new", authMiddleware, async (req, res) => {
   }
 });
 
+// GET total amount - da definire meglio
+router.get("/total", authMiddleware, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // da rivedere
+    // if (!userId || !startDate || !endDate) {
+    //   return res.status(400).json({ error: "Missing required parameters" });
+    // }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const result = await Income.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(req.user.id),
+          date: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    console.log(result);
+
+    res.json(result.length > 0 ? result[0] : { totalAmount: 0 });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+    console.error(error);
+  }
+});
+
 // GET single income
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
@@ -144,40 +184,40 @@ router.delete("/delete/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// GET totals - da definire meglio
-router.get("/totals", authMiddleware, async (req, res) => {
-  try {
-    const userId = new mongoose.Types.ObjectId(req.user.id);
-    const totalEntriesByCategory = await Income.aggregate([
-      { $match: { user: userId } },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "_id",
-          as: "category",
-        },
-      },
-      { $unwind: "$category" }, // De-struttura la categoria
-      {
-        $group: {
-          _id: "$category.name", // Raggruppa per nome della categoria
-          totalAmount: { $sum: "$amount" }, // Somma gli importi
-        },
-      },
-    ]);
+// // GET totals - da definire meglio
+// router.get("/totals", authMiddleware, async (req, res) => {
+//   try {
+//     const userId = new mongoose.Types.ObjectId(req.user.id);
+//     const totalEntriesByCategory = await Income.aggregate([
+//       { $match: { user: userId } },
+//       {
+//         $lookup: {
+//           from: "categories",
+//           localField: "category",
+//           foreignField: "_id",
+//           as: "category",
+//         },
+//       },
+//       { $unwind: "$category" }, // De-struttura la categoria
+//       {
+//         $group: {
+//           _id: "$category.name", // Raggruppa per nome della categoria
+//           totalAmount: { $sum: "$amount" }, // Somma gli importi
+//         },
+//       },
+//     ]);
 
-    if (!totalEntriesByCategory || totalEntriesByCategory.length === 0) {
-      return res
-        .status(404)
-        .json({ msg: "Nessuna entrata trovata per l'utente." });
-    }
+//     if (!totalEntriesByCategory || totalEntriesByCategory.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ msg: "Nessuna entrata trovata per l'utente." });
+//     }
 
-    res.status(200).json(totalEntriesByCategory);
-  } catch (error) {
-    res.status(500).json({ msg: "income/totals", message: error.message });
-    console.error(error);
-  }
-});
+//     res.status(200).json(totalEntriesByCategory);
+//   } catch (error) {
+//     res.status(500).json({ msg: "income/totals", message: error.message });
+//     console.error(error);
+//   }
+// });
 
 export default router;

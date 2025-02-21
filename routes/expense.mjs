@@ -67,6 +67,44 @@ router.post("/new", authMiddleware, async (req, res) => {
   }
 });
 
+// GET total amount of expenses- da definire meglio
+router.get("/total", authMiddleware, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // da rivedere
+    // if (!userId || !startDate || !endDate) {
+    //   return res.status(400).json({ error: "Missing required parameters" });
+    // }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const result = await Expense.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(req.user.id),
+          date: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    res.json(result.length > 0 ? result[0] : { totalAmount: 0 });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+    console.error(error);
+  }
+});
+
 // GET single expense
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
