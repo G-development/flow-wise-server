@@ -5,7 +5,7 @@ import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
 
-// GET Dashboard Data (transactions + totals)
+// GET Dashboard Data (transactions + totals + charts)
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -55,6 +55,51 @@ router.get("/", authMiddleware, async (req, res) => {
           },
         },
       ]),
+      // Aggregate income and expense by day for charts
+      Income.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+            date: { $gte: start, $lte: end },
+          },
+        },
+        {
+          $group: {
+            _id: { $dayOfMonth: "$date" },
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+        {
+          $project: {
+            day: "$_id",
+            income: "$totalAmount",
+            _id: null,
+          },
+        },
+        { $sort: { day: 1 } },
+      ]),
+      Expense.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+            date: { $gte: start, $lte: end },
+          },
+        },
+        {
+          $group: {
+            _id: { $dayOfMonth: "$date" },
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+        {
+          $project: {
+            day: "$_id",
+            expense: "$totalAmount",
+            _id: null,
+          },
+        },
+        { $sort: { day: 1 } },
+      ]),
     ]);
 
     const savingsRate =
@@ -67,6 +112,24 @@ router.get("/", authMiddleware, async (req, res) => {
           ).toFixed(2) + "%"
         : "0%";
 
+    // Merge income and expense data by day for charts
+    const chartData = [];
+    const maxDay = Math.max(start.getDate(), end.getDate());
+
+    for (let i = start.getDate(); i <= maxDay; i++) {
+      const incomeDay = incomes.find((item) => item.date.getDate() === i);
+      const expenseDay = expenses.find((item) => item.date.getDate() === i);
+
+      const date = new Date(start);
+      date.setDate(i);
+
+      chartData.push({
+        date: date.toISOString().split("T")[0], //`Day ${i}`,
+        income: incomeDay ? incomeDay.amount : 0,
+        expense: expenseDay ? expenseDay.amount : 0,
+      });
+    }
+
     res.json({
       income: incomes,
       expense: expenses,
@@ -78,6 +141,9 @@ router.get("/", authMiddleware, async (req, res) => {
         (incomeTotal[0]?.totalAmount || 0) -
         (expenseTotal[0]?.totalAmount || 0),
       savingsRate: savingsRate,
+      charts: {
+        income_expense: chartData,
+      },
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
