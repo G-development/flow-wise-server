@@ -1,56 +1,87 @@
 import express from "express";
-import { User } from "./models.mjs";
-import { Income, Expense, Category, Budget } from "./models.mjs";
+import mongoose from "mongoose";
+import { Income, Expense } from "./models.mjs";
 import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
 
-const replaceCategoryIdsWithNames = (data, categoryMap) => {
-  if (!Array.isArray(data)) return data;
-
-  return data.map((item) => ({
-    ...item.toObject(),
-    category: categoryMap[item.category?.toString()] || item.category,
-  }));
-};
-
+// GET Dashboard Data (transactions + totals)
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    const { startDate, endDate } = req.query;
+    const userId = req.user.id;
 
-    const categories = await Category.find({ user: req.user.id });
-    const categoryMap = categories.reduce((map, cat) => {
-      map[cat._id.toString()] = cat.name;
-      return map;
-    }, {});
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
 
-    const dataSources = { income: Income, expense: Expense };
-    const results = await Promise.all(
-      Object.entries(dataSources).map(async ([key, model]) => {
-        const data = await model
-          .find({ user: req.user.id })
-          .select("-createdAt -updatedAt -__v");
-        return [key, replaceCategoryIdsWithNames(data, categoryMap)];
-      })
-    );
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-    // Costruzione della risposta filtrata
-    const response = Object.fromEntries(results);
+    const [incomes, expenses, incomeTotal, expenseTotal] = await Promise.all([
+      Income.find({
+        user: new mongoose.Types.ObjectId(userId),
+        date: { $gte: start, $lte: end },
+      }).populate("category", "name"),
+      Expense.find({
+        user: new mongoose.Types.ObjectId(userId),
+        date: { $gte: start, $lte: end },
+      }).populate("category", "name"),
+      Income.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+            date: { $gte: start, $lte: end },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+      ]),
+      Expense.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+            date: { $gte: start, $lte: end },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+      ]),
+    ]);
 
-    const filteredResponse = Object.fromEntries(
-      Object.entries(response).filter(
-        ([_, value]) =>
-          value !== null &&
-          value !== undefined &&
-          !(Array.isArray(value) && value.length === 0)
-      )
-    );
+    const savingsRate =
+      incomeTotal[0]?.totalAmount && incomeTotal[0].totalAmount > 0
+        ? Math.max(
+            ((incomeTotal[0].totalAmount - expenseTotal[0]?.totalAmount) /
+              incomeTotal[0].totalAmount) *
+              100,
+            0
+          ).toFixed(2) + "%"
+        : "0%";
 
-    res.json(filteredResponse);
+    res.json({
+      income: incomes,
+      expense: expenses,
+      totals: {
+        income: incomeTotal.length > 0 ? incomeTotal[0].totalAmount : 0,
+        expense: expenseTotal.length > 0 ? expenseTotal[0].totalAmount : 0,
+      },
+      net:
+        (incomeTotal[0]?.totalAmount || 0) -
+        (expenseTotal[0]?.totalAmount || 0),
+      savingsRate: savingsRate,
+    });
   } catch (error) {
-    res.status(500).json({ msg: "/dashboard", message: error.message });
-    console.error(error);
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
