@@ -1,5 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
+import { parse } from "date-fns";
 import { Expense, Category } from "./models.mjs";
 import { authMiddleware } from "./authMiddleware.mjs";
 
@@ -42,9 +43,16 @@ router.get("/all", authMiddleware, async (req, res) => {
 // POST new expense
 router.post("/new", authMiddleware, async (req, res) => {
   const { amount, category } = req.body;
+  var { date } = req.body;
 
   if (!amount || amount <= 0 || !category) {
     return res.status(400).json({ error: "Invalid amount or category" });
+  }
+
+  if (!date) date = Date.now();
+  else {
+    date = parse(date, "yyyy-MM-dd", new Date());
+    date.setHours(12, 0, 0, 0);
   }
 
   try {
@@ -58,6 +66,7 @@ router.post("/new", authMiddleware, async (req, res) => {
       user: req.user.id,
       amount,
       category: cat._id,
+      date,
     });
 
     await newExpense.save();
