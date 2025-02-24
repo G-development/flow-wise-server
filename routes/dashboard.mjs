@@ -18,7 +18,15 @@ router.get("/", authMiddleware, async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const [incomes, expenses, incomeTotal, expenseTotal] = await Promise.all([
+    const [
+      incomes,
+      expenses,
+      incomeTotal,
+      expenseTotal,
+      incomeByDay,
+      expenseByDay,
+      expensesByCategory,
+    ] = await Promise.all([
       Income.find({
         user: new mongoose.Types.ObjectId(userId),
         date: { $gte: start, $lte: end },
@@ -55,7 +63,6 @@ router.get("/", authMiddleware, async (req, res) => {
           },
         },
       ]),
-      // Aggregate income and expense by day for charts
       Income.aggregate([
         {
           $match: {
@@ -100,6 +107,39 @@ router.get("/", authMiddleware, async (req, res) => {
         },
         { $sort: { day: 1 } },
       ]),
+      Expense.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(userId),
+            date: { $gte: start, $lte: end },
+          },
+        },
+        {
+          $group: {
+            _id: "$category",
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "categoryInfo",
+          },
+        },
+        {
+          $unwind: "$categoryInfo",
+        },
+        {
+          $project: {
+            category: "$categoryInfo.name",
+            totalAmount: 1,
+            _id: 0,
+          },
+        },
+        { $sort: { totalAmount: -1 } },
+      ]),
     ]);
 
     const savingsRate =
@@ -113,22 +153,28 @@ router.get("/", authMiddleware, async (req, res) => {
         : "0%";
 
     // Merge income and expense data by day for charts
-    const chartData = [];
+    const income_expense = [];
     const maxDay = Math.max(start.getDate(), end.getDate());
 
     for (let i = start.getDate(); i <= maxDay; i++) {
-      const incomeDay = incomes.find((item) => item.date.getDate() === i);
-      const expenseDay = expenses.find((item) => item.date.getDate() === i);
+      const incomeDay = incomeByDay.find((item) => item.day === i);
+      const expenseDay = expenseByDay.find((item) => item.day === i);
 
       const date = new Date(start);
       date.setDate(i);
 
-      chartData.push({
-        date: date.toISOString().split("T")[0], //`Day ${i}`,
-        income: incomeDay ? incomeDay.amount : 0,
-        expense: expenseDay ? expenseDay.amount : 0,
+      income_expense.push({
+        date: date.toISOString().split("T")[0],
+        income: incomeDay ? incomeDay.income : 0,
+        expense: expenseDay ? expenseDay.expense : 0,
       });
     }
+
+    const expense_category = expensesByCategory.map((expense, i) => ({
+      category: expense.category,
+      value: expense.totalAmount,
+      fill: `hsl(var(--chart-${(i % 5) + 1}))`, // Colori definiti in CSS
+    }));
 
     res.json({
       income: incomes,
@@ -138,11 +184,11 @@ router.get("/", authMiddleware, async (req, res) => {
         expense: expenseTotal.length > 0 ? expenseTotal[0].totalAmount : 0,
       },
       net:
-        (incomeTotal[0]?.totalAmount || 0) -
-        (expenseTotal[0]?.totalAmount || 0),
+        (incomeTotal[0]?.totalAmount || 0) - (expenseTotal[0]?.totalAmount || 0),
       savingsRate: savingsRate,
       charts: {
-        income_expense: chartData,
+        income_expense: income_expense,
+        expense_category: expense_category,
       },
     });
   } catch (error) {
@@ -150,5 +196,6 @@ router.get("/", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 export default router;
