@@ -95,22 +95,30 @@ router.post(
       console.log("reqfile", req.file);
 
       const uploadStream = cloudinary.uploader
-        .upload_stream({ folder: "profile_pics" }, async (error, result) => {
-          if (error)
-            return res
-              .status(500)
-              .json({ message: "Cloudinary upload failed" });
+        .upload_stream(
+          {
+            folder: "profile_pics",
+            transformation: [
+              { width: 150, height: 150, crop: "fill" },
+            ],
+          },
+          async (error, result) => {
+            if (error)
+              return res
+                .status(500)
+                .json({ message: "Cloudinary upload failed" });
 
-          const user = await User.findByIdAndUpdate(
-            req.user.id,
-            { profilePic: result.secure_url },
-            { new: true }
-          ).select("-password");
-          res.json({
-            message: "Profile picture updated",
-            profilePic: user.profilePic,
-          });
-        })
+            const user = await User.findByIdAndUpdate(
+              req.user.id,
+              { profilePic: result.secure_url },
+              { new: true }
+            ).select("-password");
+            res.json({
+              message: "Profile picture updated",
+              profilePic: user.profilePic,
+            });
+          }
+        )
         .end(req.file.buffer);
     } catch (error) {
       console.error(error);
