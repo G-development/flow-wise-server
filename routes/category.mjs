@@ -12,7 +12,9 @@ router.get("/all", authMiddleware, async (req, res) => {
     const user = await User.findById(userId).select("-password");
     if (!user) return res.status(404).json({ msg: "Utente non trovato" });
 
-    const category = await Category.find({ user: userId });
+    const category = await Category.find({ user: userId }).select(
+      "_id name type"
+    );
 
     const response = {
       category: category,
