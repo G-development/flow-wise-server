@@ -107,8 +107,6 @@ router.get("/total", authMiddleware, async (req, res) => {
       },
     ]);
 
-    console.log(result);
-
     res.json(result.length > 0 ? result[0] : { totalAmount: 0 });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -122,13 +120,21 @@ router.get("/:id", authMiddleware, async (req, res) => {
     const income = await Income.findOne({
       _id: req.params.id,
       user: req.user.id,
-    });
+    }).populate("category", "name");
 
     if (!income) {
       return res.status(404).json({ error: "Income not found" });
     }
 
-    res.json(income);
+    const categories = await Category.find(
+      { user: req.user.id, type: "income" },
+      "_id name"
+    );
+
+    res.json({
+      ...income.toObject(),
+      alternativeCategories: categories,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -148,14 +154,13 @@ router.put("/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Income not found" });
     }
 
-    // Da scommentare, momentaneamente disabilitato
-    // if (category) {
-    //   const cat = await Category.findOne({ user: req.user.id, name: category });
-    //   if (!cat) {
-    //     return res.status(400).json({ error: "Category not found" });
-    //   }
-    //   income.category = cat._id;
-    // }
+    if (category) {
+      const cat = await Category.findOne({ user: req.user.id, name: category });
+      if (!cat) {
+        return res.status(400).json({ error: "Category not found" });
+      }
+      income.category = cat._id;
+    }
 
     if (amount && amount > 0) {
       income.amount = amount;

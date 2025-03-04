@@ -120,13 +120,21 @@ router.get("/:id", authMiddleware, async (req, res) => {
     const expense = await Expense.findOne({
       _id: req.params.id,
       user: req.user.id,
-    });
+    }).populate("category", "name");
 
     if (!expense) {
       return res.status(404).json({ error: "Expense not found" });
     }
 
-    res.json(expense);
+    const categories = await Category.find(
+      { user: req.user.id, type: "expense" },
+      "_id name"
+    );
+
+    res.json({
+      ...expense.toObject(),
+      alternativeCategories: categories,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -134,7 +142,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
 
 // UPDATE expense
 router.put("/:id", authMiddleware, async (req, res) => {
-  const { amount, category, date} = req.body;
+  const { amount, category, date } = req.body;
 
   try {
     let expense = await Expense.findOne({
@@ -146,14 +154,13 @@ router.put("/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Expense not found" });
     }
 
-    // Da scommentare, momentaneamente disabilitato
-    // if (category) {
-    //   const cat = await Category.findOne({ user: req.user.id, name: category });
-    //   if (!cat) {
-    //     return res.status(400).json({ error: "Category not found" });
-    //   }
-    //   expense.category = cat._id;
-    // }
+    if (category) {
+      const cat = await Category.findOne({ user: req.user.id, name: category });
+      if (!cat) {
+        return res.status(400).json({ error: "Category not found" });
+      }
+      expense.category = cat._id;
+    }
 
     if (amount && amount > 0) {
       expense.amount = amount;
