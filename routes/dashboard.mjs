@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-import { Income, Expense } from "./models.mjs";
+import { Income, Expense, Category } from "./models.mjs";
 import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
@@ -27,14 +27,17 @@ router.get("/", authMiddleware, async (req, res) => {
       expenseByDay,
       expensesByCategory,
     ] = await Promise.all([
+      // Get all incomes
       Income.find({
         user: new mongoose.Types.ObjectId(userId),
         date: { $gte: start, $lte: end },
       }).populate("category", "name"),
+      // Get all expenses
       Expense.find({
         user: new mongoose.Types.ObjectId(userId),
         date: { $gte: start, $lte: end },
       }).populate("category", "name"),
+      // Get aggregate incomes
       Income.aggregate([
         {
           $match: {
@@ -49,6 +52,7 @@ router.get("/", authMiddleware, async (req, res) => {
           },
         },
       ]),
+      // Get aggregate expenses
       Expense.aggregate([
         {
           $match: {
@@ -63,6 +67,7 @@ router.get("/", authMiddleware, async (req, res) => {
           },
         },
       ]),
+      // Get aggregate incomes by day (for income_expense chart)
       Income.aggregate([
         {
           $match: {
@@ -85,6 +90,7 @@ router.get("/", authMiddleware, async (req, res) => {
         },
         { $sort: { day: 1 } },
       ]),
+      // Get aggregate expenses by day (for income_expense chart)
       Expense.aggregate([
         {
           $match: {
@@ -107,6 +113,7 @@ router.get("/", authMiddleware, async (req, res) => {
         },
         { $sort: { day: 1 } },
       ]),
+      // Get aggregate expenses by category (for expense_category chart)
       Expense.aggregate([
         {
           $match: {
@@ -184,7 +191,8 @@ router.get("/", authMiddleware, async (req, res) => {
         expense: expenseTotal.length > 0 ? expenseTotal[0].totalAmount : 0,
       },
       net:
-        (incomeTotal[0]?.totalAmount || 0) - (expenseTotal[0]?.totalAmount || 0),
+        (incomeTotal[0]?.totalAmount || 0) -
+        (expenseTotal[0]?.totalAmount || 0),
       savingsRate: savingsRate,
       charts: {
         income_expense: income_expense,
@@ -196,6 +204,5 @@ router.get("/", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 export default router;
