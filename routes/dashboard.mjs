@@ -161,7 +161,10 @@ router.get("/", authMiddleware, async (req, res) => {
 
     // Merge income and expense data by day for charts
     const income_expense = [];
+    const running_balance = [];
     const maxDay = Math.max(start.getDate(), end.getDate());
+
+    let tempIncome = 0;
 
     for (let i = start.getDate(); i <= maxDay; i++) {
       const incomeDay = incomeByDay.find((item) => item.day === i);
@@ -174,6 +177,14 @@ router.get("/", authMiddleware, async (req, res) => {
         date: date.toISOString().split("T")[0],
         income: incomeDay ? incomeDay.income : 0,
         expense: expenseDay ? expenseDay.expense : 0,
+      });
+
+      if (incomeDay) tempIncome += incomeDay.income;
+      if (expenseDay) tempIncome -= expenseDay.expense;
+
+      running_balance.push({
+        date: date.toISOString().split("T")[0],
+        sum: tempIncome,
       });
     }
 
@@ -197,6 +208,7 @@ router.get("/", authMiddleware, async (req, res) => {
       charts: {
         income_expense: income_expense,
         expense_category: expense_category,
+        running_balance: running_balance,
       },
     });
   } catch (error) {
