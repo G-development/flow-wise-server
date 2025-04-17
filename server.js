@@ -9,6 +9,7 @@ import incomeRoutes from "./routes/income.mjs";
 import expenseRoutes from "./routes/expense.mjs";
 import categoryRoutes from "./routes/category.mjs";
 import budgetRoutes from "./routes/budget.mjs";
+import importRoute from "./routes/import.mjs";
 
 dotenv.config();
 
@@ -38,6 +39,8 @@ app.use("/expense", expenseRoutes);
 app.use("/category", categoryRoutes);
 
 app.use("/budget", budgetRoutes);
+
+app.use("/import", importRoute);
 
 connectMongoDB()
   .then(() => {
