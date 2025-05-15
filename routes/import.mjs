@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 import { authMiddleware } from "./authMiddleware.mjs";
 
-import { Income, Expense, Category } from "./models.mjs";
+import { Income, Expense, Category } from "../models/models.mjs";
 
 const router = express.Router();
 

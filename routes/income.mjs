@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import { parse } from "date-fns";
-import { Income, Category } from "./models.mjs";
+import { Income, Category } from "../models/models.mjs";
 import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
