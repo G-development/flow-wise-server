@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
-import { User } from "./models.mjs";
-import { Category } from "./models.mjs";
+import { User } from "../models/models.mjs";
+import { Category } from "../models/models.mjs";
 import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
