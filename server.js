@@ -10,10 +10,12 @@ import expenseRoutes from "./routes/expense.mjs";
 import categoryRoutes from "./routes/category.mjs";
 import budgetRoutes from "./routes/budget.mjs";
 import importRoute from "./routes/import.mjs";
+import goCardlessRoute from "./routes/gocardless.mjs";
+import externalTransactions from "./routes/externalTransactions.mjs";
 
 dotenv.config();
 
-const app = express();
+const app = express({ limit: "10mb" });
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
@@ -41,6 +43,10 @@ app.use("/category", categoryRoutes);
 app.use("/budget", budgetRoutes);
 
 app.use("/import", importRoute);
+
+app.use("/bank", goCardlessRoute);
+
+app.use("/externalTransactions", externalTransactions);
 
 connectMongoDB()
   .then(() => {
