@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
-import { Income, Expense, Category } from "./models.mjs";
+import { Income, Expense, Category } from "../models/models.mjs";
+import { Transaction } from "../models/transaction.mjs";
 import { authMiddleware } from "./authMiddleware.mjs";
 
 const router = express.Router();
@@ -16,7 +17,7 @@ router.get("/", authMiddleware, async (req, res) => {
     }
 
     const start = new Date(startDate);
-    const end = new Date(endDate);
+    const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
 
     const [
       incomes,
@@ -26,6 +27,7 @@ router.get("/", authMiddleware, async (req, res) => {
       incomeByDay,
       expenseByDay,
       expensesByCategory,
+      externalTransactions,
     ] = await Promise.all([
       // Get all incomes
       Income.find({
@@ -147,6 +149,13 @@ router.get("/", authMiddleware, async (req, res) => {
         },
         { $sort: { totalAmount: -1 } },
       ]),
+      // Get external transactions (retrieved by a bank)
+      Transaction.find({
+        userId: new mongoose.Types.ObjectId(userId),
+        bookingDate: { $gte: start, $lte: end },
+      })
+        .sort({ bookingDate: -1 })
+        .select("-_id -internalTransactionId -createdAt -updatedAt -__v"),
     ]);
 
     const savingsRate =
@@ -210,6 +219,7 @@ router.get("/", authMiddleware, async (req, res) => {
         expense_category: expense_category,
         running_balance: running_balance,
       },
+      externalTransactions: externalTransactions ? externalTransactions : [],
     });
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
