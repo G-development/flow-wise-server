@@ -19,8 +19,8 @@ dotenv.config();
 const app = express({ limit: "10mb" });
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("Flow-Wise API is working!").status(200);
