@@ -11,7 +11,7 @@ router.get("/all", requireAuth, async (req, res) => {
 
     let query = supabase
       .from("TransactionView")
-      .select("*")
+      .select("id, description, note, amount, date, wallet, category")
       .eq("type", "E")
       .eq("userid", req.user.id)
       .order("date", { ascending: false });
