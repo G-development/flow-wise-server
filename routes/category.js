@@ -76,12 +76,12 @@ router.post("/", requireAuth, async (req, res) => {
 
 // PUT update category
 router.put("/:id", requireAuth, async (req, res) => {
-  const { name, type } = req.body;
+  const { name, type, active } = req.body;
 
   try {
     const { data, error } = await supabase
       .from("Category")
-      .update({ name, type })
+      .update({ name, type, active })
       .eq("id", req.params.id)
       .eq("userid", req.user.id)
       .select()

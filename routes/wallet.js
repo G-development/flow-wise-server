@@ -4,7 +4,7 @@ import { requireAuth } from "../config/auth-middleware.js";
 
 const router = express.Router();
 
-// GET /wallets - tutti i wallet dell'utente
+// GET /wallet - tutti i wallet dell'utente
 router.get("/", requireAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -19,7 +19,7 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-// POST /wallets - crea un nuovo wallet
+// POST /wallet - crea un nuovo wallet
 router.post("/", requireAuth, async (req, res) => {
   try {
     const { name } = req.body;
@@ -88,7 +88,7 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /wallets/:id - elimina un wallet
+// DELETE /wallet/:id - elimina un wallet
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;

@@ -53,5 +53,5 @@ app.use("/wallet", walletRoutes);
 // app.use("/externalTransactions", externalTransactions);
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Server avviato su http://localhost:${PORT}\n`);
+  console.log(`\n🚀 Server avviato su FE:${PORT}\n`);
 });
