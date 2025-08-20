@@ -1,5 +1,6 @@
 import express from "express";
 import { supabase } from "../config/supabaseClient.js";
+import { requireAuth } from "../config/auth-middleware.js";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 
@@ -86,60 +87,75 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// GET profile (user loggato)
-router.get("/profile", async (req, res) => {
+// GET /users/profile
+router.get("/profile", requireAuth, async (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) return res.status(401).json({ message: "Missing token" });
 
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-    if (error) return res.status(401).json({ message: error.message });
+    // Recupera l'utente loggato dall'header (o dal middleware requireAuth)
+    const userId = req.user?.id; // assumendo che requireAuth imposti req.user
+    if (!userId)
+      return res.status(401).json({ message: "User not authenticated" });
 
-    res.json(user);
+    // Query sulla tabella Profile
+    const { data, error } = await supabase
+      .from("Profile")
+      .select("*")
+      .eq("id", userId)
+      .single(); // per prendere un solo record
+
+    if (error) return res.status(404).json({ message: error.message });
+
+    res.json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
 // POST /users/profile/photo
-router.post("/profile/photo", upload.single("image"), async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-    if (error) return res.status(401).json({ message: error.message });
+router.post(
+  "/profile/photo",
+  requireAuth,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace("Bearer ", "");
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
+      if (error) return res.status(401).json({ message: error.message });
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: "profile_pics",
-        transformation: [{ width: 150, height: 150, crop: "fill" }],
-      },
-      async (err, result) => {
-        if (err)
-          return res.status(500).json({ message: "Cloudinary upload failed" });
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "profile_pics",
+          transformation: [{ width: 150, height: 150, crop: "fill" }],
+        },
+        async (err, result) => {
+          if (err)
+            return res
+              .status(500)
+              .json({ message: "Cloudinary upload failed" });
 
-        // salva URL in tabella User su Supabase
-        await supabase
-          .from("User")
-          .update({ profilePic: result.secure_url })
-          .eq("id", user.id);
+          // salva URL in tabella User su Supabase
+          await supabase
+            .from("Profile")
+            .update({ avatar_url: result.secure_url })
+            .eq("id", user.id);
 
-        res.json({
-          message: "Profile picture updated",
-          profilePic: result.secure_url,
-        });
-      }
-    );
+          res.json({
+            message: "Profile picture updated",
+            avatar_url: result.secure_url,
+          });
+        }
+      );
 
-    uploadStream.end(req.file.buffer);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+      uploadStream.end(req.file.buffer);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
   }
-});
+);
 
 export default router;
