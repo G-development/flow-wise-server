@@ -1,159 +1,76 @@
-# Flow Wise - Server 
+# Flow Wise — Server
 
-## Descrizione
-Backend part of **Flow-Wise project - Money tracker**. Created with **Express/Node.js + MongoDB**, managed with **Mongoose**.
+Express backend for Flow-Wise (money tracker), using Supabase for data and auth.
 
+## Stack
+- Node.js + Express
+- Supabase (Database + Auth via JWT)
+- CORS + dotenv
+- Multer + Cloudinary (user avatar upload)
 
-## Tech
-- **Node.js**
-- **Express.js**
-- **MongoDB**
-- **Mongoose**
-- **JWT**
-- **Dotenv**
-- **Cloudinary**
-
-## Structure
+## Project Structure
 ```
 flow-wise-server/
-├── db/
-├── routes/
-└── server.js
+├── config/              # supabase client, auth middleware
+├── routes/              # express route modules
+├── utils/               # asyncHandler, helpers
+├── server.js            # app bootstrap
+└── vercel.json          # deployment
 ```
 
-## Mongoose models schema
-##### User
-```
-name: String, required
-username: String, required
-email: String, required, unique
-password: String, required
-profilePic: String
-currency: String, default "EUR"
-notifications: Boolean, default True
-authMethod: String, ("credentials", "google", "github"), default "credentials"
-```
-##### Income (Entrate)
-```
-user: ref to User
-amount: Number
-description: String
-date: Data, default Date.now
-category: ref  Category
-```
-##### Expense (Spese)
-```
-user: ref to User
-amount: Number
-description: String
-date: Data, default Date.now
-category: ref to Category
-```
-##### Category
-```
-user: ref to User
-name: String
-type: String ("income" or "expense")
-```
-##### Budget
-```
-user: ref to User
-category: ref to Category
-amount: Number
-period: String (es. monthly, weekly - TBD)
+## Environment
+Copy .env.example to .env and set:
+
+- ALLOWED_ORIGINS: comma-separated origins for CORS (e.g. http://localhost:3000)
+- SUPABASE_URL: your Supabase project URL
+- SUPABASE_SERVICE_ROLE_KEY: service_role key (legacy JWT variant, starts with eyJ…)
+- PORT: optional (default 5030)
+- Cloudinary keys if using avatar upload
+
+Important: On the server use the legacy service_role key so Supabase bypasses RLS. The client must use only the publishable anon key.
+
+## Running locally
+- Install deps: npm install
+- Start dev: npm run dev (uses node --watch)
+- Start prod: npm start (after building any assets if needed)
+- Health checks: GET /hello (200), GET /healthz (204)
+
+Example preflight check (CORS):
+
+```bash
+curl -s -X OPTIONS http://localhost:5030/income/all \
+	-H "Origin: http://localhost:3000" \
+	-H "Access-Control-Request-Method: GET" \
+	-H "Access-Control-Request-Headers: Authorization" -i
 ```
 
-## Env config
-Create a `.env` in the project root, in which at least you should have this:
+## CORS
+Configured via ALLOWED_ORIGINS. Methods include GET, POST, PUT, DELETE, OPTIONS; headers include Content-Type and Authorization. Preflight returns 204.
+
+## Routes (current)
+- /users: login/register/profile, avatar upload
+- /income: GET /all (filter by optional startDate,endDate)
+- /expense: GET /all (filter by optional startDate,endDate)
+- /transaction, /category, /wallet: standard CRUD endpoints
+
+All protected endpoints use Supabase JWT via Authorization: Bearer <token>.
+
+Example (authorized) request:
+
+```bash
+ACCESS_TOKEN="<paste supabase access token>"
+curl -s http://localhost:5030/income/all \
+	-H "Authorization: Bearer $ACCESS_TOKEN" | jq '. | length'
 ```
-   PORT=5000
 
-   MONGO_URI=mongodb+srv://user:password@cluster.mongodb.net/database
+## Supabase Notes
+- Server SDK initialized with service_role key and persists no session.
+- Queries filter by req.user.id, set in requireAuth middleware.
 
-   JWT_SECRET=supersecret
+## Performance
+For large datasets, consider adding this index in your Supabase DB:
 
-   CLOUDINARY_CLOUD_NAME=HERE
-   CLOUDINARY_API_KEY=HERE
-   CLOUDINARY_API_SECRET=HERE
-   CLOUDINARY_API=CLOUDINARY_URL=HERE
-   ```
-
-
-## API Structure
-
-### 1️⃣ Utenti (`/users`)
-
-| Metodo | Endpoint | Descrizione |
-|--------|---------|------------|
-| `GET`  | `/users/all` | Ottiene tutti gli utenti (da disabilitare) |
-| `POST` | `/users/register` | Crea un nuovo utente |
-| `POST` | `/users/login` | Logga un utente |
-| `GET`  | `/users/profile` | Ottiene i dati dell'utente loggato |
-| `POST` | `/users/profile/photo` | Upload dell'avatar dell'utente <span style="color:red">TBD </span>  |
-
----
-
-### 2️⃣ Entrate (`/income`)
-
-Gestisce le entrate registrate.
-
-| Metodo | Endpoint | Descrizione |
-|--------|---------|------------|
-| `GET`  | `/income/all` | Ottiene tutte le entrate |
-| `GET`  | `/income/:id` | Ottiene una singola entrata |
-| `POST` | `/income/new` | Crea una nuova entrata |
-| `PUT`  | `/income/:id` | Modifica un'entrata |
-| `DELETE` | `/income/delete/:id` | Elimina un'entrata |
-
----
-
-### 3️⃣ Uscite (`/expense`)
-
-Gestisce le spese effettuate.
-
-| Metodo | Endpoint | Descrizione |
-|--------|---------|------------|
-| `GET`  | `/expense/all` | Ottiene tutte le uscite |
-| `GET`  | `/expense/:id` | Ottiene una singola uscita |
-| `POST` | `/expense/new` | Crea una nuova uscita |
-| `PUT`  | `/expense/:id` | Modifica un'uscita |
-| `DELETE` | `/expense/delete/:id` | Elimina un'uscita |
-
----
-
-### 4️⃣ Categorie (`/category`) 
-
-Gestisce le categorie di entrate/uscite.
-
-| Metodo | Endpoint | Descrizione |
-|--------|---------|------------|
-| `GET`  | `/category/all` | Ottiene tutte le categorie |
-| `POST` | `/category/new` | Crea una nuova categoria |
-
----
-
-### 5️⃣ Budget (`/budget`) 
-
-Gestisce il budget per ogni categoria.
-
-| Metodo | Endpoint | Descrizione |
-|--------|---------|------------|
-| `GET`  | `/budget/all` | Ottiene il budget per tutte le categorie |
-| `POST` | `/budget/new` | Definisce un budget per una categoria |
-| `GET`  | `/budget/:categoryId` <span style="color:red">TBD </span> | Ottiene il budget per una singola categoria |
-| `PUT`  | `/budget/:categoryId` <span style="color:red">TBD </span> | Modifica il budget di una categoria |
-
----
-
-### 🔜 Riepilogo e Statistiche (`/summary`) - <span style="color:red">TBD </span>
-
-Questa API calcola i totali, l'avanzo e genera dati per i grafici.
-
-| Metodo | Endpoint | Descrizione |
-|--------|---------|------------|
-| `GET`  | `/summary` | Ottiene il riepilogo generale (entrate, uscite, avanzo) |
-| `GET`  | `/summary/monthly/:year/:month` | Ottiene il riepilogo mensile |
-| `GET`  | `/summary/category/:categoryId` | Ottiene il riepilogo di una categoria |
+CREATE INDEX IF NOT EXISTS idx_tx_userid_date ON "Transaction"(userid, date DESC);
 
 ## Deployment
-Deployed using Vercel at [Flow Wise (Server)](https://flow-wise-server.vercel.app/)
+- Vercel-ready setup via vercel.json.

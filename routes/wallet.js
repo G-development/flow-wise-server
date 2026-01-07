@@ -1,12 +1,15 @@
 import express from "express";
 import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
 // GET /wallet - tutti i wallet dell'utente
-router.get("/", requireAuth, async (req, res) => {
-  try {
+router.get(
+  "/",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from("Wallet")
       .select("*")
@@ -14,14 +17,14 @@ router.get("/", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  })
+);
 
 // POST /wallet - crea un nuovo wallet
-router.post("/", requireAuth, async (req, res) => {
-  try {
+router.post(
+  "/",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Missing wallet name" });
 
@@ -49,14 +52,14 @@ router.post("/", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.status(201).json(data[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  })
+);
 
 // PUT /wallets/:id - aggiorna nome o saldo
-router.put("/:id", requireAuth, async (req, res) => {
-  try {
+router.put(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { name, balance, is_default } = req.body;
     const { id } = req.params;
 
@@ -83,14 +86,14 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.status(200).json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  })
+);
 
 // DELETE /wallet/:id - elimina un wallet
-router.delete("/:id", requireAuth, async (req, res) => {
-  try {
+router.delete(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     const { data, error } = await supabase
@@ -101,9 +104,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.status(200).json({ message: "Wallet deleted", wallet: data[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  })
+);
 
 export default router;

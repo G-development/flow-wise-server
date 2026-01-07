@@ -1,12 +1,15 @@
 import express from "express";
 import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
 // GET all categories for logged user
-router.get("/", requireAuth, async (req, res) => {
-  try {
+router.get(
+  "/",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from("Category")
       .select("*")
@@ -14,14 +17,14 @@ router.get("/", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+  })
+);
 
 // GET all categories for logged user
-router.get("/active", requireAuth, async (req, res) => {
-  try {
+router.get(
+  "/active",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from("Category")
       .select("*")
@@ -30,14 +33,14 @@ router.get("/active", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+  })
+);
 
 // GET category by id
-router.get("/:id", requireAuth, async (req, res) => {
-  try {
+router.get(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { data, error } = await supabase
       .from("Category")
       .select("*")
@@ -47,16 +50,16 @@ router.get("/:id", requireAuth, async (req, res) => {
 
     if (error) return res.status(404).json({ error: error.message });
     res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+  })
+);
 
 // POST create category
-router.post("/", requireAuth, async (req, res) => {
-  const { name, type } = req.body;
+router.post(
+  "/",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { name, type } = req.body;
 
-  try {
     const { data, error } = await supabase
       .from("Category")
       .insert({
@@ -69,16 +72,16 @@ router.post("/", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.status(201).json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+  })
+);
 
 // PUT update category
-router.put("/:id", requireAuth, async (req, res) => {
-  const { name, type, active } = req.body;
+router.put(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { name, type, active } = req.body;
 
-  try {
     const { data, error } = await supabase
       .from("Category")
       .update({ name, type, active })
@@ -89,14 +92,14 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+  })
+);
 
 // DELETE category
-router.delete("/:id", requireAuth, async (req, res) => {
-  try {
+router.delete(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req, res) => {
     const { error } = await supabase
       .from("Category")
       .delete()
@@ -105,9 +108,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     res.json({ message: "Category deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-});
+  })
+);
 
 export default router;

@@ -3,36 +3,48 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import userRoutes from "./routes/user.js";
-// import dashboardRoutes from "./routes/dashboard.mjs";
 import transactionRoutes from "./routes/transaction.js";
 import incomeRoutes from "./routes/income.js";
 import expenseRoutes from "./routes/expense.js";
 import categoryRoutes from "./routes/category.js";
 import walletRoutes from "./routes/wallet.js";
-// import budgetRoutes from "./routes/budget.mjs";
-// import importRoute from "./routes/import.mjs";
-// import goCardlessRoute from "./routes/gocardless.mjs";
-// import externalTransactions from "./routes/externalTransactions.mjs";
 
 dotenv.config();
 
-const app = express({ limit: "10mb" });
-const PORT = process.env.PORT || 5000;
+const app = express();
+const PORT = process.env.PORT || 5030;
 
-app.use(express.json());
-app.use(cors());
+app.use(express.json({ limit: "10mb" }));
+
+// CORS con origini configurabili da env (virgola-separate)
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.get("/", (req, res) => {
-  res.send("Flow-Wise API is working!").status(200);
+  res.status(200).send("Flow-Wise API is working!");
 });
 
 app.get("/hello", (req, res) => {
-  res.send("Hello world!");
+  res.status(200).send("Hello world!");
+});
+
+// Healthcheck
+app.get("/healthz", (req, res) => {
+  res.status(204).end();
 });
 
 app.use("/users", userRoutes);
-
-// app.use("/dashboard", dashboardRoutes);
 
 app.use("/transaction", transactionRoutes);
 
@@ -44,14 +56,18 @@ app.use("/category", categoryRoutes);
 
 app.use("/wallet", walletRoutes);
 
-// app.use("/budget", budgetRoutes);
+// 404 route
+app.use((req, res) => {
+  res.status(404).json({ error: "Not Found" });
+});
 
-// app.use("/import", importRoute);
-
-// app.use("/bank", goCardlessRoute);
-
-// app.use("/externalTransactions", externalTransactions);
+// Global error handler
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Server avviato su FE:${PORT}\n`);
+  console.log(`\n🚀 Server avviato su PORT:${PORT}\n`);
 });

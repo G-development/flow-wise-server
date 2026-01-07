@@ -132,3 +132,4 @@ package-lock.json
 package-lock.json
 
 /generated/prisma
+.DS_Store
