@@ -2,6 +2,8 @@ import express from "express";
 import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { validate } from "../utils/validate.js";
+import { categoryCreateSchema, categoryUpdateSchema } from "../utils/schemas.js";
 
 const router = express.Router();
 
@@ -57,6 +59,7 @@ router.get(
 router.post(
   "/",
   requireAuth,
+  validate(categoryCreateSchema),
   asyncHandler(async (req, res) => {
     const { name, type } = req.body;
 
@@ -79,6 +82,7 @@ router.post(
 router.put(
   "/:id",
   requireAuth,
+  validate(categoryUpdateSchema),
   asyncHandler(async (req, res) => {
     const { name, type, active } = req.body;
 

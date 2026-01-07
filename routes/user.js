@@ -3,13 +3,24 @@ import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
+import rateLimit from "express-rate-limit";
+import { validate } from "../utils/validate.js";
+import { userRegisterSchema } from "../utils/schemas.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// rate limit register route to prevent abuse
+const createAccountLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /register
-router.post("/register", async (req, res) => {
+router.post("/register", createAccountLimiter, validate(userRegisterSchema), async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password)

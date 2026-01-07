@@ -2,6 +2,8 @@ import express from "express";
 import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { validate } from "../utils/validate.js";
+import { transactionCreateSchema, transactionUpdateSchema } from "../utils/schemas.js";
 
 const router = express.Router();
 
@@ -43,6 +45,7 @@ router.get(
 router.post(
   "/",
   requireAuth,
+  validate(transactionCreateSchema),
   asyncHandler(async (req, res) => {
     const { description, note, amount, date, type, wallet_id, category_id } =
       req.body;
@@ -71,6 +74,7 @@ router.post(
 router.put(
   "/:id",
   requireAuth,
+  validate(transactionUpdateSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { description, note, amount, date, type, wallet_id, category_id } =

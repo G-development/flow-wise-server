@@ -2,6 +2,8 @@ import express from "express";
 import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { validate } from "../utils/validate.js";
+import { walletCreateSchema, walletUpdateSchema } from "../utils/schemas.js";
 
 const router = express.Router();
 
@@ -24,6 +26,7 @@ router.get(
 router.post(
   "/",
   requireAuth,
+  validate(walletCreateSchema),
   asyncHandler(async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Missing wallet name" });
@@ -59,6 +62,7 @@ router.post(
 router.put(
   "/:id",
   requireAuth,
+  validate(walletUpdateSchema),
   asyncHandler(async (req, res) => {
     const { name, balance, is_default } = req.body;
     const { id } = req.params;
