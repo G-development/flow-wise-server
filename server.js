@@ -16,15 +16,22 @@ const PORT = process.env.PORT || 5030;
 
 app.use(express.json({ limit: "10mb" }));
 
-// CORS con origini configurabili da env (virgola-separate)
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+// CORS con origini configurabili da env (virgola-separate) + fallback vercel
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,https://flow-wise-client.vercel.app")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
+const allowedPatterns = [/\.vercel\.app$/];
+
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow non-browser requests
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedPatterns.some((re) => re.test(origin))) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
