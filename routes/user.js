@@ -48,7 +48,7 @@ router.post("/register", createAccountLimiter, validate(userRegisterSchema), asy
       id: userId,
       name: name,
       username: name,
-      avatar_url: "https://avatar.iran.liara.run/public/",
+      avatar_url: null,
       email: email,
       currency: "EUR",
       // altri campi default se servono
