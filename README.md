@@ -51,7 +51,8 @@ Configured via ALLOWED_ORIGINS. Methods include GET, POST, PUT, DELETE, OPTIONS;
 - /users: login/register/profile, avatar upload
 - /income: GET /all (filter by optional startDate,endDate)
 - /expense: GET /all (filter by optional startDate,endDate)
-- /transaction, /category, /wallet: standard CRUD endpoints
+- /category: GET / (tutte), GET /active (solo attive), CRUD
+- /transaction, /wallet: standard CRUD endpoints
 
 All protected endpoints use Supabase JWT via Authorization: Bearer <token>.
 
