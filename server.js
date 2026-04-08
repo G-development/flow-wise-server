@@ -17,6 +17,9 @@ const PORT = process.env.PORT || 5030;
 
 app.use(express.json({ limit: "10mb" }));
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // CORS con origini configurabili da env (virgola-separate) + fallback vercel
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,https://flow-wise-client.vercel.app")
   .split(",")
@@ -40,7 +43,7 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-  res.status(200).send("Flow-Wise API is working!");
+  res.sendFile('index.html', { root: 'public' });
 });
 
 app.get("/hello", (req, res) => {

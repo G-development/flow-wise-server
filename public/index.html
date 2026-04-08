@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow-Wise API</title>
+  <style>
+    :root {
+      --background: #ffffff;
+      --foreground: #0f0f0f;
+      --card: #ffffff;
+      --primary: #1a1a1a;
+      --secondary: #f1f1f1;
+      --muted: #f1f1f1;
+      --muted-foreground: #737373;
+      --border: #e5e5e5;
+      --chart-1: #ff6b35;
+      --chart-2: #4a90e2;
+      --chart-3: #9b59b6;
+      --chart-4: #2ecc71;
+      --chart-5: #1abc9c;
+      --radius: 0.5rem;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding: 2rem 0;
+    }
+
+    .logo {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--muted-foreground);
+      margin-bottom: 2rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--chart-4);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .status-badge::before {
+      content: '●';
+      color: #22c55e;
+      font-size: 1.2rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    .card-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-description {
+      color: var(--muted-foreground);
+      font-size: 0.9rem;
+    }
+
+    .endpoint-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .endpoint-item {
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 0.125rem);
+      margin-bottom: 0.75rem;
+      background: var(--background);
+      transition: all 0.2s ease;
+    }
+
+    .endpoint-item:hover {
+      border-color: var(--chart-1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .endpoint-method {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      min-width: 3.5rem;
+      text-align: center;
+      color: white;
+    }
+
+    .method-GET { background: var(--chart-4); }
+    .method-POST { background: var(--chart-1); }
+    .method-PUT { background: var(--chart-2); }
+    .method-DELETE { background: #ef4444; }
+
+    .endpoint-path {
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      font-weight: 500;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .endpoint-description {
+      color: var(--muted-foreground);
+      font-size: 0.85rem;
+      margin-left: 4.25rem;
+    }
+
+    .section-icon {
+      font-size: 1.25rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted-foreground);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .header {
+        margin-bottom: 2rem;
+        padding: 1rem 0;
+      }
+
+      .logo {
+        font-size: 2.5rem;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .card {
+        padding: 1.5rem;
+      }
+
+      .endpoint-item {
+        padding: 0.75rem;
+      }
+
+      .endpoint-description {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .logo {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .card-title {
+        font-size: 1.25rem;
+      }
+
+      .endpoint-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .endpoint-description {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <span>🚀</span>
+        <span>Flow-Wise API</span>
+      </div>
+      <p class="subtitle">
+        Welcome to the Flow-Wise API documentation. Here you'll find all available endpoints to integrate with your financial data.
+      </p>
+      <div class="status-badge">
+        API Status: Online
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">🔐</span>
+            Authentication & Users
+          </h2>
+          <p class="card-description">User management and authentication endpoints</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/users/register</code>
+            </div>
+            <div class="endpoint-description">Register a new user account</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/users/profile</code>
+            </div>
+            <div class="endpoint-description">Get current user profile information</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/users/profile/photo</code>
+            </div>
+            <div class="endpoint-description">Upload and update user avatar</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">💰</span>
+            Transactions
+          </h2>
+          <p class="card-description">Complete CRUD operations for financial transactions</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/transaction</code>
+            </div>
+            <div class="endpoint-description">Get all transactions with optional date filters</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/transaction</code>
+            </div>
+            <div class="endpoint-description">Create a new transaction</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/transaction/:id</code>
+            </div>
+            <div class="endpoint-description">Update an existing transaction</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/transaction/:id</code>
+            </div>
+            <div class="endpoint-description">Delete a transaction</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">📈</span>
+            Income & Expenses
+          </h2>
+          <p class="card-description">Specialized endpoints for income and expense data</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/income/all</code>
+            </div>
+            <div class="endpoint-description">Get all income transactions</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/expense/all</code>
+            </div>
+            <div class="endpoint-description">Get all expense transactions</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">🏷️</span>
+            Categories & Wallets
+          </h2>
+          <p class="card-description">Manage transaction categories and payment methods</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/category</code>
+            </div>
+            <div class="endpoint-description">Get all transaction categories</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/category/active</code>
+            </div>
+            <div class="endpoint-description">Get only active categories</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/wallet</code>
+            </div>
+            <div class="endpoint-description">Get all user wallets</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">📊</span>
+            Dashboard
+          </h2>
+          <p class="card-description">Dashboard layout and configuration</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/dashboard-layout</code>
+            </div>
+            <div class="endpoint-description">Get current dashboard layout</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/dashboard-layout</code>
+            </div>
+            <div class="endpoint-description">Update dashboard layout configuration</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">🔧</span>
+            Utilities
+          </h2>
+          <p class="card-description">Utility endpoints for testing and monitoring</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/hello</code>
+            </div>
+            <div class="endpoint-description">Simple hello world endpoint for testing</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/healthz</code>
+            </div>
+            <div class="endpoint-description">Health check endpoint for monitoring</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>Flow-Wise API • Built with ❤️ for financial management</p>
+    </footer>
+  </div>
+</body>
+</html>
