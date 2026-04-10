@@ -1,77 +1,83 @@
-# Flow Wise — Server
+# Flow Wise - Server
 
-Express backend for Flow-Wise (money tracker), using Supabase for data and auth.
+Express backend per Flow-Wise, con API REST per transazioni, categorie, wallet e utenti.
+Utilizza Supabase per storage, autenticazione e gestione RLS.
 
 ## Stack
-- Node.js + Express
-- Supabase (Database + Auth via JWT)
-- CORS + dotenv
-- Multer + Cloudinary (user avatar upload)
 
-## Project Structure
+- Node.js + Express
+- Supabase JS SDK
+- CORS + dotenv
+- Cloudinary + Multer per upload avatar
+- Vercel-ready deployment
+
+## Struttura del progetto
+
 ```
 flow-wise-server/
-├── config/              # supabase client, auth middleware
-├── routes/              # express route modules
-├── utils/               # asyncHandler, helpers
-├── server.js            # app bootstrap
-└── vercel.json          # deployment
+├── config/             # supabase client, auth middleware, Cloudinary setup
+├── routes/             # moduli Express per endpoint
+├── utils/              # helper e middleware condivisi
+├── server.js           # bootstrap dell'app
+└── vercel.json         # configurazione Vercel
 ```
 
-## Environment
-Copy .env.example to .env and set:
+## Configurazione ambiente
 
-- ALLOWED_ORIGINS: comma-separated origins for CORS (e.g. http://localhost:3000)
-- SUPABASE_URL: your Supabase project URL
-- SUPABASE_SERVICE_ROLE_KEY: service_role key (legacy JWT variant, starts with eyJ…)
-- PORT: optional (default 5030)
-- Cloudinary keys if using avatar upload
+Copia `.env.example` in `.env` e definisci:
 
-Important: On the server use the legacy service_role key so Supabase bypasses RLS. The client must use only the publishable anon key.
+- `ALLOWED_ORIGINS`: origini per CORS (es. http://localhost:3000)
+- `SUPABASE_URL`: URL del progetto Supabase
+- `SUPABASE_SERVICE_ROLE_KEY`: chiave service_role per bypass RLS
+- `PORT`: opzionale, default 5030
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 
-## Running locally
-- Install deps: npm install
-- Start dev: npm run dev (uses node --watch)
-- Start prod: npm start (after building any assets if needed)
-- Health checks: GET /hello (200), GET /healthz (204)
+> Usa la `SUPABASE_SERVICE_ROLE_KEY` solo sul server. Il client deve usare solo la chiave pubblicabile `anon`.
 
-Example preflight check (CORS):
+## Avvio locale
 
 ```bash
-curl -s -X OPTIONS http://localhost:5030/income/all \
-	-H "Origin: http://localhost:3000" \
-	-H "Access-Control-Request-Method: GET" \
-	-H "Access-Control-Request-Headers: Authorization" -i
+cd flow-wise-server
+npm install
+npm run dev
 ```
+
+- `npm run dev` - avvia il server in hot reload
+- `npm start` - esegue il server in produzione
+- `GET /hello` - risponde con Hello world!
+- `GET /healthz` - risponde con 204
+- `GET /` - mostra la home con gli endpoint disponibili
 
 ## CORS
-Configured via ALLOWED_ORIGINS. Methods include GET, POST, PUT, DELETE, OPTIONS; headers include Content-Type and Authorization. Preflight returns 204.
 
-## Routes (current)
-- /users: login/register/profile, avatar upload
-- /income: GET /all (filter by optional startDate,endDate)
-- /expense: GET /all (filter by optional startDate,endDate)
-- /category: GET / (tutte), GET /active (solo attive), CRUD
-- /transaction, /wallet: standard CRUD endpoints
+Configurato con `ALLOWED_ORIGINS` e supporta:
+- metodi: GET, POST, PUT, DELETE, OPTIONS
+- header: Content-Type, Authorization
 
-All protected endpoints use Supabase JWT via Authorization: Bearer <token>.
+## API principali
 
-Example (authorized) request:
+- /users - login, register, profile, avatar upload
+- /transaction - CRUD transazioni
+- /income - GET /all con filtri data
+- /expense - GET /all con filtri data
+- /category - GET /, GET /active, CRUD
+- /wallet - CRUD wallet
 
-```bash
-ACCESS_TOKEN="<paste supabase access token>"
-curl -s http://localhost:5030/income/all \
-	-H "Authorization: Bearer $ACCESS_TOKEN" | jq '. | length'
-```
+Tutte le route protette usano il token Supabase in `Authorization: Bearer <token>`.
 
-## Supabase Notes
-- Server SDK initialized with service_role key and persists no session.
-- Queries filter by req.user.id, set in requireAuth middleware.
+## Note Supabase
 
-## Performance
-For large datasets, consider adding this index in your Supabase DB:
-
-CREATE INDEX IF NOT EXISTS idx_tx_userid_date ON "Transaction"(userid, date DESC);
+- Il server viene inizializzato con la service role key.
+- Le query sono filtrate su `req.user.id` tramite il middleware `requireAuth`.
 
 ## Deployment
-- Vercel-ready setup via vercel.json.
+
+Il progetto include `vercel.json` per il deploy su Vercel con runtime `@vercel/node`.
+
+## Performance
+
+Per grandi dataset, è consigliato un indice come:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_tx_userid_date ON "Transaction"(userid, date DESC);
+```
