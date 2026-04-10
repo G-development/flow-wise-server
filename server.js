@@ -9,6 +9,7 @@ import expenseRoutes from "./routes/expense.js";
 import categoryRoutes from "./routes/category.js";
 import walletRoutes from "./routes/wallet.js";
 import dashboardLayoutRoutes from "./routes/dashboard-layout.js";
+import importRoutes from "./routes/import.js";
 
 dotenv.config();
 
@@ -68,6 +69,8 @@ app.use("/category", categoryRoutes);
 app.use("/wallet", walletRoutes);
 
 app.use("/dashboard-layout", dashboardLayoutRoutes);
+
+app.use("/import", importRoutes);
 
 // 404 route
 app.use((req, res) => {

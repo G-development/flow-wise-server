@@ -33,6 +33,10 @@ export const walletUpdateSchema = z.object({
   is_default: z.boolean().optional(),
 });
 
+export const importCsvSchema = z.object({
+  csv: z.string().min(1, "CSV content is required"),
+});
+
 export const userRegisterSchema = z.object({
   name: z.string().min(1, "name is required"),
   email: z.string().email("invalid email"),
