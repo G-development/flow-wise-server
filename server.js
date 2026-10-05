@@ -10,6 +10,9 @@ import categoryRoutes from "./routes/category.js";
 import walletRoutes from "./routes/wallet.js";
 import dashboardLayoutRoutes from "./routes/dashboard-layout.js";
 import importRoutes from "./routes/import.js";
+import bankRoutes from "./routes/bank.js";
+import authRoutes from "./routes/auth.js";
+import { startBankSyncScheduler } from "./utils/bankSyncScheduler.js";
 
 dotenv.config();
 
@@ -58,6 +61,8 @@ app.get("/healthz", (req, res) => {
 
 app.use("/users", userRoutes);
 
+app.use("/auth", authRoutes);
+
 app.use("/transaction", transactionRoutes);
 
 app.use("/income", incomeRoutes);
@@ -71,6 +76,8 @@ app.use("/wallet", walletRoutes);
 app.use("/dashboard-layout", dashboardLayoutRoutes);
 
 app.use("/import", importRoutes);
+
+app.use("/bank", bankRoutes);
 
 // 404 route
 app.use((req, res) => {
@@ -86,4 +93,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Server avviato su PORT:${PORT}\n`);
+  
+  // Avvia lo scheduler per la sincronizzazione bancaria
+  startBankSyncScheduler();
 });
