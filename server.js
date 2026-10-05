@@ -22,7 +22,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.static('public'));
 
 // CORS con origini configurabili da env (virgola-separate) + fallback vercel
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,https://flow-wise-client.vercel.app")
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,http://localhost:3002,https://flow-wise-client.vercel.app")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
