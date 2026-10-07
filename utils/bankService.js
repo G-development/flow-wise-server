@@ -1,4 +1,10 @@
 import axios from "axios";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -31,9 +37,127 @@ const BANK_CONFIGS = {
   },
 };
 
+const REQUIRED_BANK_ENV = [
+  "BANK_CLIENT_ID",
+  "BANK_CLIENT_SECRET",
+  "BANK_REDIRECT_URI",
+  "BANK_CLIENT_REDIRECT_URI",
+];
+
+export const getBankSetupStatus = async () => {
+  const issues = [];
+  const missingEnv = REQUIRED_BANK_ENV.filter((name) => !process.env[name]);
+  if (missingEnv.length > 0) {
+    issues.push({
+      code: "provider_not_configured",
+      message: `Configurazione bancaria incompleta sul server: ${missingEnv.join(", ")}.`,
+    });
+  }
+
+  for (const table of ["bank_connections", "bank_transactions"]) {
+    const { error } = await supabase.from(table).select("id").limit(1);
+    if (error) {
+      const isMissingTable =
+        error.code === "PGRST205" ||
+        error.code === "42P01" ||
+        /could not find the table|does not exist/i.test(error.message);
+      issues.push({
+        code: isMissingTable ? "database_not_migrated" : "database_unavailable",
+        message: isMissingTable
+          ? `Tabella ${table} non presente: applica le migrazioni bancarie nel progetto Supabase.`
+          : `Impossibile verificare la tabella ${table} nel database.`,
+      });
+    }
+  }
+
+  return { ready: issues.length === 0, issues };
+};
+
 // Ottieni configurazione banca
 const getBankConfig = (bankId) => {
-  return BANK_CONFIGS[bankId] || BANK_CONFIGS.intesa;
+  const bank = BANK_CONFIGS[bankId];
+  if (!bank) throw new Error("Unsupported bank");
+  return bank;
+};
+
+export const getSupportedBanks = () =>
+  Object.entries(BANK_CONFIGS).map(([id, bank]) => ({ id, name: bank.name }));
+
+export const createBankOAuthState = (userId, bankId) => {
+  if (!process.env.BANK_CLIENT_SECRET) {
+    throw new Error("BANK_CLIENT_SECRET is not configured");
+  }
+
+  const key = createHash("sha256")
+    .update(process.env.BANK_CLIENT_SECRET)
+    .digest();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const payload = Buffer.from(
+    JSON.stringify({
+      userId,
+      bankId,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+      nonce: randomBytes(16).toString("hex"),
+    })
+  );
+  const encrypted = Buffer.concat([
+    cipher.update(payload),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+
+  return `${iv.toString("base64url")}.${encrypted.toString("base64url")}.${tag.toString("base64url")}`;
+};
+
+export const verifyBankOAuthState = (state) => {
+  if (typeof state !== "string" || !process.env.BANK_CLIENT_SECRET) {
+    throw new Error("Invalid OAuth state");
+  }
+
+  const [encodedIv, encodedPayload, encodedTag, extra] = state.split(".");
+  if (!encodedIv || !encodedPayload || !encodedTag || extra !== undefined) {
+    throw new Error("Invalid OAuth state");
+  }
+
+  let payload;
+  try {
+    const iv = Buffer.from(encodedIv, "base64url");
+    const encrypted = Buffer.from(encodedPayload, "base64url");
+    const tag = Buffer.from(encodedTag, "base64url");
+    if (iv.length !== 12 || tag.length !== 16 || encrypted.length === 0) {
+      throw new Error("Invalid OAuth state");
+    }
+    const key = createHash("sha256")
+      .update(process.env.BANK_CLIENT_SECRET)
+      .digest();
+    const decipher = createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+    payload = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final(),
+    ]).toString("utf8");
+  } catch {
+    throw new Error("Invalid OAuth state");
+  }
+
+  let stateData;
+  try {
+    stateData = JSON.parse(payload);
+  } catch {
+    throw new Error("Invalid OAuth state");
+  }
+
+  if (
+    typeof stateData.userId !== "string" ||
+    typeof stateData.bankId !== "string" ||
+    typeof stateData.expiresAt !== "number" ||
+    stateData.expiresAt < Date.now()
+  ) {
+    throw new Error("Expired or invalid OAuth state");
+  }
+  getBankConfig(stateData.bankId);
+  return stateData;
 };
 
 // Genera URL di autorizzazione
@@ -150,7 +274,7 @@ export const fetchTransactions = async (bankId, accessToken, accountId, fromDate
 // Salva connessione bancaria nel DB
 export const saveBankConnection = async (userId, bankId, accountId, tokenData) => {
   const expiresAt = new Date();
-  expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expiresIn);
+  expiresAt.setSeconds(expiresAt.getSeconds() + Number(tokenData.expiresIn || 3600));
 
   const { error } = await supabase.from("bank_connections").upsert({
     user_id: userId,
@@ -190,26 +314,61 @@ export const syncBankTransactions = async (userId, bankId, accountId, accessToke
   const transactions = await fetchTransactions(bankId, accessToken, accountId, dateFrom, dateTo);
 
   // Formatta transazioni
-  const formatted = transactions.map((txn) => ({
-    user_id: userId,
-    bank_id: bankId,
-    account_id: accountId,
-    external_id: txn.transactionId || txn.id,
-    amount: parseFloat(txn.amount),
-    currency: txn.currency || "EUR",
-    description: txn.purpose || txn.remittanceInformationUnstructured || "",
-    date: txn.bookingDate,
-    counterparty: txn.counterparty?.name || "",
-    status: "synced",
-    raw_data: txn,
-  }));
+  const formatted = transactions.map((txn) => {
+    const externalIdValue = txn.transactionId ?? txn.id;
+    const externalId =
+      externalIdValue === undefined || externalIdValue === null
+        ? ""
+        : String(externalIdValue);
+    const amount = Number(txn.amount ?? txn.transactionAmount?.amount);
+    const date = txn.bookingDate || txn.date;
+    if (
+      !externalId ||
+      !Number.isFinite(amount) ||
+      typeof date !== "string" ||
+      Number.isNaN(Date.parse(date))
+    ) {
+      throw new Error("Bank provider returned a transaction with invalid required fields");
+    }
+
+    return {
+      user_id: userId,
+      bank_id: bankId,
+      account_id: accountId,
+      external_id: externalId,
+      amount,
+      currency: txn.currency || "EUR",
+      description: txn.purpose || txn.remittanceInformationUnstructured || "",
+      date,
+      counterparty: txn.counterparty?.name || "",
+      status: "synced",
+      raw_data: txn,
+    };
+  });
 
   // Salva nel DB
-  const { data, error } = await supabase
-    .from("bank_transactions")
-    .upsert(formatted, { onConflict: "external_id" });
+  let data = [];
+  if (formatted.length > 0) {
+    const result = await supabase
+      .from("bank_transactions")
+      .upsert(formatted, {
+        onConflict: "user_id,bank_id,account_id,external_id",
+      })
+      .select();
+    if (result.error) {
+      throw new Error(`Failed to sync transactions: ${result.error.message}`);
+    }
+    data = result.data ?? [];
+  }
 
-  if (error) throw new Error(`Failed to sync transactions: ${error.message}`);
+  const { error: timestampError } = await supabase
+    .from("bank_connections")
+    .update({ last_synced: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("bank_id", bankId);
+  if (timestampError) {
+    throw new Error(`Failed to update last bank sync time: ${timestampError.message}`);
+  }
   return data;
 };
 
@@ -231,11 +390,26 @@ export const ensureValidToken = async (userId, bankId) => {
   if (!connection) return null;
 
   const expiresAt = new Date(connection.token_expires_at);
-  if (new Date() > expiresAt) {
+  if (
+    !Number.isFinite(expiresAt.getTime()) ||
+    Date.now() >= expiresAt.getTime()
+  ) {
     const newToken = await refreshToken(bankId, connection.refresh_token);
-    await saveBankConnection(userId, bankId, connection.account_id, newToken);
+    await saveBankConnection(userId, bankId, connection.account_id, {
+      ...newToken,
+      refreshToken: newToken.refreshToken || connection.refresh_token,
+    });
     return newToken.accessToken;
   }
 
   return connection.access_token;
+};
+
+export const disconnectBankConnection = async (userId, bankId) => {
+  const { error } = await supabase
+    .from("bank_connections")
+    .delete()
+    .eq("user_id", userId)
+    .eq("bank_id", bankId);
+  if (error) throw new Error(`Failed to disconnect bank: ${error.message}`);
 };

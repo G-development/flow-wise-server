@@ -1,13 +1,20 @@
 import express from "express";
+import { timingSafeEqual } from "node:crypto";
+import { requireAuth } from "../config/auth-middleware.js";
 import {
-  getAuthorizationUrl,
+  createBankOAuthState,
+  disconnectBankConnection,
   exchangeCodeForToken,
   fetchAccounts,
-  saveBankConnection,
+  getAuthorizationUrl,
   getBankConnection,
-  syncBankTransactions,
+  getBankSetupStatus,
+  getSupportedBanks,
   getUserBankTransactions,
   ensureValidToken,
+  saveBankConnection,
+  syncBankTransactions,
+  verifyBankOAuthState,
 } from "../utils/bankService.js";
 import {
   forceBankSync,
@@ -17,207 +24,255 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
-// GET /bank/authorize?bank=intesa&state=xyz
-// Genera URL di autorizzazione
+const clientRedirectUrl = () =>
+  new URL(
+    process.env.BANK_CLIENT_REDIRECT_URI ||
+      "http://localhost:3000/settings/yourbank"
+  );
+
+const redirectBankResult = (res, params) => {
+  const redirectUrl = clientRedirectUrl();
+  for (const [key, value] of Object.entries(params)) {
+    redirectUrl.searchParams.set(key, value);
+  }
+  return res.redirect(redirectUrl.toString());
+};
+
+const requireSchedulerSecret = (req, res, next) => {
+  const expected = process.env.BANK_SCHEDULER_SECRET;
+  const supplied = req.get("x-scheduler-secret");
+  if (!expected) {
+    return res.status(503).json({ error: "Scheduler endpoint is not configured" });
+  }
+  if (typeof supplied !== "string") {
+    return res.status(401).json({ error: "Missing scheduler credentials" });
+  }
+
+  const expectedBytes = Buffer.from(expected);
+  const suppliedBytes = Buffer.from(supplied);
+  if (
+    expectedBytes.length !== suppliedBytes.length ||
+    !timingSafeEqual(expectedBytes, suppliedBytes)
+  ) {
+    return res.status(401).json({ error: "Invalid scheduler credentials" });
+  }
+  next();
+};
+
 router.get(
-  "/authorize",
-  asyncHandler(async (req, res) => {
-    const { bank, state } = req.query;
-
-    if (!bank) {
-      return res.status(400).json({ error: "Bank ID required" });
-    }
-
-    const authUrl = getAuthorizationUrl(bank, state);
-    res.json({ authUrl });
+  "/config",
+  requireAuth,
+  asyncHandler(async (_req, res) => {
+    res.json(await getBankSetupStatus());
   })
 );
 
-// GET /bank/callback?code=xxx&state=yyy
-// Callback dalla banca dopo autorizzazione
+router.get(
+  "/institutions",
+  requireAuth,
+  asyncHandler(async (_req, res) => {
+    res.json(getSupportedBanks());
+  })
+);
+
+router.get(
+  "/authorize",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { bank } = req.query;
+    if (typeof bank !== "string" || !getSupportedBanks().some((item) => item.id === bank)) {
+      return res.status(400).json({ error: "Unsupported or missing bank ID" });
+    }
+
+    const setupStatus = await getBankSetupStatus();
+    if (!setupStatus.ready) {
+      return res.status(503).json({
+        error: "Bank integration is not configured",
+        issues: setupStatus.issues,
+      });
+    }
+
+    const state = createBankOAuthState(req.user.id, bank);
+    res.json({ authUrl: getAuthorizationUrl(bank, state) });
+  })
+);
+
+// The bank provider redirects here directly, so the encrypted state carries the
+// authenticated user identity instead of relying on a browser auth header.
 router.get(
   "/callback",
   asyncHandler(async (req, res) => {
     const { code, state, error, bank } = req.query;
-    const userId = req.headers["x-user-id"];
+    let oauthState;
 
-    if (error) {
-      return res.status(400).json({ error: `Authorization failed: ${error}` });
+    try {
+      oauthState = verifyBankOAuthState(state);
+    } catch (stateError) {
+      return res.status(400).json({ error: stateError.message });
     }
 
-    if (!code || !bank || !userId) {
-      return res.status(400).json({ error: "Missing required parameters" });
+    if (bank && bank !== oauthState.bankId) {
+      return res.status(400).json({ error: "OAuth bank does not match state" });
+    }
+
+    if (error) {
+      return redirectBankResult(res, {
+        error_description: "Authorization was declined by the bank.",
+      });
+    }
+    if (typeof code !== "string" || !code) {
+      return redirectBankResult(res, {
+        error_description: "The bank did not return an authorization code.",
+      });
     }
 
     try {
-      // Scambia code con token
-      const tokenData = await exchangeCodeForToken(bank, code);
-
-      // Ottieni account disponibili
-      const accounts = await fetchAccounts(bank, tokenData.accessToken);
-
-      if (!accounts.length) {
-        return res.status(400).json({ error: "No accounts found" });
-      }
-
-      // Usa il primo account
-      const account = accounts[0];
-
-      // Salva connessione
-      await saveBankConnection(userId, bank, account.resourceId, tokenData);
-
-      // Sincronizza transazioni
-      await syncBankTransactions(
-        userId,
-        bank,
-        account.resourceId,
+      const tokenData = await exchangeCodeForToken(oauthState.bankId, code);
+      const accounts = await fetchAccounts(
+        oauthState.bankId,
         tokenData.accessToken
       );
 
-      res.json({
-        success: true,
-        message: "Bank connected and synced",
-        account: {
-          id: account.resourceId,
-          iban: account.iban,
-          name: account.name,
-        },
+      if (!accounts.length) {
+        return redirectBankResult(res, {
+          error_description: "No bank accounts were authorized.",
+        });
+      }
+
+      const account = accounts[0];
+      if (typeof account.resourceId !== "string" || !account.resourceId) {
+        throw new Error("Bank provider returned an account without an ID");
+      }
+      await saveBankConnection(
+        oauthState.userId,
+        oauthState.bankId,
+        account.resourceId,
+        tokenData
+      );
+      let firstSyncFailed = false;
+      try {
+        await syncBankTransactions(
+          oauthState.userId,
+          oauthState.bankId,
+          account.resourceId,
+          tokenData.accessToken
+        );
+      } catch (syncError) {
+        firstSyncFailed = true;
+        console.error("Initial bank sync failed:", syncError.message);
+      }
+
+      return redirectBankResult(res, {
+        connected: "1",
+        bank: oauthState.bankId,
+        ...(firstSyncFailed ? { sync_error: "1" } : {}),
       });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+    } catch (callbackError) {
+      console.error("Bank OAuth callback failed:", callbackError.message);
+      return redirectBankResult(res, {
+        error_description: "The bank connection could not be completed.",
+      });
     }
   })
 );
 
-// GET /bank/status?bank=intesa
-// Verifica stato della connessione
 router.get(
   "/status",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const userId = req.headers["x-user-id"];
     const { bank } = req.query;
-
-    if (!userId || !bank) {
-      return res.status(400).json({ error: "User ID and bank required" });
+    if (typeof bank !== "string" || !getSupportedBanks().some((item) => item.id === bank)) {
+      return res.status(400).json({ error: "Unsupported or missing bank ID" });
     }
 
-    const connection = await getBankConnection(userId, bank);
-
+    const connection = await getBankConnection(req.user.id, bank);
     res.json({
       connected: !!connection,
       bank,
-      account: connection?.account_id,
-      lastSynced: connection?.last_synced,
+      account: connection?.account_id ?? null,
+      lastSynced: connection?.last_synced ?? null,
     });
   })
 );
 
-// POST /bank/sync?bank=intesa
-// Sincronizza transazioni manualmente
 router.post(
   "/sync",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const userId = req.headers["x-user-id"];
     const { bank } = req.query;
-
-    if (!userId || !bank) {
-      return res.status(400).json({ error: "User ID and bank required" });
+    if (typeof bank !== "string" || !getSupportedBanks().some((item) => item.id === bank)) {
+      return res.status(400).json({ error: "Unsupported or missing bank ID" });
     }
 
-    const connection = await getBankConnection(userId, bank);
-
+    const connection = await getBankConnection(req.user.id, bank);
     if (!connection) {
       return res.status(404).json({ error: "Bank not connected" });
     }
 
-    // Verifica e rinfresca token se necessario
-    const accessToken = await ensureValidToken(userId, bank);
-
+    const accessToken = await ensureValidToken(req.user.id, bank);
     if (!accessToken) {
-      return res.status(401).json({ error: "Invalid token" });
+      return res.status(401).json({ error: "Invalid bank access token" });
     }
 
-    try {
-      const txns = await syncBankTransactions(
-        userId,
-        bank,
-        connection.account_id,
-        accessToken
-      );
-
-      res.json({
-        success: true,
-        synced: txns?.length || 0,
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+    const transactions = await syncBankTransactions(
+      req.user.id,
+      bank,
+      connection.account_id,
+      accessToken
+    );
+    res.json({ success: true, synced: transactions.length });
   })
 );
 
-// GET /bank/transactions?bank=intesa
-// Ottieni transazioni sincronizzate
 router.get(
   "/transactions",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const userId = req.headers["x-user-id"];
     const { bank } = req.query;
-
-    if (!userId) {
-      return res.status(400).json({ error: "User ID required" });
+    if (bank && (typeof bank !== "string" || !getSupportedBanks().some((item) => item.id === bank))) {
+      return res.status(400).json({ error: "Unsupported bank ID" });
     }
 
-    const txns = await getUserBankTransactions(userId);
-
-    const filtered = bank ? txns.filter((t) => t.bank_id === bank) : txns;
-
-    res.json({
-      transactions: filtered,
-      count: filtered.length,
-    });
+    const transactions = await getUserBankTransactions(req.user.id);
+    const filtered = bank
+      ? transactions.filter((transaction) => transaction.bank_id === bank)
+      : transactions;
+    res.json({ transactions: filtered, count: filtered.length });
   })
 );
 
-// POST /bank/disconnect?bank=intesa
-// Disconnetti account bancario
 router.post(
   "/disconnect",
+  requireAuth,
   asyncHandler(async (req, res) => {
-    const userId = req.headers["x-user-id"];
     const { bank } = req.query;
-
-    if (!userId || !bank) {
-      return res.status(400).json({ error: "User ID and bank required" });
+    if (typeof bank !== "string" || !getSupportedBanks().some((item) => item.id === bank)) {
+      return res.status(400).json({ error: "Unsupported or missing bank ID" });
     }
 
-    // Logica opzionale: cancellare dal DB
-    res.json({
-      success: true,
-      message: "Bank disconnected",
-    });
+    const connection = await getBankConnection(req.user.id, bank);
+    if (!connection) {
+      return res.status(404).json({ error: "Bank not connected" });
+    }
+    await disconnectBankConnection(req.user.id, bank);
+    res.json({ success: true, message: "Bank disconnected" });
   })
 );
 
-// GET /bank/scheduler/status
-// Ottieni stato dello scheduler
 router.get(
   "/scheduler/status",
-  asyncHandler(async (req, res) => {
-    const status = getBankSyncStatus();
-    res.json(status);
+  requireSchedulerSecret,
+  asyncHandler(async (_req, res) => {
+    res.json(getBankSyncStatus());
   })
 );
 
-// POST /bank/scheduler/sync-now
-// Forza sincronizzazione immediata
 router.post(
   "/scheduler/sync-now",
-  asyncHandler(async (req, res) => {
+  requireSchedulerSecret,
+  asyncHandler(async (_req, res) => {
     await forceBankSync();
-    res.json({
-      success: true,
-      message: "Bank sync triggered manually",
-    });
+    res.json({ success: true, message: "Bank sync triggered manually" });
   })
 );
 
