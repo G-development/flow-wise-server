@@ -1,83 +1,99 @@
-# Flow Wise - Server
+# Flow Wise Server
 
-Express backend per Flow-Wise, con API REST per transazioni, categorie, wallet e utenti.
-Utilizza Supabase per storage, autenticazione e gestione RLS.
+Backend Express 4 (ESM) per le API di Flow Wise. Usa Supabase per autenticazione
+e database; il client server-side usa `SUPABASE_SERVICE_ROLE_KEY`, quindi le
+route utente devono filtrare i dati con l'ID ottenuto dal bearer token.
 
-## Stack
+## Struttura
 
-- Node.js + Express
-- Supabase JS SDK
-- CORS + dotenv
-- Cloudinary + Multer per upload avatar
-- Vercel-ready deployment
-
-## Struttura del progetto
-
-```
-flow-wise-server/
-├── config/             # supabase client, auth middleware, Cloudinary setup
-├── routes/             # moduli Express per endpoint
-├── utils/              # helper e middleware condivisi
-├── server.js           # bootstrap dell'app
-└── vercel.json         # configurazione Vercel
+```text
+server.js             bootstrap Express, CORS, statici e route
+config/               client Supabase, auth e Cloudinary
+routes/               API HTTP
+agents/               integrazioni e logica dell'agente AI
+utils/                validazione, servizi bancari e reset password
+migrations/           migrazioni SQL presenti nel repository
+public/               pagina informativa degli endpoint
 ```
 
-## Configurazione ambiente
+## Configurazione
 
-Copia `.env.example` in `.env` e definisci:
+Copia `.env.example` in `.env`. In locale servono almeno `SUPABASE_URL` e
+`SUPABASE_SERVICE_ROLE_KEY`; `PORT` è opzionale e predefinita a `5030`.
+Configura `ALLOWED_ORIGINS` per le origini frontend non incluse nelle
+impostazioni di sviluppo. Conserva le chiavi solo nell'ambiente server e non
+committare `.env`.
 
-- `ALLOWED_ORIGINS`: origini per CORS (es. http://localhost:3000)
-- `SUPABASE_URL`: URL del progetto Supabase
-- `SUPABASE_SERVICE_ROLE_KEY`: chiave service_role per bypass RLS
-- `PORT`: opzionale, default 5030
-- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+Per l'agente AI configura `LLM_API_KEY`. In assenza di override, usa l'API
+compatibile OpenAI di Groq (`LLM_API_BASE_URL=https://api.groq.com/openai/v1`)
+e il modello `qwen/qwen3.8-27b`; entrambi possono essere cambiati con
+`LLM_API_BASE_URL` e `LLM_MODEL`. Le spese aggregate e alcuni dettagli delle
+transazioni vengono inviati al provider AI configurato.
 
-> Usa la `SUPABASE_SERVICE_ROLE_KEY` solo sul server. Il client deve usare solo la chiave pubblicabile `anon`.
+L'integrazione bancaria usa `BANK_CLIENT_ID`, `BANK_CLIENT_SECRET`,
+`BANK_REDIRECT_URI`, `BANK_CLIENT_REDIRECT_URI`, `BANK_SYNC_CRON` e
+`BANK_SCHEDULER_SECRET`. Il reset password usa la configurazione SMTP e
+`FRONTEND_URL`. Consulta `.env.example` per le altre variabili opzionali
+Cloudinary e SMTP.
 
-## Avvio locale
+## Avvio
 
 ```bash
-cd flow-wise-server
 npm install
 npm run dev
 ```
 
-- `npm run dev` - avvia il server in hot reload
-- `npm start` - esegue il server in produzione
-- `GET /hello` - risponde con Hello world!
-- `GET /healthz` - risponde con 204
-- `GET /` - mostra la home con gli endpoint disponibili
+`npm run dev` usa `node --watch server.js`; `npm start` avvia `server.js`.
+`GET /healthz` risponde con `204`. Il server avvia lo scheduler di sync
+bancario all'avvio (cron configurabile, default ogni ora).
 
-## CORS
+## Route
 
-Configurato con `ALLOWED_ORIGINS` e supporta:
-- metodi: GET, POST, PUT, DELETE, OPTIONS
-- header: Content-Type, Authorization
+Tutte le route principali sono montate in `server.js`.
 
-## API principali
+| Prefisso | Funzioni |
+| --- | --- |
+| `/users` | Registrazione, profilo e avatar |
+| `/auth` | Reset password via email, verifica token e aggiornamento password |
+| `/transaction` | `GET /all`, `GET /:id`, creazione, modifica ed eliminazione transazioni |
+| `/income`, `/expense` | Elenchi filtrabili per data e tipo |
+| `/category`, `/wallet` | CRUD categorie e wallet |
+| `/dashboard-layout` | Lettura/salvataggio layout dashboard |
+| `/import` | Import CSV autenticato |
+| `/bank` | Stato/configurazione, OAuth, sincronizzazione e scheduler |
+| `/agents/analytics` | Analisi AI delle spese |
 
-- /users - login, register, profile, avatar upload
-- /transaction - CRUD transazioni
-- /income - GET /all con filtri data
-- /expense - GET /all con filtri data
-- /category - GET /, GET /active, CRUD
-- /wallet - CRUD wallet
+Le route protette verificano `Authorization: Bearer <supabase_access_token>`
+tramite `requireAuth`. L'elenco preciso delle route bancarie e le migrazioni
+sono in [BANK_INTEGRATION.md](./BANK_INTEGRATION.md).
 
-Tutte le route protette usano il token Supabase in `Authorization: Bearer <token>`.
+## Agente di analytics delle spese
 
-## Note Supabase
+`POST /agents/analytics` accetta `question`, `startDate` e `endDate`; le date
+usano `YYYY-MM-DD` e, se omesse, coprono il mese corrente fino a oggi. Il
+backend recupera solo spese dell'utente autenticato e rifiuta periodi con più
+di 1.000 transazioni. Invia al modello un riepilogo aggregato: totale, media,
+totali per categoria e mese, e fino a dieci esempi di spesa con descrizioni
+limitate. Ogni richiesta è indipendente; non esiste memoria conversazionale.
 
-- Il server viene inizializzato con la service role key.
-- Le query sono filtrate su `req.user.id` tramite il middleware `requireAuth`.
-
-## Deployment
-
-Il progetto include `vercel.json` per il deploy su Vercel con runtime `@vercel/node`.
-
-## Performance
-
-Per grandi dataset, è consigliato un indice come:
-
-```sql
-CREATE INDEX IF NOT EXISTS idx_tx_userid_date ON "Transaction"(userid, date DESC);
+```bash
+curl -X POST http://localhost:5030/agents/analytics \
+  -H "Authorization: Bearer <supabase_access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Quali sono le mie spese principali?","startDate":"2026-05-01","endDate":"2026-05-31"}'
 ```
+
+Le richieste non valide restituiscono errori HTTP; l'assenza di
+`LLM_API_KEY` restituisce `503`, timeout provider `504` e risposta AI non
+riuscita `502`. Il codice non salva la conversazione.
+
+## Database e limiti noti
+
+Le route dati assumono che le tabelle applicative Supabase (`Transaction`,
+`Category`, `Wallet`, `Profile` e `dashboard_layouts`) siano già predisposte.
+Le migrazioni incluse nel repository riguardano tabelle bancarie e token di
+reset password.
+
+I provider bancari configurati in `utils/bankService.js` usano URL sandbox:
+non sono endpoint di produzione. Il manifest non definisce uno script di test
+automatici.

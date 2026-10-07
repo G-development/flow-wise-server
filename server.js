@@ -12,6 +12,7 @@ import dashboardLayoutRoutes from "./routes/dashboard-layout.js";
 import importRoutes from "./routes/import.js";
 import bankRoutes from "./routes/bank.js";
 import authRoutes from "./routes/auth.js";
+import agentRoutes from "./routes/agents.js";
 import { startBankSyncScheduler } from "./utils/bankSyncScheduler.js";
 
 dotenv.config();
@@ -31,6 +32,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000,ht
   .filter(Boolean);
 
 const allowedPatterns = [/\.vercel\.app$/];
+const localDevelopmentOrigin =
+  /^http:\/\/(?:localhost|127\.0\.0\.1):(?:3000|3001|3002)$/;
 
 app.use(
   cors({
@@ -38,6 +41,7 @@ app.use(
       if (!origin) return callback(null, true); // allow non-browser requests
       if (allowedOrigins.includes(origin)) return callback(null, true);
       if (allowedPatterns.some((re) => re.test(origin))) return callback(null, true);
+      if (localDevelopmentOrigin.test(origin)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -78,6 +82,8 @@ app.use("/dashboard-layout", dashboardLayoutRoutes);
 app.use("/import", importRoutes);
 
 app.use("/bank", bankRoutes);
+
+app.use("/agents", agentRoutes);
 
 // 404 route
 app.use((req, res) => {
