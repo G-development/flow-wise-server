@@ -2,7 +2,7 @@
 
 Backend Express 4 (ESM) per le API di Flow Wise. Usa Supabase per autenticazione
 e database; il client server-side usa `SUPABASE_SERVICE_ROLE_KEY`, quindi le
-route utente devono filtrare i dati con l'ID ottenuto dal bearer token.
+route utente filtrano i dati con l'ID ottenuto dal bearer token.
 
 ## Struttura
 
@@ -30,11 +30,12 @@ e il modello `qwen/qwen3.8-27b`; entrambi possono essere cambiati con
 `LLM_API_BASE_URL` e `LLM_MODEL`. Le spese aggregate e alcuni dettagli delle
 transazioni vengono inviati al provider AI configurato.
 
-L'integrazione bancaria usa `BANK_CLIENT_ID`, `BANK_CLIENT_SECRET`,
-`BANK_REDIRECT_URI`, `BANK_CLIENT_REDIRECT_URI`, `BANK_SYNC_CRON` e
-`BANK_SCHEDULER_SECRET`. Il reset password usa la configurazione SMTP e
-`FRONTEND_URL`. Consulta `.env.example` per le altre variabili opzionali
-Cloudinary e SMTP.
+L'integrazione bancaria supporta sia la modalità locale **Sandbox/Mock** (default)
+sia l'integrazione **Open Banking PSD2 reale tramite GoCardless** (configurando
+`GOCARDLESS_SECRET_ID` e `GOCARDLESS_SECRET_KEY`). Usa inoltre `BANK_REDIRECT_URI`,
+`BANK_CLIENT_REDIRECT_URI`, `BANK_SYNC_CRON` e `BANK_SCHEDULER_SECRET`. Il reset
+password usa la configurazione SMTP e `FRONTEND_URL`. Consulta `.env.example` per
+le altre variabili opzionali Cloudinary e SMTP.
 
 ## Avvio
 
@@ -60,11 +61,11 @@ Tutte le route principali sono montate in `server.js`.
 | `/category`, `/wallet` | CRUD categorie e wallet |
 | `/dashboard-layout` | Lettura/salvataggio layout dashboard |
 | `/import` | Import CSV autenticato |
-| `/bank` | Stato/configurazione, OAuth, sincronizzazione e scheduler |
+| `/bank` | Configurazione provider, OAuth PSD2/Sandbox, sincronizzazione movimenti, filtri data e importazione massiva |
 | `/agents/analytics` | Analisi AI delle spese |
 
 Le route protette verificano `Authorization: Bearer <supabase_access_token>`
-tramite `requireAuth`. L'elenco preciso delle route bancarie e le migrazioni
+tramite `requireAuth`. L'elenco dettagliato delle route bancarie e le migrazioni
 sono in [BANK_INTEGRATION.md](./BANK_INTEGRATION.md).
 
 ## Agente di analytics delle spese
@@ -87,13 +88,10 @@ Le richieste non valide restituiscono errori HTTP; l'assenza di
 `LLM_API_KEY` restituisce `503`, timeout provider `504` e risposta AI non
 riuscita `502`. Il codice non salva la conversazione.
 
-## Database e limiti noti
+## Database e Migrazioni
 
 Le route dati assumono che le tabelle applicative Supabase (`Transaction`,
-`Category`, `Wallet`, `Profile` e `dashboard_layouts`) siano già predisposte.
-Le migrazioni incluse nel repository riguardano tabelle bancarie e token di
+`Category`, `Wallet`, `Profile`, `dashboard_layouts`, `bank_connections` e
+`bank_transactions`) siano già predisposte. Le migrazioni incluse nella cartella
+`migrations/` contengono le definizioni SQL per le tabelle bancarie e i token di
 reset password.
-
-I provider bancari configurati in `utils/bankService.js` usano URL sandbox:
-non sono endpoint di produzione. Il manifest non definisce uno script di test
-automatici.
