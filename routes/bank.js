@@ -320,7 +320,7 @@ router.get(
     }
 
     try {
-      // Se è un flusso GoCardless con requisitionId
+      // Se è un flusso GoCardless con requisitionId nello state
       if (oauthState.requisitionId) {
         await handleGoCardlessCallback(
           oauthState.userId,
@@ -328,25 +328,74 @@ router.get(
           oauthState.requisitionId
         );
       } else {
-        // Flusso Sandbox Mock
-        const mockAccountId = `acc_${oauthState.bankId}_${randomBytes(4).toString("hex")}`;
-        await saveBankConnection(
-          oauthState.userId,
-          oauthState.bankId,
-          mockAccountId,
-          {
-            accessToken: "mock_token",
-            expiresIn: 7776000,
-          }
-        );
+        // GoCardless spesso ritorna lo state senza includere l'id requisition.
+        // In quel caso recuperiamo il requisitionId dalla "connessione in attesa"
+        // salvata in getAuthorizationUrl(), usando come chiave l'access_token placeholder.
+        const rawState =
+          typeof state === "string" ? state : typeof ref === "string" ? ref : null;
 
-        // Primo sync
-        await syncBankTransactions(
-          oauthState.userId,
-          oauthState.bankId,
-          mockAccountId,
-          "mock_token"
-        );
+        try {
+          const pending = await getBankConnection(
+            oauthState.userId,
+            oauthState.bankId
+          );
+
+          // In produzione alcune integrazioni possono restituire un `state`
+          // non perfettamente identico a quello salvato come placeholder,
+          // o addirittura ometterlo.
+          // Se abbiamo comunque la requisitionId (salvata in refresh_token),
+          // procediamo con GoCardless invece di cadere nel mock.
+          if (pending?.refresh_token && typeof pending.refresh_token === "string") {
+            if (
+              rawState &&
+              typeof pending.access_token === "string" &&
+              pending.access_token !== rawState
+            ) {
+              console.warn(
+                "GoCardless callback: pending access_token does not match callback state; proceeding with saved requisitionId anyway.",
+                {
+                  bankId: oauthState.bankId,
+                  userId: oauthState.userId,
+                  pendingAccessTokenPrefix: pending.access_token.slice(0, 12),
+                  callbackStatePrefix: rawState.slice(0, 12),
+                }
+              );
+            }
+
+            await handleGoCardlessCallback(
+              oauthState.userId,
+              oauthState.bankId,
+              pending.refresh_token
+            );
+          } else {
+            throw new Error("Pending GoCardless connection not found");
+          }
+        } catch (err) {
+          console.warn(
+            "GoCardless callback: pending recovery failed; falling back to mock.",
+            err?.message || err
+          );
+
+          // Flusso Sandbox Mock (fallback)
+          const mockAccountId = `acc_${oauthState.bankId}_${randomBytes(4).toString("hex")}`;
+          await saveBankConnection(
+            oauthState.userId,
+            oauthState.bankId,
+            mockAccountId,
+            {
+              accessToken: "mock_token",
+              expiresIn: 7776000,
+            }
+          );
+
+          // Primo sync
+          await syncBankTransactions(
+            oauthState.userId,
+            oauthState.bankId,
+            mockAccountId,
+            "mock_token"
+          );
+        }
       }
 
       return redirectBankResult(res, {

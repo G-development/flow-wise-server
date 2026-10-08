@@ -20,11 +20,14 @@ let cachedGoCardlessToken = {
   expiresAt: 0,
 };
 
-// Fallback secret for AES-GCM state encryption in development
-const getEncryptionSecret = () =>
-  process.env.BANK_CLIENT_SECRET ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "flow-wise-bank-integration-secure-key-2026";
+// Fallback secret for AES-GCM state encryption, required to be set in production
+const getEncryptionSecret = () => {
+  const secret = process.env.BANK_CLIENT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) {
+    throw new Error("Bank integration secret (BANK_CLIENT_SECRET or SUPABASE_SERVICE_ROLE_KEY) is missing");
+  }
+  return secret;
+};
 
 /**
  * Ottiene il token di accesso alle API di GoCardless
@@ -345,13 +348,22 @@ export const getAuthorizationUrl = async (userId, bankId) => {
     normalizedBankId = popular.id;
   }
 
-  // Se GoCardless è disponibile, crea la Requisition PSD2 ufficiale
+  // Se GoCardless è disponibile o configurato
   if (hasGoCardless) {
+    // In produzione il callback deve essere un URL pubblico, non localhost
+    if (!process.env.BANK_REDIRECT_URI && !process.env.SERVER_BASE_URL) {
+      throw new Error(
+        "Configurazione errata: imposta BANK_REDIRECT_URI (o SERVER_BASE_URL) con un URL pubblico per usare GoCardless."
+      );
+    }
+
     try {
       const token = await getGoCardlessToken();
       const state = createBankOAuthState(userId, normalizedBankId);
 
-      // Crea l'accordo e la requisition su GoCardless
+      // Crea l'accordo e la requisition su GoCardless.
+      // Passiamo lo state cifrato direttamente nella redirect URL:
+      // GoCardless lo rimanda invariato nel callback (param `state`).
       const requisitionRes = await axios.post(
         `${GOCARDLESS_API_BASE}/requisitions/`,
         {
@@ -367,19 +379,31 @@ export const getAuthorizationUrl = async (userId, bankId) => {
 
       const { link, id: requisitionId } = requisitionRes.data;
 
-      // Aggiorna lo state per includere la requisitionId
-      const stateWithReq = createBankOAuthState(userId, normalizedBankId, {
-        requisitionId,
+      if (!link || !requisitionId) {
+        throw new Error(
+          "GoCardless non ha restituito un link e/o un requisitionId di autorizzazione."
+        );
+      }
+
+      // Salviamo una "connessione in attesa" per poter recuperare il requisitionId
+      // nel callback, anche se lo state non lo include.
+      // Nota: in produzione, ensureValidToken userà comunque token GoCardless
+      // direttamente; questo placeholder evita di cadere nel flusso mock.
+      await saveBankConnection(userId, normalizedBankId, "pending_account", {
+        // Usiamo lo *state cifrato* come placeholder per riconoscere
+        // il callback GoCardless e risalire al requisitionId.
+        accessToken: state,
+        refreshToken: requisitionId,
+        expiresIn: 20 * 60, // 20 minuti
       });
 
-      // Se GoCardless ha creato il link di autorizzazione
-      if (link) {
-        // Se il redirect di GoCardless supporta il passaggio di parametri o link diretto
-        return link;
-      }
+      return link;
     } catch (err) {
-      console.error("GoCardless Requisition Error:", err.response?.data || err.message);
-      // Se fallisce (es. sandbox istituto non registrato o errore rete), fallback su mock auth
+      console.error(
+        "GoCardless Requisition Error:",
+        err.response?.data || err.message
+      );
+      throw new Error(`Errore GoCardless: ${err.message}`);
     }
   }
 
@@ -705,7 +729,7 @@ export const getUserBankTransactions = async (
 ) => {
   let query = supabase
     .from("bank_transactions")
-    .select("*")
+    .select("id, user_id, bank_id, account_id, external_id, amount, currency, description, date, counterparty, status")
     .eq("user_id", userId)
     .order("date", { ascending: false });
 
