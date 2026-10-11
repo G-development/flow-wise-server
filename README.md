@@ -130,5 +130,19 @@ riuscita `502`. Il codice non salva la conversazione.
 Le route dati assumono che le tabelle applicative Supabase (`Transaction`,
 `Category`, `Wallet`, `Profile`, `dashboard_layouts`, `bank_connections` e
 `bank_transactions`) siano già predisposte. Le migrazioni incluse nella cartella
-`migrations/` contengono le definizioni SQL per le tabelle bancarie e i token di
-reset password.
+`migrations/` contengono le definizioni SQL per le tabelle bancarie, i token di
+reset password e il saldo di apertura dei wallet:
+
+- `003_wallet_opening_balance.sql` — aggiunge `Wallet.opening_balance_cents`
+  (integer, NOT NULL, default 0), il punto di partenza della somma derivata in
+  `utils/walletService.js`, e fa il backfill dei wallet esistenti con
+  `opening_balance_cents = round(balance * 100) - somma_movimenti`, così il saldo
+  derivato coincide con il `balance` memorizzato. Il file è idempotente e la sua
+  ultima `SELECT` è il log dei wallet toccati; richiede tabelle `Transaction`
+  valorizzate (nell'SQL editor di Supabase, oppure
+  `node backfill-opening-balance.mjs --apply`).
+
+`backfill-opening-balance.mjs` è la versione da terminale della stessa regola:
+dry-run di default, `--apply` per scrivere, rilettura del DB per verificare
+`balance == (opening_balance_cents + movimenti) / 100`. I wallet nuovi non
+richiedono backfill: partono dal default 0.
