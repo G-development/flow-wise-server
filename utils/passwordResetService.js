@@ -1,3 +1,26 @@
+/**
+ * Ciclo di reset password via email.
+ *
+ * ## Ordine deliberato delle operazioni
+ *
+ * Il token viene generato **in memoria**, inserito nell'URL inviato per email e
+ * salvato in `password_reset_tokens` **solo dopo** che l'invio è riuscito. Il
+ * codice precedente faceva il contrario (crea → invia) e con `SMTP_HOST` mancante
+ * lasciava un token valido e orfano che nessuno aveva mai ricevuto.
+ *
+ * Il costo di questo ordine è la finestra opposta: se l'insert fallisse **dopo**
+ * l'invio, il link consegnato non sarebbe valido. In quel caso però l'errore
+ * risale al chiamante (che risponde 5xx) e l'utente riprova; un token valido ma
+ * non consegnato, invece, è un artefatto di sicurezza silenzioso. Da qui la scelta.
+ *
+ * `requestPasswordReset` non lancia mai: distingue l'esito nel valore di ritorno
+ * (`{ success: true }` / `{ success: false, error }`) perché la route possa
+ * rispondere con lo stato reale. L'anti-enumerazione resta intatta: un'email
+ * sconosciuta **non** produce `success: false`, ma il messaggio neutro di sempre.
+ *
+ * @module utils/passwordResetService
+ */
+
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
@@ -18,6 +41,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+/** Righe per pagina della Admin API di GoTrue. */
+export const LIST_USERS_PAGE_SIZE = 1000;
+
+/**
+ * Tetto di sicurezza sul numero di pagine lette: un filtro sbagliato non deve
+ * trasformarsi in un ciclo potenzialmente infinito.
+ */
+export const LIST_USERS_MAX_PAGES = 100;
+
 /**
  * Genera un token reset univoco
  */
@@ -30,6 +62,12 @@ const generateResetToken = () => {
  */
 export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
   try {
+    // Fail fast con un errore leggibile: senza SMTP_HOST nodemailer proverebbe a
+    // connettersi a localhost e il messaggio sarebbe un ECONNREFUSED opaco.
+    if (!process.env.SMTP_HOST) {
+      throw new Error("SMTP_HOST is not configured");
+    }
+
     const mailOptions = {
       from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
       to: email,
@@ -65,16 +103,31 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
     return true;
   } catch (error) {
     console.error("Error sending password reset email:", error.message);
-    throw new Error("Failed to send reset email");
+    // Il motivo reale resta nel messaggio: con SMTP_HOST mancante il chiamante
+    // deve leggere quello, non un generico "invio fallito".
+    throw new Error(`Failed to send reset email: ${error.message}`, {
+      cause: error,
+    });
   }
 };
 
 /**
- * Crea un token di reset password nel DB
+ * Crea un token di reset password nel DB.
+ *
+ * Il token è accettato dal chiamante perché `requestPasswordReset` lo genera, lo
+ * invia per email e **solo dopo** lo persiste: vedi l'header del modulo. Chiamata
+ * con due argomenti si comporta come prima e genera il token da sé.
+ *
+ * @param {string} userId
+ * @param {string} email
+ * @param {string} [token=generateResetToken()] Token già generato dal chiamante.
  */
-export const createPasswordResetToken = async (userId, email) => {
+export const createPasswordResetToken = async (
+  userId,
+  email,
+  token = generateResetToken()
+) => {
   try {
-    const token = generateResetToken();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1); // Valido per 1 ora
 
@@ -90,8 +143,52 @@ export const createPasswordResetToken = async (userId, email) => {
     return token;
   } catch (error) {
     console.error("Error creating reset token:", error.message);
-    throw new Error("Failed to create reset token");
+    throw new Error(`Failed to create reset token: ${error.message}`, {
+      cause: error,
+    });
   }
+};
+
+/**
+ * Cerca un utente per email su **tutte** le pagine della Admin API di GoTrue.
+ *
+ * `supabase.auth.admin.listUsers()` senza `page`/`perPage` legge una sola pagina
+ * (1000 utenti per default): chi sta oltre la prima pagina è invisibile e la
+ * richiesta di reset fallisce in silenzio. Qui si itera finché la pagina letta
+ * non è l'ultima.
+ *
+ * @param {string} email
+ * @param {object} [client=supabase] Client Supabase (iniettabile nei test).
+ * @returns {Promise<object|null>} L'utente trovato, oppure `null` se non esiste.
+ * @throws {Error} se la Admin API fallisce o se si supera il tetto di pagine:
+ *   un errore visibile è meglio di un falso "utente inesistente".
+ */
+export const findUserByEmail = async (email, client = supabase) => {
+  for (let page = 1; page <= LIST_USERS_MAX_PAGES; page += 1) {
+    const { data, error } = await client.auth.admin.listUsers({
+      page,
+      perPage: LIST_USERS_PAGE_SIZE,
+    });
+
+    if (error) {
+      throw new Error(`Failed to list users: ${error.message}`);
+    }
+
+    const users = data?.users ?? [];
+    const user = users.find((u) => u.email === email);
+    if (user) return user;
+
+    // Una pagina più corta di `perPage` è l'ultima: è l'informazione fisica,
+    // più affidabile dei metadati `nextPage`/`lastPage`.
+    if (users.length < LIST_USERS_PAGE_SIZE) return null;
+
+    // Nessuna pagina successiva: `nextPage === null` (GoTrue) oppure la pagina
+    // corrente è già oltre l'ultima dichiarata.
+    if (data?.nextPage === null) return null;
+    if (typeof data?.lastPage === "number" && page >= data.lastPage) return null;
+  }
+
+  throw new Error("Failed to list users: page limit reached");
 };
 
 /**
@@ -155,14 +252,20 @@ export const resetUserPassword = async (userId, token, newPassword) => {
 };
 
 /**
- * Richiesta di reset password tramite email
+ * Richiesta di reset password tramite email.
+ *
+ * Non lancia: l'esito è nel valore di ritorno. `success: false` significa che la
+ * richiesta **non** è stata consegnata (invio email o lookup falliti), quindi il
+ * chiamante deve rispondere con un errore; un'email sconosciuta resta un
+ * `success: true` neutro per non rivelare se l'account esiste.
+ *
+ * @param {string} email
+ * @returns {Promise<{success: true, message: string} | {success: false, error: string}>}
  */
 export const requestPasswordReset = async (email) => {
   try {
-    // Cerca l'utente per email
-    const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-
-    const user = userData?.users?.find((u) => u.email === email);
+    // Cerca l'utente per email (su tutte le pagine, non solo la prima)
+    const user = await findUserByEmail(email);
 
     if (!user) {
       // Non rivelare se l'email esiste o no per motivi di sicurezza
@@ -170,8 +273,9 @@ export const requestPasswordReset = async (email) => {
       return { success: true, message: "If email exists, reset link has been sent" };
     }
 
-    // Crea token reset
-    const resetToken = await createPasswordResetToken(user.id, email);
+    // Il token esiste solo in memoria finché l'email non è partita: se l'invio
+    // fallisce non resta alcun token valido in `password_reset_tokens`.
+    const resetToken = generateResetToken();
 
     // Genera URL di reset
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
@@ -179,11 +283,14 @@ export const requestPasswordReset = async (email) => {
     // Invia email
     await sendPasswordResetEmail(email, resetToken, resetUrl);
 
+    // Persistito solo ora: scadenza 1h, uso singolo, come prima.
+    await createPasswordResetToken(user.id, email, resetToken);
+
     return { success: true, message: "Reset link has been sent to your email" };
   } catch (error) {
     console.error("Error in requestPasswordReset:", error.message);
-    // Non rivelare dettagli di errore
-    return { success: true, message: "If email exists, reset link has been sent" };
+    // L'esito reale non va nascosto: il chiamante deve poter rispondere 5xx.
+    return { success: false, error: error.message };
   }
 };
 

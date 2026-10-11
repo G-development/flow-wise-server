@@ -26,7 +26,15 @@ router.post(
       return res.status(400).json({ error: "Invalid email format" });
     }
 
+    // `requestPasswordReset` non lancia: distingue l'esito nel valore di ritorno.
+    // Un invio non avvenuto (es. SMTP non configurato) non è un 200: il client
+    // deve poter dire all'utente che l'email non è partita.
     const result = await requestPasswordReset(email);
+
+    if (result.success === false) {
+      return res.status(502).json(result);
+    }
+
     res.json(result);
   })
 );

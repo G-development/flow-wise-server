@@ -37,7 +37,7 @@ sia l'integrazione **Open Banking PSD2 reale tramite GoCardless** (configurando
 password usa la configurazione SMTP e `FRONTEND_URL`. Consulta `.env.example` per
 le altre variabili opzionali Cloudinary e SMTP.
 
-Attenzione a tre variabili il cui valore mancante non produce errori evidenti:
+Attenzione a due variabili il cui valore mancante non produce errori evidenti:
 
 - `BANK_PROVIDER` è presente in `.env.example` e in `BANK_INTEGRATION.md` ma non
   è letta da nessuna riga di codice: la modalità la decidono solo
@@ -45,8 +45,11 @@ Attenzione a tre variabili il cui valore mancante non produce errori evidenti:
   attiva appena le due chiavi esistono.
 - senza `BANK_SCHEDULER_SECRET` le route `/bank/scheduler/status` e
   `/bank/scheduler/sync-now` rispondono `503`.
-- senza `SMTP_HOST` l'invio dell'email di reset fallisce, ma
-  `POST /auth/forgot-password` risponde comunque `success: true`.
+
+Senza `SMTP_HOST` invece la richiesta di reset fallisce in modo visibile:
+`POST /auth/forgot-password` risponde `502` con l'errore reale e non lascia alcun
+token in `password_reset_tokens`, perché `requestPasswordReset` salva il token
+solo **dopo** che l'email è partita.
 
 ## Avvio
 
