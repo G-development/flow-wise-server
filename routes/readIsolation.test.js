@@ -166,7 +166,9 @@ test("GET /category ignora ?userid", async () => {
   const { status, body } = await request("GET", `/category?userid=${U2}`);
 
   assert.equal(status, 200);
-  assert.deepEqual(body.map((row) => row.id), [101, 102]);
+  // Envelope di lista (`utils/paginatedSelect.js`): le righe stanno in `data`.
+  assert.deepEqual(body.data.map((row) => row.id), [101, 102]);
+  assert.equal(body.truncated, false);
   assertQueriesScopedTo(U1);
 });
 

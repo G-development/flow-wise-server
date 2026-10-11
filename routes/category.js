@@ -4,6 +4,7 @@ import { requireAuth as requireAuthMiddleware } from "../config/auth-middleware.
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../utils/validate.js";
 import { categoryCreateSchema, categoryUpdateSchema } from "../utils/schemas.js";
+import { fetchAllRows, toListResponse } from "../utils/paginatedSelect.js";
 
 /**
  * The router is built by a factory so tests can inject a fake Supabase client and a
@@ -21,13 +22,26 @@ export const createCategoryRouter = ({
     "/",
     auth,
     asyncHandler(async (req, res) => {
-      const { data, error } = await supabase
-        .from("Category")
-        .select("*")
-        .eq("userid", req.user.id);
+      // Envelope `{ data, count, truncated, total }` (utils/paginatedSelect.js):
+      // una `select()` una-shot si ferma al tetto PostgREST (1000 righe) senza
+      // dirlo, quindi il client mostrerebbe un elenco incompleto come se fosse
+      // completo. Il tiebreaker `.order("id")` rende l'ordinamento totale: senza,
+      // le pagine possono ripetersi o saltare righe.
+      let result;
+      try {
+        result = await fetchAllRows(() =>
+          supabase
+            .from("Category")
+            .select("*", { count: "exact" })
+            .eq("userid", req.user.id)
+            .order("id")
+        );
+      } catch (err) {
+        // Stesso esito di prima dell'helper (che lancia sul primo errore PostgREST).
+        return res.status(400).json({ error: err.message });
+      }
 
-      if (error) return res.status(400).json({ error: error.message });
-      res.json(data);
+      res.status(200).json(toListResponse(result));
     })
   );
 
@@ -36,14 +50,21 @@ export const createCategoryRouter = ({
     "/active",
     auth,
     asyncHandler(async (req, res) => {
-      const { data, error } = await supabase
-        .from("Category")
-        .select("*")
-        .eq("userid", req.user.id)
-        .eq("active", true);
+      let result;
+      try {
+        result = await fetchAllRows(() =>
+          supabase
+            .from("Category")
+            .select("*", { count: "exact" })
+            .eq("userid", req.user.id)
+            .eq("active", true)
+            .order("id")
+        );
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
 
-      if (error) return res.status(400).json({ error: error.message });
-      res.json(data);
+      res.status(200).json(toListResponse(result));
     })
   );
 

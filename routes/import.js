@@ -4,6 +4,7 @@ import { requireAuth as requireAuthMiddleware } from "../config/auth-middleware.
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../utils/validate.js";
 import { importCsvSchema, transactionCreateSchema } from "../utils/schemas.js";
+import { fetchAllRows } from "../utils/paginatedSelect.js";
 
 function parseCsvLine(line, delimiter = ",") {
   const values = [];
@@ -209,16 +210,24 @@ export const createImportRouter = ({
         });
       }
 
-      const categoryResponse = await supabase
-        .from("Category")
-        .select("id,name,type")
-        .eq("userid", req.user.id);
-
-      if (categoryResponse.error) {
-        return res.status(500).json({ error: categoryResponse.error.message });
+      // La mappa nome->categoria deve essere *completa*: con una `select()` una-shot
+      // oltre il tetto PostgREST (1000 righe) le categorie in eccesso mancherebbero
+      // dalla mappa e l'import le rifiuterebbe come inesistenti. `.order("id")` e'
+      // il tiebreaker univoco che rende le pagine deterministiche.
+      let categories;
+      try {
+        ({ rows: categories } = await fetchAllRows(() =>
+          supabase
+            .from("Category")
+            .select("id,name,type")
+            .eq("userid", req.user.id)
+            .order("id")
+        ));
+      } catch (err) {
+        // Stesso esito della lettura una-shot fallita: nessuna importazione parziale.
+        return res.status(500).json({ error: err.message });
       }
 
-      const categories = categoryResponse.data || [];
       const categoryMap = new Map(
         categories.map((category) => [
           category.name.trim().toLowerCase(),
