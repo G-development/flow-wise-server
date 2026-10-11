@@ -12,6 +12,7 @@ import {
   getUserBankTransactions,
   handleGoCardlessCallback,
   importBankTransactionsToApp,
+  isMockBankModeEnabled,
   saveBankConnection,
   syncBankTransactions,
   verifyBankOAuthState,
@@ -22,6 +23,7 @@ import {
   getBankSyncStatus,
 } from "../utils/bankSyncScheduler.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { toListResponse } from "../utils/paginatedSelect.js";
 
 const router = express.Router();
 
@@ -114,6 +116,20 @@ router.get(
 router.get(
   "/mock-auth",
   asyncHandler(async (req, res) => {
+    // Il flusso sandbox/mock esiste solo se il mock e' esplicitamente abilitato.
+    if (!isMockBankModeEnabled()) {
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html lang="it">
+        <head><meta charset="utf-8"><title>Sandbox disabilitata</title></head>
+        <body style="font-family:sans-serif;background:#0f172a;color:#f8fafc;padding:40px;">
+          <h2 style="color:#ef4444;">Sandbox mock disabilitata</h2>
+          <p>Questo server e' in modalita' live: la sandbox richiede <code>BANK_MOCK_ENABLED=true</code>.</p>
+          <a href="${clientRedirectUrl().toString()}" style="color:#38bdf8;">Torna all'applicazione</a>
+        </body></html>
+      `);
+    }
+
     const { state, bank } = req.query;
     let bankName = bank || "FlowWise Sandbox Bank";
     try {
@@ -351,14 +367,10 @@ router.get(
               typeof pending.access_token === "string" &&
               pending.access_token !== rawState
             ) {
+              // Nessun frammento di token nei log: solo il fatto che non combaciano.
               console.warn(
-                "GoCardless callback: pending access_token does not match callback state; proceeding with saved requisitionId anyway.",
-                {
-                  bankId: oauthState.bankId,
-                  userId: oauthState.userId,
-                  pendingAccessTokenPrefix: pending.access_token.slice(0, 12),
-                  callbackStatePrefix: rawState.slice(0, 12),
-                }
+                "GoCardless callback: lo state del callback non combacia con quello salvato; proseguo con la requisitionId salvata.",
+                { bankId: oauthState.bankId, userId: oauthState.userId }
               );
             }
 
@@ -371,13 +383,21 @@ router.get(
             throw new Error("Pending GoCardless connection not found");
           }
         } catch (err) {
+          // In modalita' live un fallimento del recupero della requisition non deve mai
+          // diventare movimenti finti: l'errore risale al catch esterno e l'utente lo vede.
+          if (!isMockBankModeEnabled()) {
+            throw err;
+          }
+
           console.warn(
-            "GoCardless callback: pending recovery failed; falling back to mock.",
+            "GoCardless callback: recupero della pending fallito; fallback alla sandbox mock (BANK_MOCK_ENABLED attivo).",
             err?.message || err
           );
 
-          // Flusso Sandbox Mock (fallback)
-          const mockAccountId = `acc_${oauthState.bankId}_${randomBytes(4).toString("hex")}`;
+          // Flusso Sandbox Mock (fallback, solo con mock esplicitamente attivo)
+          // account_id deterministico: un nuovo authorize della stessa banca non crea un
+          // secondo conto fittizio (e quindi non duplica i movimenti).
+          const mockAccountId = `acc_${oauthState.bankId}`;
           await saveBankConnection(
             oauthState.userId,
             oauthState.bankId,
@@ -393,7 +413,8 @@ router.get(
             oauthState.userId,
             oauthState.bankId,
             mockAccountId,
-            "mock_token"
+            "mock_token",
+            { mock: true }
           );
         }
       }
@@ -485,6 +506,10 @@ router.post(
 
 /**
  * GET /bank/transactions?bank=<id>&startDate=<YYYY-MM-DD>&endDate=<YYYY-MM-DD>
+ *
+ * La chiave delle righe resta `transactions` (il client la legge cosi'); a quelle
+ * del contratto condiviso si aggiungono `truncated` e `total`, cosi' il client puo'
+ * dire che l'elenco e' parziale invece di mostrarlo come completo.
  */
 router.get(
   "/transactions",
@@ -492,13 +517,13 @@ router.get(
   asyncHandler(async (req, res) => {
     const { bank, startDate, endDate } = req.query;
 
-    const transactions = await getUserBankTransactions(
+    const result = await getUserBankTransactions(
       req.user.id,
       bank || null,
       startDate || null,
       endDate || null
     );
-    res.json({ transactions, count: transactions.length });
+    res.json(toListResponse(result, { rowsKey: "transactions" }));
   })
 );
 

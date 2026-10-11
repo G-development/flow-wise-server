@@ -6,6 +6,8 @@ import {
   randomBytes,
 } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { decryptToken, encryptToken } from "./bankTokenCrypto.js";
+import { fetchAllRows } from "./paginatedSelect.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -27,6 +29,23 @@ const getEncryptionSecret = () => {
     throw new Error("Bank integration secret (BANK_CLIENT_SECRET or SUPABASE_SERVICE_ROLE_KEY) is missing");
   }
   return secret;
+};
+
+/**
+ * Il mock e' ammesso solo con un consenso esplicito: `BANK_MOCK_ENABLED` truthy oppure
+ * `BANK_PROVIDER=mock`. Senza di essi il server e' in modalita' live e un errore del
+ * provider deve emergere, mai diventare movimenti finti.
+ *
+ * `options.mock` permette di forzare il comportamento per singola chiamata (test, sandbox).
+ */
+export const isMockBankModeEnabled = (options = {}) => {
+  if (options?.mock === true) return true;
+  if (options?.mock === false) return false;
+
+  const flag = String(process.env.BANK_MOCK_ENABLED ?? "").trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(flag)) return true;
+
+  return String(process.env.BANK_PROVIDER ?? "").trim().toLowerCase() === "mock";
 };
 
 /**
@@ -407,7 +426,14 @@ export const getAuthorizationUrl = async (userId, bankId) => {
     }
   }
 
-  // Modalità Mock Sandbox Interattiva
+  // Modalita' Mock Sandbox Interattiva: disponibile solo se il mock e' esplicitamente attivo.
+  if (!isMockBankModeEnabled()) {
+    throw new Error(
+      "GoCardless non e' configurato (GOCARDLESS_SECRET_ID/GOCARDLESS_SECRET_KEY) e il mock e' disabilitato: " +
+        "nessun provider bancario disponibile. Imposta la sandbox con BANK_MOCK_ENABLED=true."
+    );
+  }
+
   const state = createBankOAuthState(userId, normalizedBankId);
   return `${serverBase}/bank/mock-auth?state=${encodeURIComponent(state)}&bank=${encodeURIComponent(normalizedBankId)}`;
 };
@@ -446,9 +472,13 @@ export const handleGoCardlessCallback = async (userId, bankId, requisitionId) =>
 };
 
 /**
- * Genera movimenti bancari realistici per sandbox/mock
+ * Genera movimenti bancari realistici per sandbox/mock.
+ *
+ * Gli `externalId` sono deterministici: dipendono solo da bankId/accountId/offset-giorni/indice,
+ * mai da un timestamp. La chiave unica (user_id, bank_id, account_id, external_id) combacia
+ * quindi a ogni sync e l'upsert non duplica i movimenti.
  */
-const generateMockBankTransactions = (bankId, accountId, count = 25) => {
+export const generateMockBankTransactions = (bankId, accountId, count = 25) => {
   const now = new Date();
   const sampleTransactions = [
     { desc: "Stipendio Mensile - Bonifico SEPA", amount: 2250.00, counterparty: "Datatech Solutions SRL", category: "Stipendio" },
@@ -482,12 +512,14 @@ const generateMockBankTransactions = (bankId, accountId, count = 25) => {
   const selectedSamples = sampleTransactions.slice(0, count);
 
   selectedSamples.forEach((sample, index) => {
+    // `daysAgo` e' un seme fisso (nessun Date.now()): la data visualizzata resta relativa a
+    // oggi, ma l'ID del movimento non cambia tra un sync e l'altro.
     const daysAgo = Math.floor((index * 88) / selectedSamples.length);
     const dateObj = new Date(now);
     dateObj.setDate(now.getDate() - daysAgo);
 
     const date = dateObj.toISOString().split("T")[0];
-    const externalId = `txn_${bankId}_${accountId}_${dateObj.getTime()}_${index + 1}`;
+    const externalId = `txn_${bankId}_${accountId}_mock_${daysAgo}_${index + 1}`;
 
     transactions.push({
       transactionId: externalId,
@@ -506,14 +538,19 @@ const generateMockBankTransactions = (bankId, accountId, count = 25) => {
 };
 
 /**
- * Ottiene le transazioni di un conto da GoCardless o Mock
+ * Ottiene le transazioni di un conto da GoCardless o Mock.
+ *
+ * Regola: in modalita' live (mock non abilitato) un errore del provider viene propagato e
+ * nessun movimento finto viene mai restituito. Il mock e' disponibile solo con
+ * `BANK_MOCK_ENABLED`/`BANK_PROVIDER=mock` oppure `options.mock === true`.
  */
 export const fetchTransactions = async (
   bankId,
   accessToken,
   accountId,
   fromDate,
-  toDate
+  toDate,
+  options = {}
 ) => {
   const isGoCardlessAccount =
     accountId &&
@@ -567,16 +604,31 @@ export const fetchTransactions = async (
         };
       });
     } catch (err) {
-      console.error("Error fetching transactions from GoCardless:", err.response?.data || err.message);
+      const detail =
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message;
+      // Nessun fallback al mock: in live un errore del provider resta un errore.
+      console.error("Error fetching transactions from GoCardless:", detail);
+      throw new Error(`Errore nel recupero dei movimenti da GoCardless: ${detail}`);
     }
   }
 
-  // Fallback / Mock
-  return generateMockBankTransactions(bankId, accountId, 25);
+  if (isMockBankModeEnabled(options)) {
+    return generateMockBankTransactions(bankId, accountId, 25);
+  }
+
+  throw new Error(
+    "Modalita' live: il conto non e' un conto GoCardless e il mock non e' abilitato. " +
+      "Abilitalo esplicitamente con BANK_MOCK_ENABLED=true (solo per la sandbox) per usare movimenti simulati."
+  );
 };
 
 /**
- * Salva la connessione bancaria nel database Supabase
+ * Salva la connessione bancaria nel database Supabase.
+ *
+ * I token sono cifrati at-rest (AES-256-GCM, vedi bankTokenCrypto.js): il valore scritto in
+ * `bank_connections` non e' mai il token in chiaro, nemmeno il segnaposto `mock_token`.
  */
 export const saveBankConnection = async (
   userId,
@@ -594,8 +646,8 @@ export const saveBankConnection = async (
       user_id: userId,
       bank_id: bankId,
       account_id: accountId,
-      access_token: tokenData.accessToken || "mock_token",
-      refresh_token: tokenData.refreshToken || null,
+      access_token: encryptToken(tokenData.accessToken || "mock_token"),
+      refresh_token: encryptToken(tokenData.refreshToken),
       token_expires_at: expiresAt.toISOString(),
       last_synced: new Date().toISOString(),
     },
@@ -606,7 +658,9 @@ export const saveBankConnection = async (
 };
 
 /**
- * Recupera una connessione bancaria attiva per l'utente
+ * Recupera una connessione bancaria attiva per l'utente.
+ * I token vengono decifrati qui: chi legge la connessione vede i valori in chiaro e non deve
+ * conoscere il formato di cifratura.
  */
 export const getBankConnection = async (userId, bankId) => {
   const { data, error } = await supabase
@@ -617,7 +671,13 @@ export const getBankConnection = async (userId, bankId) => {
     .single();
 
   if (error && error.code !== "PGRST116") throw new Error(error.message);
-  return data;
+  if (!data) return data;
+
+  return {
+    ...data,
+    access_token: decryptToken(data.access_token),
+    refresh_token: decryptToken(data.refresh_token),
+  };
 };
 
 /**
@@ -635,13 +695,15 @@ export const getUserBankConnections = async (userId) => {
 };
 
 /**
- * Sincronizza i movimenti bancari e li salva nel DB
+ * Sincronizza i movimenti bancari e li salva nel DB.
+ * `options` viene inoltrato a fetchTransactions (es. `{ mock: true }` per la sandbox).
  */
 export const syncBankTransactions = async (
   userId,
   bankId,
   accountId,
-  accessToken
+  accessToken,
+  options = {}
 ) => {
   const toDate = new Date();
   const fromDate = new Date();
@@ -655,7 +717,8 @@ export const syncBankTransactions = async (
     accessToken,
     accountId,
     dateFrom,
-    dateTo
+    dateTo,
+    options
   );
 
   const formatted = transactions.map((txn) => {
@@ -719,34 +782,44 @@ export const syncBankTransactions = async (
 };
 
 /**
- * Ottiene i movimenti bancari sincronizzati di un utente
+ * Ottiene i movimenti bancari sincronizzati di un utente.
+ *
+ * Passa da `fetchAllRows`: una `select()` una-shot si ferma al tetto PostgREST
+ * (1000 righe su questo progetto) **senza errore e senza dirlo**, quindi l'elenco
+ * arrivava troncato in silenzio. Il valore restituito non e' piu' un array nudo ma
+ * il risultato dell'helper (`{ rows, truncated, count, total, pagesFetched }`):
+ * il chiamante lo serializza con `toListResponse(result, { rowsKey: "transactions" })`.
  */
 export const getUserBankTransactions = async (
   userId,
   bankId = null,
   startDate = null,
   endDate = null
-) => {
-  let query = supabase
-    .from("bank_transactions")
-    .select("id, user_id, bank_id, account_id, external_id, amount, currency, description, date, counterparty, status")
-    .eq("user_id", userId)
-    .order("date", { ascending: false });
+) =>
+  fetchAllRows(() => {
+    let query = supabase
+      .from("bank_transactions")
+      .select(
+        "id, user_id, bank_id, account_id, external_id, amount, currency, description, date, counterparty, status",
+        { count: "exact" }
+      )
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      // Tiebreaker univoco: senza un ordine totale le pagine possono ripetersi o saltare righe.
+      .order("id", { ascending: false });
 
-  if (bankId && bankId !== "all") {
-    query = query.eq("bank_id", bankId);
-  }
-  if (startDate) {
-    query = query.gte("date", startDate);
-  }
-  if (endDate) {
-    query = query.lte("date", endDate);
-  }
+    if (bankId && bankId !== "all") {
+      query = query.eq("bank_id", bankId);
+    }
+    if (startDate) {
+      query = query.gte("date", startDate);
+    }
+    if (endDate) {
+      query = query.lte("date", endDate);
+    }
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data || [];
-};
+    return query;
+  });
 
 /**
  * Assicura che il token della connessione bancaria sia valido
