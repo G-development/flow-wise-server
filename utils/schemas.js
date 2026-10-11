@@ -29,7 +29,6 @@ export const walletCreateSchema = z.object({
 
 export const walletUpdateSchema = z.object({
   name: z.string().min(1).optional(),
-  balance: z.number().optional(),
   is_default: z.boolean().optional(),
 });
 

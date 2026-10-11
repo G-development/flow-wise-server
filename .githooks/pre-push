@@ -1,0 +1,61 @@
+#!/bin/sh
+# Gate di push — Flow-Wise server
+#
+# Il push viene rifiutato finché non esiste un'approvazione esplicita per il commit
+# corrente. Il gate sta qui, nel tooling, e non nella buona volontà dell'agente che
+# ha scritto il codice: un agente può sbagliare, un hook no.
+#
+# Approvazione = file in .git/ (non tracciato, invisibile a `git status`) contenente
+# lo SHA del commit approvato. Vale per UN commit: se ne aggiungi un altro, il gate
+# si richiude da solo.
+#
+#   printf '%s' "$(git rev-parse HEAD)" > "$(git rev-parse --git-dir)/hermes-push-approval"
+#
+# Uscita di emergenza, consapevole: HERMES_PUSH_APPROVED=1 git push
+set -u
+
+repo=$(git rev-parse --show-toplevel)
+git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
+head_sha=$(git rev-parse HEAD)
+approval_file="$git_dir/hermes-push-approval"
+
+if [ "${HERMES_PUSH_APPROVED:-}" = "1" ]; then
+  echo "[pre-push] HERMES_PUSH_APPROVED=1: gate e check saltati per scelta esplicita."
+  exit 0
+fi
+
+if [ ! -f "$approval_file" ] || [ "$(tr -d '[:space:]' <"$approval_file")" != "$head_sha" ]; then
+  cat <<EOF
+[pre-push] PUSH BLOCCATO — nessuna approvazione per questo commit.
+
+  repo:    $repo
+  commit:  $head_sha
+  atteso:  $approval_file
+
+Il push lo autorizza Gio. Per approvare (dopo il suo OK esplicito):
+
+  printf '%s' "\$(git rev-parse HEAD)" > "$approval_file"
+
+Per forzare consapevolmente:  HERMES_PUSH_APPROVED=1 git push
+EOF
+  exit 1
+fi
+
+echo "[pre-push] approvazione presente per $head_sha — eseguo i check."
+cd "$repo" || exit 1
+
+fail() {
+  echo "[pre-push] CHECK FALLITO: $1 — push rifiutato."
+  exit 1
+}
+
+# JavaScript puro, quindi il controllo di sintassi sostituisce il typecheck.
+count=0
+for file in $(find . -name '*.js' -not -path './node_modules/*'); do
+  node --check "$file" || fail "sintassi: $file"
+  count=$((count + 1))
+done
+echo "[pre-push] node --check superato su $count file"
+
+echo "[pre-push] check superati: push consentito."
+exit 0

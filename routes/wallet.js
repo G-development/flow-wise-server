@@ -2,23 +2,19 @@ import express from "express";
 import { supabase } from "../config/supabaseClient.js";
 import { requireAuth } from "../config/auth-middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { getWalletsWithBalances } from "../utils/walletService.js";
 import { validate } from "../utils/validate.js";
 import { walletCreateSchema, walletUpdateSchema } from "../utils/schemas.js";
 
 const router = express.Router();
 
-// GET /wallet - tutti i wallet dell'utente
+// GET /wallet - tutti i wallet dell'utente, con il saldo derivato dalle transazioni
 router.get(
   "/",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { data, error } = await supabase
-      .from("Wallet")
-      .select("*")
-      .eq("userid", req.user.id);
-
-    if (error) return res.status(400).json({ error: error.message });
-    res.status(200).json(data);
+    const wallets = await getWalletsWithBalances(req.user.id);
+    res.status(200).json(wallets);
   })
 );
 
@@ -58,18 +54,18 @@ router.post(
   })
 );
 
-// PUT /wallets/:id - aggiorna nome o saldo
+// PUT /wallets/:id - aggiorna nome o flag di default
+// Il saldo non è modificabile: è derivato dalle transazioni.
 router.put(
   "/:id",
   requireAuth,
   validate(walletUpdateSchema),
   asyncHandler(async (req, res) => {
-    const { name, balance, is_default } = req.body;
+    const { name, is_default } = req.body;
     const { id } = req.params;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
-    if (balance !== undefined) updates.balance = balance;
     if (is_default !== undefined) updates.is_default = is_default;
 
     // Se si imposta is_default, resetta gli altri wallet a false
