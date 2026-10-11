@@ -325,7 +325,12 @@ export const createImportRouter = ({
 
         // Ultima rete di sicurezza: l'import scrive solo righe che passano lo
         // stesso schema del POST /transaction, quindi il vincolo `amount >= 0`
-        // vale qui per costruzione e non solo per come è scritto il codice sopra.
+        // vale qui per costruzione e non solo per come e' scritto il codice sopra.
+        // `transactionCreateSchema` e' lo schema del body di POST /transaction e
+        // non conosce `userid`: zod rimuove le chiavi sconosciute, quindi il
+        // proprietario va riattaccato al payload validato. Senza, la colonna
+        // `userid` (default `auth.uid()`, NULL con la service-role key) resterebbe
+        // vuota e le righe importate sparirebbero da ogni elenco.
         const validated = transactionCreateSchema.safeParse(transaction);
         if (!validated.success) {
           const detail = validated.error.issues
@@ -335,7 +340,7 @@ export const createImportRouter = ({
           return;
         }
 
-        transactions.push(validated.data);
+        transactions.push({ ...validated.data, userid: req.user.id });
       });
 
       if (transactions.length === 0) {
