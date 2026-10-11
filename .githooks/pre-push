@@ -49,7 +49,12 @@ fail() {
   exit 1
 }
 
-# JavaScript puro, quindi il controllo di sintassi sostituisce il typecheck.
+# 1) Invarianti (node --test). Un test rosso ferma il push qui: nessun `|| true`,
+#    nessuno skip condizionale, nessuna suite vuota silenziosa.
+echo "[pre-push] npm test (node --test)"
+npm test || fail "test backend (node --test)"
+
+# 2) JavaScript puro, quindi il controllo di sintassi sostituisce il typecheck.
 count=0
 for file in $(find . -name '*.js' -not -path './node_modules/*'); do
   node --check "$file" || fail "sintassi: $file"
