@@ -4,10 +4,15 @@ import { signedAmountCents } from "./amount.js";
 /**
  * Il saldo di un wallet non è memorizzato: è derivato dalle transazioni.
  *
- * Motivo: la colonna `Wallet.balance` andrebbe tenuta allineata da ogni percorso
- * che scrive su `Transaction` (transazioni, import CSV, import bancario) e basta
- * dimenticarne uno per avere un saldo sbagliato che sembra corretto. Derivarlo
- * rende `Transaction` l'unica fonte di verità.
+ * `Wallet.balance` NON è, e non deve tornare a essere, la fonte di verità. La colonna è
+ * stata rimossa da `migrations/005_drop_wallet_balance.sql`: non va più scritta, letta né
+ * restituita da nessun percorso. Il campo `balance` che le API espongono è quello calcolato
+ * qui, non la colonna.
+ *
+ * Motivo: tenerla allineata richiederebbe di aggiornarla da ogni percorso che scrive su
+ * `Transaction` (transazioni, import CSV, import bancario) e basta dimenticarne uno per
+ * avere un saldo sbagliato che sembra corretto. Derivarlo rende `Transaction` (più
+ * `opening_balance_cents`) l'unica fonte di verità.
  *
  * Tre dettagli non ovvi, tutti verificati sul progetto Supabase reale:
  *

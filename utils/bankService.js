@@ -859,10 +859,11 @@ export const importBankTransactionsToApp = async (
     throw new Error("Nessun ID transazione fornito per l'importazione");
   }
 
-  // Verifica esistenza e proprietà del wallet
+  // Verifica esistenza e proprietà del wallet. Nessun `balance`: la colonna è stata
+  // rimossa da migrations/005_drop_wallet_balance.sql e il saldo è derivato.
   const { data: wallet, error: walletError } = await supabase
     .from("Wallet")
-    .select("id, name, balance")
+    .select("id, name")
     .eq("id", walletId)
     .eq("userid", userId)
     .single();

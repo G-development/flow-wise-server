@@ -440,6 +440,11 @@ export const startFakeSupabase = async ({
       if (req.method === "POST") {
         const incoming = Array.isArray(body) ? body : [body];
 
+        const unknown = incoming
+          .map((row) => unknownColumn(table, row))
+          .find(Boolean);
+        if (unknown) return json(400, unknownColumnError(table, unknown));
+
         if (walletInvariants && table === WALLET_TABLE) {
           const violation = walletInsertViolation(incoming);
           if (violation) return json(violation.status, violation.payload);
@@ -459,6 +464,9 @@ export const startFakeSupabase = async ({
       }
 
       if (req.method === "PATCH") {
+        const unknown = unknownColumn(table, body);
+        if (unknown) return json(400, unknownColumnError(table, unknown));
+
         if (walletInvariants && table === WALLET_TABLE) {
           const violation = walletUpdateViolation(matched, body);
           if (violation) return json(violation.status, violation.payload);

@@ -18,6 +18,11 @@
  * migrazione da eseguire per prima (crea la colonna). Questo script e' la versione da terminale:
  * dry-run di default, `--apply` per scrivere, idempotente (una seconda esecuzione non tocca nulla).
  *
+ * STORICO: da `migrations/005_drop_wallet_balance.sql` la colonna `Wallet.balance` non esiste
+ * piu', quindi questo script non ha piu' nulla da cui derivare l'apertura e si ferma con un
+ * messaggio esplicito. L'apertura e' gia' stata scritta una volta e si modifica dalla pagina
+ * /wallets (`PUT /wallet/:id`, `opening_balance_cents`): non ricalcolarla da `balance`.
+ *
  * Uso, dalla root del repo server:
  *     node backfill-opening-balance.mjs            # dry-run: mostra cosa scriverebbe
  *     node backfill-opening-balance.mjs --apply    # scrive e verifica l'invariante
@@ -75,6 +80,15 @@ if (walletError) {
   if (/opening_balance_cents/.test(walletError.message)) {
     console.error(
       "Colonna Wallet.opening_balance_cents assente: esegui prima migrations/003_wallet_opening_balance.sql"
+    );
+    process.exit(1);
+  }
+  if (/balance/.test(walletError.message)) {
+    console.error(
+      "Colonna Wallet.balance assente: rimossa da migrations/005_drop_wallet_balance.sql.\n" +
+        "Questo backfill e' una migrazione una-tantum, gia' applicata: ricalcolerebbe l'apertura\n" +
+        "da un valore che non esiste piu'. L'apertura vive in Wallet.opening_balance_cents e va\n" +
+        "modificata dalla pagina /wallets, non ricalcolata da `balance`."
     );
     process.exit(1);
   }
