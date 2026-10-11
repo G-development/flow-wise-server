@@ -40,7 +40,7 @@ export const walletUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   is_default: z.boolean().optional(),
   // Saldo di apertura del wallet, in centesimi interi (come la somma in
-  // services/walletService.js). È il punto di partenza del saldo derivato, non
+  // utils/walletService.js). È il punto di partenza del saldo derivato, non
   // un saldo finale: il segno è ammesso (un wallet può nascere in negativo).
   opening_balance_cents: z
     .number({ invalid_type_error: "opening_balance_cents must be a number" })

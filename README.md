@@ -39,10 +39,14 @@ le altre variabili opzionali Cloudinary e SMTP.
 
 Attenzione a due variabili il cui valore mancante non produce errori evidenti:
 
-- `BANK_PROVIDER` è presente in `.env.example` e in `BANK_INTEGRATION.md` ma non
-  è letta da nessuna riga di codice: la modalità la decidono solo
-  `GOCARDLESS_SECRET_ID` e `GOCARDLESS_SECRET_KEY`, cioè la modalità live è
-  attiva appena le due chiavi esistono.
+- `BANK_PROVIDER` (insieme a `BANK_MOCK_ENABLED`) decide **mock o live** ed è
+  letta davvero dal codice in `isMockBankModeEnabled()`
+  (`utils/bankService.js`): la sandbox `/bank/mock-auth` e i movimenti simulati
+  sono attivi solo con `BANK_MOCK_ENABLED` impostata a `true`/`1`/`yes`/`on`
+  oppure con `BANK_PROVIDER=mock`. In ogni altro caso il server è in modalità
+  **live**, dove un errore del provider GoCardless risale come errore e non
+  diventa mai un movimento finto; il live richiede `GOCARDLESS_SECRET_ID` e
+  `GOCARDLESS_SECRET_KEY`.
 - senza `BANK_SCHEDULER_SECRET` le route `/bank/scheduler/status` e
   `/bank/scheduler/sync-now` rispondono `503`.
 
@@ -82,13 +86,27 @@ Le route protette verificano `Authorization: Bearer <supabase_access_token>`
 tramite `requireAuth`. L'elenco dettagliato delle route bancarie e le migrazioni
 sono in [BANK_INTEGRATION.md](./BANK_INTEGRATION.md).
 
-`GET /wallet` merita una precisazione: restituisce i wallet con il `balance`
-**derivato dalle transazioni** a ogni lettura (`utils/walletService.js`, che
-pagina le transazioni perché PostgREST tronca a 1000 righe e somma in centesimi
-in assenza di aggregati SQL). La colonna `Wallet.balance` esiste ancora e viene
-scritta a `0` alla creazione, ma solo per compatibilità e non è più la fonte del
-dato mostrato; di conseguenza anche `PUT /wallet/:id` non accetta `balance` e
-aggiorna solo `name` e `is_default`.
+`GET /wallet`, `POST /wallet` e `PUT /wallet/:id` rispondono sempre con la stessa
+forma della risorsa: il `balance` è **derivato dalle transazioni** a ogni lettura
+(`utils/walletService.js`, che parte da `Wallet.opening_balance_cents`, pagina le
+transazioni perché PostgREST tronca a 1000 righe e somma in centesimi in assenza di
+aggregati SQL). La colonna `Wallet.balance` è stata **rimossa** da
+`migrations/005_drop_wallet_balance.sql`: nessun percorso la scrive, la legge o la
+restituisce, e non va reintrodotta come fonte di verità (il campo `balance` delle
+risposte è calcolato, non letto). `PUT /wallet/:id` accetta `name`, `is_default` e
+`opening_balance_cents`, mai un `balance` finale.
+
+Gli **invarianti dei wallet** — massimo 3 per utente, esattamente un default — sono
+vincoli del DB (migrazione 004): la route non li ricontrolla, traduce l'errore che il
+database solleva. `POST /wallet` tenta direttamente l'insert e risponde **409**
+(`Max 3 wallets allowed per user`, senza il testo interno del DB) quando il DB rifiuta
+il quarto wallet; il primo wallet nasce default per volontà del DB, non della route.
+`PUT /wallet/:id` con `is_default: true` esegue la RPC `wallet_set_default` in **una
+sola** richiesta — la vecchia coppia di UPDATE ora fallirebbe, perché il primo commit
+senza default viene respinto — e risponde **404** se il wallet non esiste o non è
+dell'utente, **409** se l'operazione lascerebbe l'utente senza default. Se la 004 non è
+applicata la RPC non esiste: la route risponde **503** dicendo quale migrazione manca,
+invece di lasciare il cambio di default rotto senza spiegazione.
 
 Le **route di lista** (`GET /income/all`, `/expense/all`, `/transaction/all`,
 `/bank/transactions`) non si fermano più al tetto di PostgREST: leggono con
@@ -111,20 +129,28 @@ printf '%s' "$(git rev-parse HEAD)" > "$(git rev-parse --git-dir)/hermes-push-ap
 ```
 
 L'approvazione vale per un solo commit: appena aggiungi un commit il gate si
-richiude da solo. Superato il gate, l'hook controlla la sintassi dei file
-JavaScript con `node --check` prima di lasciar passare il push (il server non ha
-un typecheck). L'uscita consapevole, che salta gate e check, è
-`HERMES_PUSH_APPROVED=1 git push`. Lo stesso meccanismo vale per il repo del
-client, che esegue `npx tsc --noEmit` e `npm run build`.
+richiude da solo. Superato il gate, l'hook esegue `npm test` (`node --test`, gli
+invarianti) e poi controlla la sintassi dei file JavaScript con `node --check`
+prima di lasciar passare il push (il server non ha un typecheck). L'uscita
+consapevole, che salta gate e check, è `HERMES_PUSH_APPROVED=1 git push`. Lo
+stesso meccanismo vale per il repo del client, il cui `npm test` esegue
+`node --test`, `npx tsc --noEmit` e `next build`.
 
 ## Agente di analytics delle spese
 
 `POST /agents/analytics` accetta `question`, `startDate` e `endDate`; le date
 usano `YYYY-MM-DD` e, se omesse, coprono il mese corrente fino a oggi. Il
-backend recupera solo spese dell'utente autenticato e rifiuta periodi con più
-di 1.000 transazioni. Invia al modello un riepilogo aggregato: totale, media,
-totali per categoria e mese, e fino a dieci esempi di spesa con descrizioni
-limitate. Ogni richiesta è indipendente; non esiste memoria conversazionale.
+backend recupera solo spese dell'utente autenticato, al massimo 1.000 per
+richiesta (`range` di PostgREST è inclusivo, quindi la pagina è
+`.range(0, limit - 1)`), e invia al modello un riepilogo aggregato: totale,
+media, totali per categoria e mese, e fino a dieci esempi di spesa con
+descrizioni limitate. Il totale reale del periodo arriva da una count query
+separata, quindi la risposta dichiara sempre la copertura: `analysis` inizia con
+"Ho analizzato N movimenti su M del periodo" e, se il periodo contiene più
+movimenti del limite, avvisa che l'analisi copre solo i primi N. Gli stessi
+numeri sono nel payload in `coverage` (`rowsFetched`, `totalRows`, `limit`,
+`truncated`, `notice`) e in `transactionsAnalyzed` / `totalTransactions`. Ogni
+richiesta è indipendente; non esiste memoria conversazionale.
 
 ```bash
 curl -X POST http://localhost:5030/agents/analytics \
@@ -143,7 +169,8 @@ Le route dati assumono che le tabelle applicative Supabase (`Transaction`,
 `Category`, `Wallet`, `Profile`, `dashboard_layouts`, `bank_connections` e
 `bank_transactions`) siano già predisposte. Le migrazioni incluse nella cartella
 `migrations/` contengono le definizioni SQL per le tabelle bancarie, i token di
-reset password e il saldo di apertura dei wallet:
+reset password, il saldo di apertura dei wallet, gli invarianti dei wallet e la
+rimozione della colonna fantasma `Wallet.balance`:
 
 - `003_wallet_opening_balance.sql` — aggiunge `Wallet.opening_balance_cents`
   (integer, NOT NULL, default 0), il punto di partenza della somma derivata in
@@ -153,8 +180,34 @@ reset password e il saldo di apertura dei wallet:
   ultima `SELECT` è il log dei wallet toccati; richiede tabelle `Transaction`
   valorizzate (nell'SQL editor di Supabase, oppure
   `node backfill-opening-balance.mjs --apply`).
+- `004_wallet_invariants.sql` — rende invarianti del DB il limite di **3 wallet
+  per utente** e l'**esattamente-un default**: indice unico parziale
+  `wallet_one_default_per_user_idx`, trigger `BEFORE INSERT/UPDATE` (limite +
+  primo wallet forzato a default, serializzato da un advisory lock per utente),
+  trigger `AFTER DELETE` (eliminando il default ne promuove un altro) e
+  constraint trigger `DEFERRABLE INITIALLY DEFERRED` che al commit pretende
+  esattamente un default per ogni utente che possiede wallet. Il cambio di
+  default diventa la RPC `wallet_set_default(p_userid uuid, p_wallet_id integer)`,
+  una sola operazione atomica. Errori riconoscibili: SQLSTATE `45001`
+  `wallet_limit_exceeded`, `45002` `wallet_default_missing`, `45003`
+  `wallet_not_found`, più `23505` sull'indice unico. La migrazione è idempotente,
+  parte da un pre-check che la fa fallire senza applicare nulla se i dati
+  esistenti violano già l'invariante, e ha il rollback in
+  `004_wallet_invariants.down.sql`. Va applicata **insieme** al refactor di
+  `routes/wallet.js`: la vecchia sequenza "azzera tutti + setta quello
+  richiesto", fatta di due richieste separate, ora incontra `45002`.
+- `005_drop_wallet_balance.sql` — rimuove la colonna fantasma `Wallet.balance`
+  (`DROP COLUMN IF EXISTS`, idempotente). Il valore utile è già in
+  `opening_balance_cents` dal backfill di `003`, e nessuna view, policy o
+  dipendenza Postgres referenzia la colonna, quindi il drop è sicuro anche su dati
+  discordanti; da qui in poi il saldo è solo quello derivato. Il rollback di
+  struttura è in `005_drop_wallet_balance.down.sql` (ricrea la colonna col suo
+  default, **non** i valori). Va eseguita **dopo** `003`: `003` legge
+  `Wallet.balance` per il backfill e dopo il drop non è più rieseguibile.
 
-`backfill-opening-balance.mjs` è la versione da terminale della stessa regola:
+`backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare
-`balance == (opening_balance_cents + movimenti) / 100`. I wallet nuovi non
-richiedono backfill: partono dal default 0.
+`balance == (opening_balance_cents + movimenti) / 100`. È **storico**: dopo
+`005_drop_wallet_balance.sql` la colonna `balance` non esiste più, quindi lo script
+si ferma con un messaggio esplicito e l'apertura si modifica dalla pagina /wallets
+(`PUT /wallet/:id`). I wallet nuovi non richiedono backfill: partono dal default 0.

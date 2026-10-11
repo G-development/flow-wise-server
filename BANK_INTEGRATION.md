@@ -14,21 +14,27 @@ L'integrazione bancaria di Flow Wise consente agli utenti di connettere in modo 
 ### 2. GoCardless Open Banking PSD2 (Banche Reali)
 - Connessione a oltre 2.500 banche europee e italiane con licenza AISP ufficiale (Intesa Sanpaolo, UniCredit, Poste Italiane, Revolut, Fineco, BNL, BPM, N26, Credem, Illimity, ecc.).
 - Gestione automatica del ciclo di vita dei token OAuth2 (`POST /token/new/`) con memorizzazione in cache.
-- Configura `BANK_PROVIDER=gocardless`, `GOCARDLESS_SECRET_ID` e `GOCARDLESS_SECRET_KEY`.
+- Configura `GOCARDLESS_SECRET_ID` e `GOCARDLESS_SECRET_KEY`: con il mock non abilitato il server è in modalità **live**. `BANK_PROVIDER` (diverso da `mock`, oppure assente) seleziona il live; `BANK_PROVIDER=mock` abilita la sandbox, come documentato qui sotto.
 
 ---
 
 ## Configurazione Server (.env)
 
 ```env
-# Modalità provider ("mock" per sviluppo locale / "gocardless" per banche reali)
+# Modalità: BANK_PROVIDER=mock abilita la sandbox/mock (variabile letta dal codice,
+# utils/bankService.js). Qualsiasi altro valore, o l'assenza, lascia il server in
+# modalità live, che richiede le credenziali GoCardless.
 BANK_PROVIDER=mock
+
+# Override esplicito del mock (true/1/yes/on): da solo abilita la sandbox, a
+# prescindere da BANK_PROVIDER.
+BANK_MOCK_ENABLED=false
 
 # URI di reindirizzamento OAuth
 BANK_REDIRECT_URI=http://localhost:5030/bank/callback
 BANK_CLIENT_REDIRECT_URI=http://localhost:3000/settings/yourbank
 
-# (Opzionale se BANK_PROVIDER=gocardless)
+# Credenziali GoCardless (richieste per la modalità live)
 GOCARDLESS_SECRET_ID=il_tuo_secret_id
 GOCARDLESS_SECRET_KEY=la_tua_secret_key
 

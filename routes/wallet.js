@@ -192,6 +192,63 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
+    // Two tables reference `Wallet`, and until now neither was accounted for:
+    //   `Transaction.wallet_id` -> no ON DELETE action: the delete fails and the raw
+    //      Postgres message (23503) reaches the client inside a 400;
+    //   `Budget.walletid`       -> ON DELETE CASCADE (measured on the live DB, not read
+    //      from the dump): the wallet disappears with a 200 and takes its budgets down
+    //      silently, with no error, no warning and no trace in the response.
+    // Count both, always scoped to the authenticated user, and refuse naming what blocks:
+    // an explicit rejection the user can act on beats a leaked constraint or a silent
+    // cascade. Same contract as the `DELETE /category/:id` guard.
+    // Migration 007 moves the Budget side to RESTRICT as a backstop at the DB level; the
+    // 23503 branch after the delete stays as the net under this guard.
+    const [transactions, budgets] = await Promise.all([
+      supabase
+        .from("Transaction")
+        .select("id", { count: "exact", head: true })
+        .eq("userid", req.user.id)
+        .eq("wallet_id", id),
+      supabase
+        .from("Budget")
+        .select("id", { count: "exact", head: true })
+        .eq("userid", req.user.id)
+        .eq("walletid", id),
+    ]);
+
+    // No count means we cannot know whether the wallet is in use, so nothing is
+    // deleted either way. Same error shape as the rest of this router.
+    if (transactions.error) {
+      return res.status(400).json({ error: transactions.error.message });
+    }
+    if (budgets.error) {
+      return res.status(400).json({ error: budgets.error.message });
+    }
+
+    const transactionCount = transactions.count ?? 0;
+    const budgetCount = budgets.count ?? 0;
+
+    if (transactionCount > 0 || budgetCount > 0) {
+      const blockers = [];
+      if (transactionCount > 0) {
+        blockers.push(
+          `${transactionCount} transaction${transactionCount === 1 ? "" : "s"}`
+        );
+      }
+      if (budgetCount > 0) {
+        blockers.push(`${budgetCount} budget${budgetCount === 1 ? "" : "s"}`);
+      }
+
+      return res.status(409).json({
+        error: `Wallet is in use by ${blockers.join(
+          " and "
+        )}; reassign or remove them first`,
+        code: "WALLET_IN_USE",
+        transactionCount,
+        budgetCount,
+      });
+    }
+
     // `.select("id")` rende `data` un array: senza, `data` è `null` e `data[0]`
     // faceva esplodere la risposta con un 500.
     const { data, error } = await supabase
@@ -201,7 +258,24 @@ router.delete(
       .eq("userid", req.user.id)
       .select("id");
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      // Foreign key violation (23503) or restrict violation (23001): something the counts
+      // above do not cover — a table added later, or rows written between the count and the
+      // delete. Both codes are needed: `Transaction_wallet_id_fkey` has no ON DELETE action
+      // and raises 23503, while the RESTRICT of migration 007 — the very net under this
+      // guard — raises 23001. Measured on PostgreSQL 18 + PostgREST, not assumed: the probe
+      // `.probe-t_772c0b10/chain/real-chain.sh` shows 23001 and HTTP 400 from PostgREST.
+      // Either way it is a conflict for the user, never a raw database message.
+      if (error.code === "23503" || error.code === "23001") {
+        return res.status(409).json({
+          error:
+            "Wallet is in use and cannot be deleted; reassign or remove the referencing rows first",
+          code: "WALLET_IN_USE",
+        });
+      }
+      return res.status(400).json({ error: error.message });
+    }
+
     res
       .status(200)
       .json({ message: "Wallet deleted", wallet: data?.[0] ?? null });
