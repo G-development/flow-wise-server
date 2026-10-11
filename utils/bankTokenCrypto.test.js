@@ -83,8 +83,15 @@ test("un token manomesso non decifra: errore invece di spazzatura", () => {
   const restore = withKey("test-key-1");
   try {
     const stored = encryptToken("token-da-proteggere");
-    const last = stored.slice(-1) === "A" ? "B" : "A";
-    const tampered = stored.slice(0, -1) + last;
+    // Si manomette il PRIMO carattere dell'IV, non l'ultimo del payload: l'ultimo
+    // carattere base64 di un gruppo finale puo' trasportare solo bit di padding
+    // (es. 'A' -> 'B' e' invisibile se i bit dati sono '00'), quindi la manomissione
+    // non cambierebbe i byte decodificati e la decifratura riuscirebbe. L'IV e' 12 byte
+    // = 16 caratteri base64url tutti significativi: alterarne uno cambia sempre la
+    // keystream e il tag GCM non verifica mai.
+    const i = ENCRYPTED_TOKEN_PREFIX.length;
+    const tampered =
+      stored.slice(0, i) + (stored[i] === "A" ? "B" : "A") + stored.slice(i + 1);
 
     assert.throws(() => decryptToken(tampered), /decifrare|malformato/i);
   } finally {
