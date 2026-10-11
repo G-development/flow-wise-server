@@ -90,6 +90,15 @@ scritta a `0` alla creazione, ma solo per compatibilità e non è più la fonte 
 dato mostrato; di conseguenza anche `PUT /wallet/:id` non accetta `balance` e
 aggiorna solo `name` e `is_default`.
 
+Le **route di lista** (`GET /income/all`, `/expense/all`, `/transaction/all`,
+`/bank/transactions`) non si fermano più al tetto di PostgREST: leggono con
+`utils/paginatedSelect.js` (`fetchAllRows`) e rispondono con l'envelope
+`{ data, count, truncated, total }` — `{ transactions, count, truncated, total }`
+per `/bank/transactions`, che tiene la sua chiave. `count` è il numero di righe
+restituite, `total` quello del range secondo il database, e `truncated: true`
+dichiara che le righe sono tagliate al tetto di paginazione: il client deve dirlo
+invece di presentare le somme come definitive.
+
 ## Push gate
 
 Il repo versiona un hook `pre-push` in `.githooks/pre-push`, attivo quando
