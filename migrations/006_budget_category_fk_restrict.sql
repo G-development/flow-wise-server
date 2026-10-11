@@ -25,8 +25,9 @@
 -- RESTRICT esprime l'intenzione senza lasciare una scappatoia.
 --
 -- Costo: nullo. `Budget` ha 0 righe (misurato via PostgREST), quindi la ADD CONSTRAINT non
--- deve validare nulla; nessuna riga di `routes/` referenzia la tabella `Budget`, quindi
--- nessun percorso applicativo dipendeva dal CASCADE.
+-- deve validare nulla; l'unico percorso applicativo che nomina `Budget` e' il count di
+-- guardia di `DELETE /category/:id` (`routes/category.js`), che conta le righe in uso ma
+-- non si appoggia alla regola di delete, quindi nessun percorso dipendeva dal CASCADE.
 --
 -- Idempotente: DROP CONSTRAINT IF EXISTS + ADD CONSTRAINT riportano la constraint allo stesso
 -- stato anche se il file viene rieseguito. La DROP+ADD non distrugge dati: cambiare la regola

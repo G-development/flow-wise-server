@@ -28,7 +28,8 @@ const matches = (row, filters) =>
  * call log. It emulates only what the route needs (a counted `head` select on
  * `Transaction` and on `Budget`, and a filtered delete); `deleteError` fails the
  * delete the way the real foreign key does, `countError` fails any count and
- * `countErrors` fails the count of one table only.
+ * `countErrors` fails the count of one table only, while `nullCounts` returns a
+ * null count with no error for one table (a provider with no `Content-Range`).
  */
 const createFakeSupabase = ({
   categories = [],
@@ -37,6 +38,7 @@ const createFakeSupabase = ({
   deleteError = null,
   countError = null,
   countErrors = {},
+  nullCounts = {},
 } = {}) => {
   const store = { Category: categories, Transaction: transactions, Budget: budgets };
   const calls = [];
@@ -49,10 +51,16 @@ const createFakeSupabase = ({
       const failure = countErrors[state.table] ?? countError;
       if (failure) return { data: null, error: failure, count: null };
 
+      // `nullCounts` emulates a provider that answers without `Content-Range`: the count
+      // is requested but comes back null with no error (@supabase/postgrest-js yields
+      // count: null then). Distinct from `countErrors`, which sets an error too.
+      const missingCount = nullCounts[state.table] === true;
+
       return {
         data: state.options?.head === true ? null : matched,
         error: null,
-        count: state.options?.count === "exact" ? matched.length : null,
+        count:
+          state.options?.count === "exact" && !missingCount ? matched.length : null,
       };
     }
 
@@ -262,6 +270,36 @@ test("se il conteggio fallisce la categoria non viene cancellata", async () => {
   assert.equal(fake.store.Transaction.length, 1);
 });
 
+test("un errore nel solo count delle transazioni non cancella nulla", async () => {
+  // L'unico test d'errore sopra (`countError`) fa fallire ENTRAMBI i count e i due
+  // messaggi coincidono: il ramo Budget maschererebbe la rimozione di quello Transaction.
+  // Qui fallisce SOLO il count Transaction (Budget ok), cosi' il test muore davvero se il
+  // ramo `transactions.error` sparisce.
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    transactions: [{ id: 1, userid: USER_ID, category_id: 7 }],
+    countErrors: {
+      Transaction: { code: "XX000", message: "transaction count unavailable" },
+    },
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 400);
+  assert.equal(body.error, "transaction count unavailable");
+  assert.equal(body.code, undefined);
+
+  // Nessuna `Category:delete` tentata: solo i due count di guardia.
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
+
+  // La categoria e' intatta.
+  assert.equal(fake.store.Category.length, 1);
+  assert.equal(fake.store.Category[0].id, 7);
+});
+
 // --- Ramo Budget ---------------------------------------------------------------
 // `Budget_categoryid_fkey` e' ON DELETE CASCADE: una categoria referenziata SOLO da un
 // budget passava il guard (che contava solo `Transaction`), veniva cancellata con un 200
@@ -355,6 +393,58 @@ test("un errore nel count dei budget non cancella nulla", async () => {
   assert.equal(status, 400);
   assert.equal(body.error, "budget count unavailable");
   assert.equal(fake.store.Category.length, 1, "senza count non si cancella");
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
+});
+
+// --- Count assente (null) senza errore -----------------------------------------
+// `count: "exact"` puo' tornare `null` senza errore quando il provider non manda
+// `Content-Range` (@supabase/postgrest-js legge il count da quell'header). La `?? 0`
+// precedente trasformava "non so" in "categoria libera" e cancellava la categoria. Il
+// guard ora rifiuta anche questo caso, come per un count in errore.
+// La seconda meta' di ogni test e' un controllo positivo: senza il guard la categoria
+// (che ha davvero una riga collegata) verrebbe cancellata con un 200.
+
+test("un count assente sulle transazioni non cancella la categoria", async () => {
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    transactions: [{ id: 1, userid: USER_ID, category_id: 7 }],
+    nullCounts: { Transaction: true },
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 400, "count null senza errore: non si cancella");
+  assert.match(body.error, /Transaction/);
+  assert.doesNotMatch(body.error, /foreign key|violates|constraint/i);
+
+  assert.equal(fake.store.Category.length, 1);
+  assert.equal(fake.store.Transaction.length, 1);
+
+  // Nessuna `Category:delete` tentata.
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
+});
+
+test("un count assente sui budget non cancella la categoria", async () => {
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    budgets: [{ id: 1, userid: USER_ID, categoryid: 7 }],
+    nullCounts: { Budget: true },
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 400);
+  assert.match(body.error, /Budget/);
+
+  assert.equal(fake.store.Category.length, 1);
+  assert.equal(fake.store.Budget.length, 1, "il budget non sparisce per CASCADE");
+
   assert.deepEqual(
     fake.calls.map((call) => `${call.table}:${call.op}`),
     GUARD_CALLS
