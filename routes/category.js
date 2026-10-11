@@ -113,28 +113,58 @@ export const createCategoryRouter = ({
     "/:id",
     auth,
     asyncHandler(async (req, res) => {
-      // `Transaction.category_id` is a foreign key with no ON DELETE action, so
-      // deleting a category that is still referenced either fails with a raw
-      // Postgres error or leaves orphan transactions behind. Count the references
-      // first and refuse explicitly: a rejection the user can act on beats a leaked
-      // constraint message.
-      const { count, error: countError } = await supabase
-        .from("Transaction")
-        .select("id", { count: "exact", head: true })
-        .eq("userid", req.user.id)
-        .eq("category_id", req.params.id);
+      // Two tables reference `Category`:
+      //   `Transaction.category_id` -> no ON DELETE action (a raw Postgres error)
+      //   `Budget.categoryid`       -> ON DELETE CASCADE (the budgets disappear silently)
+      // Counting only `Transaction` let a category referenced by a budget alone pass the
+      // guard, be deleted with a 200 and take its budgets down without a word. Count both,
+      // always scoped to the authenticated user, and refuse naming what blocks: an explicit
+      // rejection the user can act on beats a leaked constraint or a silent cascade.
+      // Migration 006 moves the Budget side to RESTRICT as a backstop at the DB level; the
+      // 23503 branch after the delete stays as the net under this guard.
+      const [transactions, budgets] = await Promise.all([
+        supabase
+          .from("Transaction")
+          .select("id", { count: "exact", head: true })
+          .eq("userid", req.user.id)
+          .eq("category_id", req.params.id),
+        supabase
+          .from("Budget")
+          .select("id", { count: "exact", head: true })
+          .eq("userid", req.user.id)
+          .eq("categoryid", req.params.id),
+      ]);
 
       // No count means we cannot know whether the category is in use, so nothing is
       // deleted either way. Same error shape as the rest of this router.
-      if (countError) return res.status(400).json({ error: countError.message });
+      if (transactions.error) {
+        return res.status(400).json({ error: transactions.error.message });
+      }
+      if (budgets.error) {
+        return res.status(400).json({ error: budgets.error.message });
+      }
 
-      if (count > 0) {
+      const transactionCount = transactions.count ?? 0;
+      const budgetCount = budgets.count ?? 0;
+
+      if (transactionCount > 0 || budgetCount > 0) {
+        const blockers = [];
+        if (transactionCount > 0) {
+          blockers.push(
+            `${transactionCount} transaction${transactionCount === 1 ? "" : "s"}`
+          );
+        }
+        if (budgetCount > 0) {
+          blockers.push(`${budgetCount} budget${budgetCount === 1 ? "" : "s"}`);
+        }
+
         return res.status(409).json({
-          error: `Category is in use by ${count} transaction${
-            count === 1 ? "" : "s"
-          }; reassign or remove them first`,
+          error: `Category is in use by ${blockers.join(
+            " and "
+          )}; reassign or remove them first`,
           code: "CATEGORY_IN_USE",
-          transactionCount: count,
+          transactionCount,
+          budgetCount,
         });
       }
 
@@ -145,9 +175,10 @@ export const createCategoryRouter = ({
         .eq("userid", req.user.id);
 
       if (error) {
-        // 23503 = foreign key violation: something the count above does not cover
-        // (another table, or rows written between the count and the delete). Still a
-        // conflict for the user, still not a raw database message.
+        // 23503 = foreign key violation: something the counts above do not cover (a table
+        // added later, or rows written between the count and the delete). After migration
+        // 006 this is also what a `Budget` reference raises if the guard were ever skipped.
+        // Still a conflict for the user, still not a raw database message.
         if (error.code === "23503") {
           return res.status(409).json({
             error:

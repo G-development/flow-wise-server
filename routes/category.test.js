@@ -13,22 +13,32 @@ const { createCategoryRouter } = await import("./category.js");
 const USER_ID = "11111111-1111-1111-1111-111111111111";
 const OTHER_USER_ID = "22222222-2222-2222-2222-222222222222";
 
+/**
+ * Le due query di guardia, nell'ordine in cui la route le emette: una categoria e' in
+ * uso se la referenzia almeno una `Transaction` **o** un `Budget`. Un assert sulla
+ * sequenza esatta dice anche che la delete non e' stata tentata.
+ */
+const GUARD_CALLS = ["Transaction:select", "Budget:select"];
+
 const matches = (row, filters) =>
   filters.every(({ column, value }) => String(row[column]) === String(value));
 
 /**
  * Fake Supabase client: chainable query builder backed by in-memory arrays, plus a
- * call log. It emulates only what the route needs (a counted `head` select and a
- * filtered delete); `deleteError` fails the delete the way the real foreign key
- * does, `countError` fails the count `select` the way an unreachable database does.
+ * call log. It emulates only what the route needs (a counted `head` select on
+ * `Transaction` and on `Budget`, and a filtered delete); `deleteError` fails the
+ * delete the way the real foreign key does, `countError` fails any count and
+ * `countErrors` fails the count of one table only.
  */
 const createFakeSupabase = ({
   categories = [],
   transactions = [],
+  budgets = [],
   deleteError = null,
   countError = null,
+  countErrors = {},
 } = {}) => {
-  const store = { Category: categories, Transaction: transactions };
+  const store = { Category: categories, Transaction: transactions, Budget: budgets };
   const calls = [];
 
   const execute = (state) => {
@@ -36,7 +46,8 @@ const createFakeSupabase = ({
     const matched = rows.filter((row) => matches(row, state.filters));
 
     if (state.op === "select") {
-      if (countError) return { data: null, error: countError, count: null };
+      const failure = countErrors[state.table] ?? countError;
+      if (failure) return { data: null, error: failure, count: null };
 
       return {
         data: state.options?.head === true ? null : matched,
@@ -129,8 +140,10 @@ test("cancellare una categoria in uso e' rifiutato con un messaggio esplicito", 
   assert.equal(status, 409);
   assert.equal(body.code, "CATEGORY_IN_USE");
   assert.equal(body.transactionCount, 3);
+  assert.equal(body.budgetCount, 0);
   assert.match(body.error, /in use by 3 transactions/i);
   assert.match(body.error, /reassign or remove/i);
+  assert.doesNotMatch(body.error, /0 budgets/);
 
   // The category and its transactions survive the refused delete.
   assert.equal(fake.store.Category.length, 1);
@@ -139,9 +152,10 @@ test("cancellare una categoria in uso e' rifiutato con un messaggio esplicito", 
 
   // The refusal comes from the guard, not from a leaked database constraint: the
   // delete was never attempted, so no raw Postgres message can reach the client.
-  assert.equal(fake.calls.length, 1);
-  assert.equal(fake.calls[0].table, "Transaction");
-  assert.equal(fake.calls[0].op, "select");
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
   assert.doesNotMatch(body.error, /foreign key|violates|constraint/i);
 });
 
@@ -187,7 +201,7 @@ test("una categoria non in uso si cancella normalmente", async () => {
   // Guard first, delete second.
   assert.deepEqual(
     fake.calls.map((call) => `${call.table}:${call.op}`),
-    ["Transaction:select", "Category:delete"]
+    [...GUARD_CALLS, "Category:delete"]
   );
 });
 
@@ -236,13 +250,113 @@ test("se il conteggio fallisce la categoria non viene cancellata", async () => {
   assert.equal(body.error, "failed to fetch");
   assert.equal(body.code, undefined);
 
-  // No delete was attempted: the only request is the count itself.
-  assert.equal(fake.calls.length, 1);
-  assert.equal(fake.calls[0].table, "Transaction");
-  assert.equal(fake.calls[0].op, "select");
+  // No delete was attempted: only the two guard counts, both failing on the same error.
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
 
   // The category survives.
   assert.equal(fake.store.Category.length, 1);
   assert.equal(fake.store.Category[0].id, 7);
   assert.equal(fake.store.Transaction.length, 1);
+});
+
+// --- Ramo Budget ---------------------------------------------------------------
+// `Budget_categoryid_fkey` e' ON DELETE CASCADE: una categoria referenziata SOLO da un
+// budget passava il guard (che contava solo `Transaction`), veniva cancellata con un 200
+// e si portava via i budget senza dire nulla. Questi test bloccano quella regressione.
+// (Migrazione 006: la FK passa a RESTRICT come rete sotto al guard.)
+
+test("una categoria referenziata solo da un budget non si cancella in silenzio", async () => {
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    budgets: [{ id: 1, userid: USER_ID, categoryid: 7 }],
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(
+    status,
+    409,
+    "il guard deve rifiutare anche il solo riferimento da Budget"
+  );
+  assert.equal(body.code, "CATEGORY_IN_USE");
+  assert.equal(body.transactionCount, 0);
+  assert.equal(body.budgetCount, 1);
+  assert.match(body.error, /in use by 1 budget;/i);
+  assert.doesNotMatch(body.error, /0 transactions|foreign key|violates|constraint/i);
+
+  // Il budget e' ancora li': nessun CASCADE silenzioso.
+  assert.equal(fake.store.Budget.length, 1);
+  assert.equal(fake.store.Budget[0].id, 1);
+  assert.equal(fake.store.Category.length, 1);
+
+  // La delete non e' mai stata tentata: il rifiuto viene dal guard, non dal DB.
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
+});
+
+test("il rifiuto nomina transazioni e budget quando bloccano entrambi", async () => {
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    transactions: [
+      { id: 1, userid: USER_ID, category_id: 7 },
+      { id: 2, userid: USER_ID, category_id: 7 },
+      { id: 3, userid: USER_ID, category_id: 7 },
+    ],
+    budgets: [
+      { id: 1, userid: USER_ID, categoryid: 7 },
+      { id: 2, userid: USER_ID, categoryid: 7 },
+    ],
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 409);
+  assert.equal(body.transactionCount, 3);
+  assert.equal(body.budgetCount, 2);
+  assert.match(body.error, /in use by 3 transactions and 2 budgets/i);
+  assert.equal(fake.store.Budget.length, 2);
+});
+
+test("il count dei budget e' filtrato per utente", async () => {
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    // Budget di un altro utente sulla stessa categoria: non deve bloccare la delete.
+    budgets: [{ id: 1, userid: OTHER_USER_ID, categoryid: 7 }],
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 200);
+  assert.equal(body.message, "Category deleted successfully");
+  assert.deepEqual(fake.store.Category, []);
+  assert.equal(fake.store.Budget.length, 1, "il budget altrui non viene toccato");
+
+  // Il filtro per userid e' davvero nella query, non solo nel fake.
+  const budgetQuery = fake.calls.find((call) => call.table === "Budget");
+  assert.deepEqual(budgetQuery.filters, [
+    { column: "userid", value: USER_ID },
+    { column: "categoryid", value: "7" },
+  ]);
+});
+
+test("un errore nel count dei budget non cancella nulla", async () => {
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    countErrors: { Budget: { code: "XX000", message: "budget count unavailable" } },
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 400);
+  assert.equal(body.error, "budget count unavailable");
+  assert.equal(fake.store.Category.length, 1, "senza count non si cancella");
+  assert.deepEqual(
+    fake.calls.map((call) => `${call.table}:${call.op}`),
+    GUARD_CALLS
+  );
 });
