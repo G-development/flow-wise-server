@@ -416,6 +416,14 @@ export const startFakeSupabase = async ({
       const rows = store[table];
       const matched = applyFilters(rows, url.searchParams);
 
+      if (req.method === "HEAD") {
+        res.writeHead(200, {
+          "Content-Range": `*/${matched.length}`,
+        });
+        res.end();
+        return;
+      }
+
       if (req.method === "GET") {
         const ordered = applyOrder(matched, url.searchParams.get("order"));
         const total = ordered.length;

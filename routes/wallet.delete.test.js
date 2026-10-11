@@ -47,7 +47,7 @@ const supabaseFacade = {
 };
 
 mock.module("../config/supabaseClient.js", {
-  exports: { supabase: supabaseFacade },
+  namedExports: { supabase: supabaseFacade },
 });
 
 const express = (await import("express")).default;

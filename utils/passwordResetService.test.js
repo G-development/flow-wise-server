@@ -201,15 +201,13 @@ const mailerFake = createFakeMailer();
 
 // Sostituzione delle dipendenze esterne PRIMA di importare il modulo.
 mock.module("@supabase/supabase-js", {
-  exports: { createClient: () => supabaseFake.client },
+  namedExports: { createClient: () => supabaseFake.client },
 });
 mock.module("nodemailer", {
-  exports: {
-    default: {
-      createTransport: (config) => {
-        mailerFake.state.transportConfigs.push(config);
-        return mailerFake.transporter;
-      },
+  defaultExport: {
+    createTransport: (config) => {
+      mailerFake.state.transportConfigs.push(config);
+      return mailerFake.transporter;
     },
   },
 });
