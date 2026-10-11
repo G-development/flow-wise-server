@@ -11,6 +11,7 @@ const express = (await import("express")).default;
 const { createCategoryRouter } = await import("./category.js");
 
 const USER_ID = "11111111-1111-1111-1111-111111111111";
+const OTHER_USER_ID = "22222222-2222-2222-2222-222222222222";
 
 const matches = (row, filters) =>
   filters.every(({ column, value }) => String(row[column]) === String(value));
@@ -18,13 +19,14 @@ const matches = (row, filters) =>
 /**
  * Fake Supabase client: chainable query builder backed by in-memory arrays, plus a
  * call log. It emulates only what the route needs (a counted `head` select and a
- * filtered delete) and can be told to fail the delete the way the real foreign key
- * does.
+ * filtered delete); `deleteError` fails the delete the way the real foreign key
+ * does, `countError` fails the count `select` the way an unreachable database does.
  */
 const createFakeSupabase = ({
   categories = [],
   transactions = [],
   deleteError = null,
+  countError = null,
 } = {}) => {
   const store = { Category: categories, Transaction: transactions };
   const calls = [];
@@ -34,6 +36,8 @@ const createFakeSupabase = ({
     const matched = rows.filter((row) => matches(row, state.filters));
 
     if (state.op === "select") {
+      if (countError) return { data: null, error: countError, count: null };
+
       return {
         data: state.options?.head === true ? null : matched,
         error: null,
@@ -142,17 +146,28 @@ test("cancellare una categoria in uso e' rifiutato con un messaggio esplicito", 
 });
 
 test("il rifiuto conta le sole transazioni dell'utente autenticato", async () => {
+  // A transaction of another user points at the same category: the count must
+  // ignore it. Without it the fixture has a single owner and dropping the
+  // `userid` filter would not change the result, so the test would pass while
+  // asserting nothing.
   const fake = createFakeSupabase({
     categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
-    transactions: [{ id: 1, userid: USER_ID, category_id: 7 }],
+    transactions: [
+      { id: 1, userid: USER_ID, category_id: 7 },
+      { id: 2, userid: OTHER_USER_ID, category_id: 7 },
+    ],
   });
 
   const { status, body } = await deleteCategory(fake, "/category/7");
 
   assert.equal(status, 409);
-  assert.equal(body.transactionCount, 1);
+  assert.equal(body.transactionCount, 1, "conta solo la transazione dell'utente");
   assert.doesNotMatch(body.error, /1 transactions/);
   assert.match(body.error, /1 transaction;/);
+
+  // Nothing is deleted, the foreign user's transaction included.
+  assert.equal(fake.store.Category.length, 1);
+  assert.equal(fake.store.Transaction.length, 2);
 });
 
 test("una categoria non in uso si cancella normalmente", async () => {
@@ -203,4 +218,31 @@ test("la categoria di un altro utente non viene cancellata", async () => {
 
   assert.equal(status, 200);
   assert.equal(fake.store.Category.length, 1, "la delete e' filtrata per userid");
+});
+
+test("se il conteggio fallisce la categoria non viene cancellata", async () => {
+  // Without a count we cannot tell whether the category is in use, so the safe
+  // outcome is not to delete at all: this is the branch that protects the data
+  // when the database is unreachable, not just the happy path.
+  const fake = createFakeSupabase({
+    categories: [{ id: 7, userid: USER_ID, name: "Spesa" }],
+    transactions: [{ id: 1, userid: USER_ID, category_id: 7 }],
+    countError: { code: "PGRST000", message: "failed to fetch" },
+  });
+
+  const { status, body } = await deleteCategory(fake, "/category/7");
+
+  assert.equal(status, 400);
+  assert.equal(body.error, "failed to fetch");
+  assert.equal(body.code, undefined);
+
+  // No delete was attempted: the only request is the count itself.
+  assert.equal(fake.calls.length, 1);
+  assert.equal(fake.calls[0].table, "Transaction");
+  assert.equal(fake.calls[0].op, "select");
+
+  // The category survives.
+  assert.equal(fake.store.Category.length, 1);
+  assert.equal(fake.store.Category[0].id, 7);
+  assert.equal(fake.store.Transaction.length, 1);
 });
