@@ -79,8 +79,10 @@ Tutte le route (tranne `/bank/mock-auth`, `/bank/callback` e scheduler) richiedo
 2. Le transazioni vengono filtrate per periodo (default: dal 1° del mese corrente a oggi).
 3. L'utente seleziona una o più transazioni (selezione singola o massiva con checkbox header).
 4. Apre il modale di importazione ([ImportTransactionDialog.tsx](../flow-wise-client/app/settings/yourbank/ImportTransactionDialog.tsx)).
-5. Seleziona il **Wallet di destinazione** e la **Categoria**.
-6. Il client invia la richiesta a `POST /bank/import`:
-   - Crea i record nella tabella `Transaction` di Flow Wise (`amount > 0` &rarr; Entrata `"I"`, `amount < 0` &rarr; Spesa `"E"`).
+5. Sceglie il **Wallet di destinazione**. Per la **Categoria** il modale distingue due casi:
+   - *singolo movimento*: la categoria si seleziona a mano ed è filtrata sul tipo atteso dal segno dell'importo;
+   - *import massivo*: l'**auto-suggerimento** è attivo di default e propone a ogni movimento una categoria attiva del tipo corretto, scelta confrontando descrizione e controparte con il nome della categoria. I movimenti vengono raggruppati per categoria suggerita e il client ripete la chiamata una volta per gruppo. Disattivando l'auto-suggerimento si indica un'unica categoria per tutti i movimenti selezionati.
+6. Il client invia la richiesta a `POST /bank/import` con `{ transactionIds, walletId, categoryId }`:
+   - Crea i record nella tabella `Transaction` di Flow Wise. Il tipo è `defaultType` se il campo opzionale è presente nella richiesta, altrimenti è deciso dal segno dell'importo (`amount >= 0` &rarr; Entrata `"I"`, `amount < 0` &rarr; Spesa `"E"`); l'importo viene salvato in valore assoluto. Il client attuale non invia `defaultType`, quindi per l'import da interfaccia vale sempre il segno.
    - Aggiorna lo stato in `bank_transactions` a `"imported"`.
    - Invalida la cache TanStack Query per aggiornare istantaneamente Dashboard, Wallet ed elenchi Entrate/Spese.

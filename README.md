@@ -11,7 +11,7 @@ server.js             bootstrap Express, CORS, statici e route
 config/               client Supabase, auth e Cloudinary
 routes/               API HTTP
 agents/               integrazioni e logica dell'agente AI
-utils/                validazione, servizi bancari e reset password
+utils/                validazione, servizi bancari, saldo wallet e reset password
 migrations/           migrazioni SQL presenti nel repository
 public/               pagina informativa degli endpoint
 ```
@@ -78,6 +78,32 @@ Tutte le route principali sono montate in `server.js`.
 Le route protette verificano `Authorization: Bearer <supabase_access_token>`
 tramite `requireAuth`. L'elenco dettagliato delle route bancarie e le migrazioni
 sono in [BANK_INTEGRATION.md](./BANK_INTEGRATION.md).
+
+`GET /wallet` merita una precisazione: restituisce i wallet con il `balance`
+**derivato dalle transazioni** a ogni lettura (`utils/walletService.js`, che
+pagina le transazioni perché PostgREST tronca a 1000 righe e somma in centesimi
+in assenza di aggregati SQL). La colonna `Wallet.balance` esiste ancora e viene
+scritta a `0` alla creazione, ma solo per compatibilità e non è più la fonte del
+dato mostrato; di conseguenza anche `PUT /wallet/:id` non accetta `balance` e
+aggiorna solo `name` e `is_default`.
+
+## Push gate
+
+Il repo versiona un hook `pre-push` in `.githooks/pre-push`, attivo quando
+`git config core.hooksPath .githooks` è impostato. L'hook **rifiuta il push**
+finché non esiste un'approvazione per lo **SHA esatto** del commit corrente; il
+file di approvazione vive in `.git/` (non tracciato) e si crea con:
+
+```bash
+printf '%s' "$(git rev-parse HEAD)" > "$(git rev-parse --git-dir)/hermes-push-approval"
+```
+
+L'approvazione vale per un solo commit: appena aggiungi un commit il gate si
+richiude da solo. Superato il gate, l'hook controlla la sintassi dei file
+JavaScript con `node --check` prima di lasciar passare il push (il server non ha
+un typecheck). L'uscita consapevole, che salta gate e check, è
+`HERMES_PUSH_APPROVED=1 git push`. Lo stesso meccanismo vale per il repo del
+client, che esegue `npx tsc --noEmit` e `npm run build`.
 
 ## Agente di analytics delle spese
 
