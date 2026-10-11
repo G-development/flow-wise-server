@@ -4,6 +4,7 @@ import { requireAuth } from "../config/auth-middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../utils/validate.js";
 import { transactionCreateSchema, transactionUpdateSchema } from "../utils/schemas.js";
+import { fetchAllRows, toListResponse } from "../utils/paginatedSelect.js";
 
 const router = express.Router();
 
@@ -12,14 +13,23 @@ router.get(
   "/all",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { data, error } = await supabase
-      .from("Transaction")
-      .select("*")
-      .eq("userid", req.user.id)
-      .order("date", { ascending: false });
+    let result;
+    try {
+      result = await fetchAllRows(() =>
+        supabase
+          .from("Transaction")
+          .select("*", { count: "exact" })
+          .eq("userid", req.user.id)
+          .order("date", { ascending: false })
+          // Tiebreaker univoco: senza di esso le pagine possono ripetersi o saltare righe.
+          .order("id", { ascending: false })
+      );
+    } catch (err) {
+      // Stesso esito di prima dell'helper (che lancia sul primo errore PostgREST).
+      return res.status(400).json({ error: err.message });
+    }
 
-    if (error) return res.status(400).json({ error: error.message });
-    res.status(200).json(data);
+    res.status(200).json(toListResponse(result));
   })
 );
 
