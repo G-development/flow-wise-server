@@ -86,6 +86,17 @@
       font-size: 1.2rem;
     }
 
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--muted-foreground);
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -172,6 +183,23 @@
       font-size: 0.9rem;
     }
 
+    .endpoint-auth {
+      margin-left: auto;
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      background: var(--secondary);
+      color: var(--muted-foreground);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .auth-public { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+    .auth-bearer { background: #dbeafe; border-color: #bfdbfe; color: #1e3a8a; }
+    .auth-secret { background: #ffedd5; border-color: #fed7aa; color: #7c2d12; }
+
     .endpoint-description {
       color: var(--muted-foreground);
       font-size: 0.85rem;
@@ -245,6 +273,10 @@
         gap: 0.5rem;
       }
 
+      .endpoint-auth {
+        margin-left: 0;
+      }
+
       .endpoint-description {
         margin-left: 0;
       }
@@ -264,6 +296,14 @@
       <div class="status-badge">
         API Status: Online
       </div>
+      <div class="legend">
+        <span class="endpoint-auth auth-public">PUBLIC</span>
+        <span>nessuna credenziale</span>
+        <span class="endpoint-auth auth-bearer">BEARER</span>
+        <span><code>Authorization: Bearer &lt;supabase token&gt;</code></span>
+        <span class="endpoint-auth auth-secret">SECRET</span>
+        <span>header <code>x-scheduler-secret</code></span>
+      </div>
     </header>
 
     <div class="grid">
@@ -280,6 +320,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-POST">POST</span>
               <code class="endpoint-path">/users/register</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
             </div>
             <div class="endpoint-description">Register a new user account</div>
           </li>
@@ -287,6 +328,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/users/profile</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get current user profile information</div>
           </li>
@@ -294,8 +336,33 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-POST">POST</span>
               <code class="endpoint-path">/users/profile/photo</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Upload and update user avatar</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/auth/forgot-password</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
+            </div>
+            <div class="endpoint-description">Request a password reset email; answers <code>502</code> when the email cannot be sent</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/auth/verify-reset-token</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
+            </div>
+            <div class="endpoint-description">Check that a reset token is still valid and return its email; <code>401</code> otherwise</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/auth/reset-password</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
+            </div>
+            <div class="endpoint-description">Set a new password using a valid token</div>
           </li>
         </ul>
       </div>
@@ -312,14 +379,24 @@
           <li class="endpoint-item">
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
-              <code class="endpoint-path">/transaction</code>
+              <code class="endpoint-path">/transaction/all</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get all transactions with optional date filters</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/transaction/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Get a single transaction of the authenticated user</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
               <span class="endpoint-method method-POST">POST</span>
               <code class="endpoint-path">/transaction</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Create a new transaction</div>
           </li>
@@ -327,6 +404,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-PUT">PUT</span>
               <code class="endpoint-path">/transaction/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Update an existing transaction</div>
           </li>
@@ -334,6 +412,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-DELETE">DELETE</span>
               <code class="endpoint-path">/transaction/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Delete a transaction</div>
           </li>
@@ -353,6 +432,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/income/all</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get all income transactions</div>
           </li>
@@ -360,6 +440,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/expense/all</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get all expense transactions</div>
           </li>
@@ -379,6 +460,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/category</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get all transaction categories</div>
           </li>
@@ -386,15 +468,209 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/category/active</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get only active categories</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
-              <code class="endpoint-path">/wallet</code>
+              <code class="endpoint-path">/category/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Get all user wallets</div>
+            <div class="endpoint-description">Get a single category</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/category</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Create a category (<code>name</code>, <code>type</code> <code>"I"</code>/<code>"E"</code>)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/category/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Update a category (<code>name</code>, <code>type</code>, <code>active</code>)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/category/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Delete a category; <code>409</code> <code>CATEGORY_IN_USE</code> when transactions or budgets reference it</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/wallet</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Get all user wallets, with the balance derived from transactions</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/wallet</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Create a wallet; <code>409</code> past the three-wallet limit (database invariant)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/wallet/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Update <code>name</code>, <code>is_default</code> or <code>opening_balance_cents</code>; the final balance is never writable</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/wallet/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Delete a wallet; <code>409</code> <code>WALLET_IN_USE</code> when transactions or budgets reference it</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">📥</span>
+            CSV Import
+          </h2>
+          <p class="card-description">Bulk import of transactions from a CSV document</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/import/csv</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Import rows from a CSV body (<code>{ csv }</code>); required columns <code>Type, Amount, Date, Category, Description</code></div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">🏦</span>
+            Bank Integration
+          </h2>
+          <p class="card-description">GoCardless Open Banking (PSD2) and the sandbox fallback</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/config</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Setup status of the integration: mock or live mode, and what is missing</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/institutions</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Banks supported by the configured provider</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/authorize?bank=&lt;id&gt;</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Authorization URL that starts the PSD2 consent flow; <code>503</code> when the integration is not configured</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/mock-auth?state=&lt;...&gt;</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
+            </div>
+            <div class="endpoint-description">Sandbox consent page; answers <code>403</code> unless the mock is explicitly enabled</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/callback</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
+            </div>
+            <div class="endpoint-description">OAuth redirect target: verifies the state, saves the connection and runs the first sync</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/connections</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Bank connections of the authenticated user, with the last sync time</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/status?bank=&lt;id&gt;</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Connection state for one bank</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/bank/sync?bank=&lt;id&gt;</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Sync the movements of one connected bank</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/transactions?bank=&amp;startDate=&amp;endDate=</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Synced movements; envelope <code>{ transactions, count, truncated, total }</code></div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/bank/import</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Move selected bank movements into Flow Wise (<code>{ transactionIds, walletId, categoryId, defaultType? }</code>)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/bank/disconnect?bank=&lt;id&gt;</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Disconnect a bank and drop its stored tokens</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/bank/scheduler/status</code>
+              <span class="endpoint-auth auth-secret">SECRET</span>
+            </div>
+            <div class="endpoint-description">State of the periodic sync scheduler; <code>503</code> without <code>BANK_SCHEDULER_SECRET</code></div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/bank/scheduler/sync-now</code>
+              <span class="endpoint-auth auth-secret">SECRET</span>
+            </div>
+            <div class="endpoint-description">Force a global sync for every connected user</div>
           </li>
         </ul>
       </div>
@@ -412,6 +688,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/dashboard-layout</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Get current dashboard layout</div>
           </li>
@@ -419,8 +696,29 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-PUT">PUT</span>
               <code class="endpoint-path">/dashboard-layout</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
             <div class="endpoint-description">Update dashboard layout configuration</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="section-icon">🤖</span>
+            AI Analytics
+          </h2>
+          <p class="card-description">One-shot analysis of the user's expenses</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/agents/analytics</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Analyse expenses for a period (<code>{ question, startDate, endDate }</code>); the answer declares how many movements were covered. <code>503</code>/<code>504</code>/<code>502</code> on provider errors, no conversation memory</div>
           </li>
         </ul>
       </div>
@@ -437,7 +735,16 @@
           <li class="endpoint-item">
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
+            </div>
+            <div class="endpoint-description">This page: the API index of available endpoints</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/hello</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
             </div>
             <div class="endpoint-description">Simple hello world endpoint for testing</div>
           </li>
@@ -445,6 +752,7 @@
             <div class="endpoint-header">
               <span class="endpoint-method method-GET">GET</span>
               <code class="endpoint-path">/healthz</code>
+              <span class="endpoint-auth auth-public">PUBLIC</span>
             </div>
             <div class="endpoint-description">Health check endpoint for monitoring</div>
           </li>
