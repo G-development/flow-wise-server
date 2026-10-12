@@ -64,13 +64,13 @@ router.post(
       .from("Transaction")
       .insert({
         userid: req.user.id,
-        description: description,
-        note: note,
-        amount: amount,
-        date: date,
-        type: type,
-        wallet_id: wallet_id,
-        category_id: category_id,
+        description,
+        note,
+        amount,
+        date,
+        type,
+        wallet_id,
+        category_id,
       })
       .select()
       .single();

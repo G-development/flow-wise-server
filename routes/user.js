@@ -103,11 +103,9 @@ router.post("/register", createAccountLimiter, validate(userRegisterSchema), asy
 // GET /users/profile
 router.get("/profile", requireAuth, async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) return res.status(401).json({ message: "Missing token" });
-
-    // Recupera l'utente loggato dall'header (o dal middleware requireAuth)
-    const userId = req.user?.id; // assumendo che requireAuth imposti req.user
+    // `requireAuth` ha già verificato il token e messo l'utente in `req.user`: rileggere
+    // l'header qui era codice morto (la richiesta senza token non arriva a questo handler).
+    const userId = req.user?.id;
     if (!userId)
       return res.status(401).json({ message: "User not authenticated" });
 
@@ -133,12 +131,10 @@ router.post(
   upload.single("image"),
   async (req, res) => {
     try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser(token);
-      if (error) return res.status(401).json({ message: error.message });
+      // `req.user` è già l'utente verificato da `requireAuth`: la vecchia
+      // `supabase.auth.getUser(token)` rileggeva lo stesso token con una seconda chiamata
+      // di rete per richiesta, senza aggiungere nulla al controllo d'accesso.
+      const userId = req.user.id;
 
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -155,7 +151,7 @@ router.post(
           await supabase
             .from("Profile")
             .update({ avatar_url: result.secure_url })
-            .eq("id", user.id);
+            .eq("id", userId);
 
           res.json({
             message: "Profile picture updated",

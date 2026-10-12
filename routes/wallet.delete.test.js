@@ -88,7 +88,9 @@ const matches = (row, filters) =>
  * Chainable query builder over in-memory arrays, with a call log. It emulates only what
  * this route needs: a counted `head` select on `Transaction` and `Budget`, a filtered
  * delete on `Wallet`, and `auth.getUser`. `deleteErrors` fails the delete the way the
- * real foreign key does; `countErrors` fails the count of one table only.
+ * real foreign key does; `countErrors` fails the count of one table only; `nullCounts`
+ * leaves a count of one table `null` with **no** error, the way a PostgREST response
+ * without a `Content-Range` header reaches `@supabase/postgrest-js`.
  */
 const createFakeSupabase = ({
   wallets = [],
@@ -96,6 +98,7 @@ const createFakeSupabase = ({
   budgets = [],
   deleteErrors = {},
   countErrors = {},
+  nullCounts = {},
 } = {}) => {
   const store = { Wallet: wallets, Transaction: transactions, Budget: budgets };
   const calls = [];
@@ -107,6 +110,10 @@ const createFakeSupabase = ({
 
     if (failure && (state.op === "select" || state.op === "delete"))
       return { data: null, error: failure, count: null };
+
+    // Un conteggio senza errore e senza numero: `count: null` dal provider.
+    if (state.op === "select" && nullCounts[state.table])
+      return { data: null, error: null, count: null };
 
     if (state.op === "select") {
       return {
@@ -375,6 +382,34 @@ test("se il conteggio fallisce il wallet non viene cancellato", async () => {
     assert.equal(body.code, undefined);
     assert.ok(walletRow(activeFake), `il wallet sopravvive al count ${table} fallito`);
     assert.equal(deleteCalls(activeFake).length, 0);
+  }
+});
+
+test("un conteggio null (nessun errore) non equivale a 'nessun riferimento'", async () => {
+  // `count: "exact"` con `head: true`: il numero arriva dall'header `Content-Range`, e un
+  // provider che non lo restituisce lascia `count: null` **senza errore**. Trattarlo come
+  // zero (`?? 0`) cancellerebbe il wallet con i suoi movimenti o budget ancora appesi.
+  // Stessa regola del guard di `DELETE /category/:id`.
+  for (const table of ["Transaction", "Budget"]) {
+    activeFake = createFakeSupabase({
+      wallets: [{ id: WALLET_ID, userid: USER_ID, name: "Main" }],
+      transactions: [{ id: 1, userid: USER_ID, wallet_id: WALLET_ID }],
+      budgets: [{ id: 1, userid: USER_ID, walletid: WALLET_ID }],
+      nullCounts: { [table]: true },
+    });
+
+    const { status, body } = await request("DELETE", `/wallet/${WALLET_ID}`);
+
+    assert.equal(status, 400, `count ${table} null`);
+    assert.match(body.error, /cannot verify whether the wallet is in use/i);
+    assert.match(body.error, new RegExp(`${table} count unavailable`));
+    assert.equal(body.code, undefined);
+    assert.ok(walletRow(activeFake), `il wallet sopravvive al count ${table} null`);
+    assert.equal(
+      deleteCalls(activeFake).length,
+      0,
+      "nessuna delete tentata senza un conteggio valido"
+    );
   }
 });
 

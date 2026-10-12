@@ -225,8 +225,27 @@ router.delete(
       return res.status(400).json({ error: budgets.error.message });
     }
 
-    const transactionCount = transactions.count ?? 0;
-    const budgetCount = budgets.count ?? 0;
+    const transactionCount = transactions.count;
+    const budgetCount = budgets.count;
+
+    // `count: "exact"` can come back null with no error at all: @supabase/postgrest-js
+    // reads the count from the `Content-Range` header, so a provider that omits it
+    // yields `count: null`. That is the same blind spot as a failed count — we cannot
+    // know whether the wallet is in use — and must be refused the same way: `?? 0`
+    // would turn "unknown" into "free" and let the delete take the referencing rows
+    // down silently, the exact failure mode this guard exists to stop.
+    // Same contract as the `DELETE /category/:id` guard.
+    if (transactionCount == null || budgetCount == null) {
+      const unknown = [
+        ...(transactionCount == null ? ["Transaction"] : []),
+        ...(budgetCount == null ? ["Budget"] : []),
+      ];
+      return res.status(400).json({
+        error: `cannot verify whether the wallet is in use (${unknown.join(
+          " and "
+        )} count unavailable)`,
+      });
+    }
 
     if (transactionCount > 0 || budgetCount > 0) {
       const blockers = [];
