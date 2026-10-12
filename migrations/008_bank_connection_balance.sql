@@ -1,0 +1,8 @@
+ALTER TABLE bank_connections
+  ADD COLUMN IF NOT EXISTS balance_amount NUMERIC(15, 2),
+  ADD COLUMN IF NOT EXISTS balance_currency VARCHAR(3),
+  ADD COLUMN IF NOT EXISTS balance_type VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS balance_reference_date TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS balance_provider_updated_at TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS balance_fetched_at TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS balance_raw_data JSONB;

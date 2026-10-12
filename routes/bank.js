@@ -445,6 +445,16 @@ router.get(
         bank: conn.bank_id,
         account: conn.account_id,
         lastSynced: conn.last_synced,
+        balance: conn.balance_amount == null
+          ? null
+          : {
+              amount: Number(conn.balance_amount),
+              currency: conn.balance_currency,
+              type: conn.balance_type,
+              referenceDate: conn.balance_reference_date,
+              providerUpdatedAt: conn.balance_provider_updated_at,
+              fetchedAt: conn.balance_fetched_at,
+            },
       })),
     });
   })
@@ -468,6 +478,17 @@ router.get(
       bank,
       account: connection?.account_id ?? null,
       lastSynced: connection?.last_synced ?? null,
+      balance:
+        connection?.balance_amount == null
+          ? null
+          : {
+              amount: Number(connection.balance_amount),
+              currency: connection.balance_currency,
+              type: connection.balance_type,
+              referenceDate: connection.balance_reference_date,
+              providerUpdatedAt: connection.balance_provider_updated_at,
+              fetchedAt: connection.balance_fetched_at,
+            },
     });
   })
 );

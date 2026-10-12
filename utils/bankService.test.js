@@ -6,9 +6,12 @@ import assert from "node:assert/strict";
 process.env.SUPABASE_URL ||= "http://127.0.0.1:54321";
 process.env.SUPABASE_SERVICE_ROLE_KEY ||= "test-service-role-key";
 
-const { generateMockBankTransactions, isMockBankModeEnabled } = await import(
-  "./bankService.js"
-);
+const {
+  fetchAccountBalance,
+  generateMockBankTransactions,
+  isMockBankModeEnabled,
+  normalizeAccountBalance,
+} = await import("./bankService.js");
 
 const withEnv = (overrides, run) => {
   const previous = {};
@@ -99,4 +102,52 @@ test("bank e conto diversi producono external_id diversi", () => {
 
   assert.equal(a.some((id) => b.includes(id)), false);
   assert.equal(a.some((id) => c.includes(id)), false);
+});
+
+test("normalizeAccountBalance sceglie un saldo disponibile valido prima degli altri", () => {
+  const selected = normalizeAccountBalance([
+    {
+      balanceAmount: { amount: "10.00", currency: "EUR" },
+      balanceType: "closingBooked",
+      referenceDate: "2026-10-10",
+    },
+    {
+      balanceAmount: { amount: "25.50", currency: "eur" },
+      balanceType: "available",
+      referenceDate: "2026-10-11",
+      lastChangeDateTime: "2026-10-11T10:00:00Z",
+    },
+  ]);
+
+  assert.deepEqual(selected, {
+    amount: 25.5,
+    currency: "EUR",
+    type: "available",
+    referenceDate: "2026-10-11",
+    providerUpdatedAt: "2026-10-11T10:00:00Z",
+    rawData: {
+      balanceAmount: { amount: "25.50", currency: "eur" },
+      balanceType: "available",
+      referenceDate: "2026-10-11",
+      lastChangeDateTime: "2026-10-11T10:00:00Z",
+    },
+  });
+});
+
+test("normalizeAccountBalance ignora saldi senza importo valido", () => {
+  const selected = normalizeAccountBalance([
+    { balanceAmount: { amount: "not-a-number", currency: "EUR" }, balanceType: "available" },
+    { balanceAmount: { amount: "7.25", currency: "EUR" }, balanceType: "interimBooked" },
+  ]);
+
+  assert.equal(selected.amount, 7.25);
+  assert.equal(selected.type, "interimBooked");
+});
+
+test("fetchAccountBalance restituisce un saldo mock solo con mock esplicito", async () => {
+  const balance = await fetchAccountBalance("acc_mock", "mock_token", { mock: true });
+
+  assert.equal(balance.amount, 2450.75);
+  assert.equal(balance.currency, "EUR");
+  assert.equal(balance.type, "mock");
 });

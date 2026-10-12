@@ -544,6 +544,81 @@ export const generateMockBankTransactions = (bankId, accountId, count = 25) => {
  * nessun movimento finto viene mai restituito. Il mock e' disponibile solo con
  * `BANK_MOCK_ENABLED`/`BANK_PROVIDER=mock` oppure `options.mock === true`.
  */
+export const normalizeAccountBalance = (balances) => {
+  if (!Array.isArray(balances)) return null;
+
+  const priority = [
+    "available",
+    "current",
+    "interimAvailable",
+    "interimBooked",
+    "booked",
+    "closingBooked",
+  ];
+  const valid = balances
+    .map((balance, index) => ({
+      balance,
+      index,
+      amount: Number(balance?.balanceAmount?.amount),
+      type: String(balance?.balanceType || "").trim(),
+    }))
+    .filter(({ balance, amount }) =>
+      balance?.balanceAmount?.currency && Number.isFinite(amount)
+    );
+
+  if (valid.length === 0) return null;
+  valid.sort((a, b) => {
+    const aPriority = priority.indexOf(a.type);
+    const bPriority = priority.indexOf(b.type);
+    const normalizedAPriority = aPriority < 0 ? priority.length : aPriority;
+    const normalizedBPriority = bPriority < 0 ? priority.length : bPriority;
+    return normalizedAPriority - normalizedBPriority || a.index - b.index;
+  });
+
+  const selected = valid[0];
+  return {
+    amount: selected.amount,
+    currency: String(selected.balance.balanceAmount.currency).toUpperCase(),
+    type: selected.type || "unknown",
+    referenceDate: selected.balance.referenceDate || null,
+    providerUpdatedAt: selected.balance.lastChangeDateTime || null,
+    rawData: selected.balance,
+  };
+};
+
+export const fetchAccountBalance = async (accountId, accessToken, options = {}) => {
+  if (isMockBankModeEnabled(options)) {
+    return {
+      amount: 2450.75,
+      currency: "EUR",
+      type: "mock",
+      referenceDate: new Date().toISOString(),
+      providerUpdatedAt: null,
+      rawData: { balanceType: "mock", amount: 2450.75, currency: "EUR" },
+    };
+  }
+
+  if (
+    !accountId ||
+    accountId === "pending_account" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accountId)
+  ) {
+    return null;
+  }
+
+  const token = accessToken || (await getGoCardlessToken());
+  try {
+    const response = await axios.get(
+      `${GOCARDLESS_API_BASE}/accounts/${accountId}/balances/`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return normalizeAccountBalance(response.data?.balances);
+  } catch (error) {
+    const detail = error.response?.data?.detail || error.response?.data?.message || error.message;
+    throw new Error(`Errore nel recupero del saldo bancario: ${detail}`);
+  }
+};
+
 export const fetchTransactions = async (
   bankId,
   accessToken,
@@ -641,6 +716,16 @@ export const saveBankConnection = async (
     expiresAt.getSeconds() + Number(tokenData.expiresIn || 7776000)
   );
 
+  const { data: existing, error: existingError } = await supabase
+    .from("bank_connections")
+    .select(
+      "balance_amount, balance_currency, balance_type, balance_reference_date, balance_provider_updated_at, balance_fetched_at, balance_raw_data"
+    )
+    .eq("user_id", userId)
+    .eq("bank_id", bankId)
+    .maybeSingle();
+  if (existingError) throw new Error(`Failed to read bank connection: ${existingError.message}`);
+
   const { error } = await supabase.from("bank_connections").upsert(
     {
       user_id: userId,
@@ -650,6 +735,17 @@ export const saveBankConnection = async (
       refresh_token: encryptToken(tokenData.refreshToken),
       token_expires_at: expiresAt.toISOString(),
       last_synced: new Date().toISOString(),
+      ...(existing
+        ? {
+            balance_amount: existing.balance_amount,
+            balance_currency: existing.balance_currency,
+            balance_type: existing.balance_type,
+            balance_reference_date: existing.balance_reference_date,
+            balance_provider_updated_at: existing.balance_provider_updated_at,
+            balance_fetched_at: existing.balance_fetched_at,
+            balance_raw_data: existing.balance_raw_data,
+          }
+        : {}),
     },
     { onConflict: "user_id,bank_id" }
   );
@@ -770,6 +866,33 @@ export const syncBankTransactions = async (
       throw new Error(`Failed to sync transactions: ${result.error.message}`);
     }
     savedData = result.data ?? [];
+  }
+
+  try {
+    const balance = await fetchAccountBalance(accountId, accessToken, options);
+    if (balance) {
+      const fetchedAt = new Date().toISOString();
+      const { error: balanceError } = await supabase
+        .from("bank_connections")
+        .update({
+          balance_amount: balance.amount,
+          balance_currency: balance.currency,
+          balance_type: balance.type,
+          balance_reference_date: balance.referenceDate,
+          balance_provider_updated_at: balance.providerUpdatedAt,
+          balance_fetched_at: fetchedAt,
+          balance_raw_data: balance.rawData,
+        })
+        .eq("user_id", userId)
+        .eq("bank_id", bankId);
+      if (balanceError) {
+        console.warn(`Could not save bank balance for ${bankId}:`, balanceError.message);
+      }
+    }
+  } catch (error) {
+    // Il saldo e' informativo: un errore del relativo endpoint non deve bloccare
+    // la sincronizzazione dei movimenti né cancellare l'ultimo saldo riuscito.
+    console.warn(`Could not refresh bank balance for ${bankId}:`, error.message);
   }
 
   await supabase
