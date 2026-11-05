@@ -17,7 +17,7 @@ caricato c'è `/context` in sessione.
 
 | Cosa | Dove |
 | --- | --- |
-| Architettura, data model, limiti noti, stato, workflow multi-agente, push gate | skill **`flow-wise`** — caricala prima di lavorare |
+| Architettura, data model, limiti noti, stato, workflow multi-agente | skill **`flow-wise`** — caricala prima di lavorare |
 | Indice file-per-file (route, export, migrazioni) | `CODE_MAP.md` in questo repo |
 | Setup, variabili d'ambiente, panoramica route | `README.md` |
 | Route bancarie, modalità mock/live, migrazioni | `BANK_INTEGRATION.md` |
@@ -58,8 +58,8 @@ Mai `pkill -f "node server.js"`: combacia anche con il `npm run dev` di Gio e gl
 
 ## Guardrail
 
-- **Push gated**: `.githooks/pre-push` rifiuta il push finché non esiste un'approvazione per lo **SHA
-  esatto**. Autorizza Gio; l'agente non approva mai da solo. Un commit nuovo riapre il gate.
+- **Push solo con l'ok di Gio**: commit liberi, push mai senza il suo ok esplicito in conversazione.
+  `.githooks/pre-push` esegue i test e rifiuta il push se falliscono; non c'è più un'approvazione per SHA.
 - Il `balance` di un wallet è **derivato** dalle transazioni (`utils/walletService.js`, da
   `opening_balance_cents`). La colonna `Wallet.balance` è stata rimossa: non reintrodurla.
 - `public/index.html` è la pagina indice delle API (`GET /`): è scritta a mano e va tenuta allineata

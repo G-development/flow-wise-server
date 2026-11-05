@@ -120,24 +120,17 @@ restituite, `total` quello del range secondo il database, e `truncated: true`
 dichiara che le righe sono tagliate al tetto di paginazione: il client deve dirlo
 invece di presentare le somme come definitive.
 
-## Push gate
+## Controlli prima del push
 
 Il repo versiona un hook `pre-push` in `.githooks/pre-push`, attivo quando
-`git config core.hooksPath .githooks` è impostato. L'hook **rifiuta il push**
-finché non esiste un'approvazione per lo **SHA esatto** del commit corrente; il
-file di approvazione vive in `.git/` (non tracciato) e si crea con:
-
-```bash
-printf '%s' "$(git rev-parse HEAD)" > "$(git rev-parse --git-dir)/hermes-push-approval"
-```
-
-L'approvazione vale per un solo commit: appena aggiungi un commit il gate si
-richiude da solo. Superato il gate, l'hook esegue `npm test` (`node --test`, gli
-invarianti) e poi controlla la sintassi dei file JavaScript con `node --check`
-prima di lasciar passare il push (il server non ha un typecheck). L'uscita
-consapevole, che salta gate e check, è `HERMES_PUSH_APPROVED=1 git push`. Lo
-stesso meccanismo vale per il repo del client, il cui `npm test` esegue
+`git config core.hooksPath .githooks` è impostato. L'hook esegue `npm test`
+(`node --test`, gli invarianti) e poi controlla la sintassi dei file JavaScript con
+`node --check` (il server non ha un typecheck); se uno dei due fallisce, il push
+viene rifiutato. Lo stesso vale per il repo del client, il cui `npm test` esegue
 `node --test`, `npx tsc --noEmit` e `next build`.
+
+Non c'è un'approvazione per commit: il push lo decide Gio, e un agente lo fa solo
+dopo il suo ok esplicito.
 
 ## Agente di analytics delle spese
 
