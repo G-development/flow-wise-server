@@ -7,10 +7,13 @@ process.env.SUPABASE_URL ||= "http://127.0.0.1:54321";
 process.env.SUPABASE_SERVICE_ROLE_KEY ||= "test-service-role-key";
 
 const {
+  buildAppTransactionFromBank,
   fetchAccountBalance,
+  formatSyncedTransaction,
   generateMockBankTransactions,
   isMockBankModeEnabled,
   normalizeAccountBalance,
+  normalizeGoCardlessTransactions,
 } = await import("./bankService.js");
 
 const withEnv = (overrides, run) => {
@@ -150,4 +153,94 @@ test("fetchAccountBalance restituisce un saldo mock solo con mock esplicito", as
   assert.equal(balance.amount, 2450.75);
   assert.equal(balance.currency, "EUR");
   assert.equal(balance.type, "mock");
+});
+
+test("normalizeGoCardlessTransactions conserva booked e pending invece di fonderli", () => {
+  const txns = normalizeGoCardlessTransactions(
+    {
+      transactions: {
+        booked: [
+          {
+            transactionId: "B1",
+            bookingDate: "2026-11-01",
+            transactionAmount: { amount: "-12.50", currency: "EUR" },
+            remittanceInformationUnstructured: "Spesa",
+            creditorName: "Negozio",
+          },
+        ],
+        pending: [
+          {
+            transactionId: "P1",
+            valueDate: "2026-11-04",
+            transactionAmount: { amount: "-3.00", currency: "EUR" },
+          },
+        ],
+      },
+    },
+    "acc"
+  );
+
+  assert.deepEqual(
+    txns.map((t) => [t.transactionId, t.bookingStatus, t.amount]),
+    [
+      ["B1", "booked", -12.5],
+      ["P1", "pending", -3],
+    ]
+  );
+  assert.equal(txns[0].counterparty.name, "Negozio");
+});
+
+test("formatSyncedTransaction non scrive status (l'upsert non deve riportare a 'synced' gli importati)", () => {
+  const row = formatSyncedTransaction(
+    {
+      transactionId: "B1",
+      amount: -12.5,
+      bookingDate: "2026-11-01",
+      bookingStatus: "booked",
+      purpose: "Spesa",
+      counterparty: { name: "Negozio" },
+    },
+    { userId: "u1", bankId: "BANK", accountId: "acc" }
+  );
+
+  assert.equal("status" in row, false);
+  assert.equal(row.booking_status, "booked");
+  assert.equal(row.external_id, "B1");
+  assert.equal(row.counterparty, "Negozio");
+});
+
+test("formatSyncedTransaction: pending resta pending, il mock senza stato e' booked", () => {
+  const base = { transactionId: "X", amount: 1, bookingDate: "2026-11-01" };
+  const ctx = { userId: "u1", bankId: "BANK", accountId: "acc" };
+  assert.equal(formatSyncedTransaction({ ...base, bookingStatus: "pending" }, ctx).booking_status, "pending");
+  assert.equal(formatSyncedTransaction(base, ctx).booking_status, "booked");
+});
+
+test("formatSyncedTransaction rifiuta un movimento senza id o con data non valida", () => {
+  const ctx = { userId: "u1", bankId: "BANK", accountId: "acc" };
+  assert.throws(() => formatSyncedTransaction({ amount: 1, bookingDate: "2026-11-01" }, ctx));
+  assert.throws(() => formatSyncedTransaction({ transactionId: "X", amount: 1, bookingDate: "boh" }, ctx));
+});
+
+test("buildAppTransactionFromBank: importo assoluto, tipo dal segno, collegamento al movimento", () => {
+  const bankTxn = {
+    id: "bank-uuid-1",
+    bank_id: "BANK",
+    amount: "-42.10",
+    date: "2026-11-01",
+    description: "",
+    counterparty: "Negozio",
+  };
+  const row = buildAppTransactionFromBank(bankTxn, { userId: "u1", walletId: "7", categoryId: 3 });
+
+  assert.equal(row.amount, 42.1);
+  assert.equal(row.type, "E");
+  assert.equal(row.wallet_id, 7);
+  assert.equal(row.category_id, 3);
+  assert.equal(row.bank_transaction_id, "bank-uuid-1");
+  assert.equal(row.description, "Negozio");
+  assert.equal(
+    buildAppTransactionFromBank({ ...bankTxn, amount: 5 }, { userId: "u1", walletId: 7, categoryId: 3 }).type,
+    "I"
+  );
 });

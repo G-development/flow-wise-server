@@ -614,7 +614,15 @@
               <code class="endpoint-path">/bank/connections</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Bank connections of the authenticated user, with the last sync time</div>
+            <div class="endpoint-description">Bank connections of the authenticated user, with the last sync time, balance and auto-import settings</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/bank/connections/:bank/auto-import</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Enable (target wallet + start date) or disable (<code>walletId: null</code>) the daily auto-import for a connected bank</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
@@ -662,7 +670,7 @@
               <code class="endpoint-path">/bank/scheduler/status</code>
               <span class="endpoint-auth auth-secret">SECRET</span>
             </div>
-            <div class="endpoint-description">State of the periodic sync scheduler; <code>503</code> without <code>BANK_SCHEDULER_SECRET</code></div>
+            <div class="endpoint-description">Whether the optional in-process scheduler (<code>BANK_SYNC_CRON</code>) is running; <code>503</code> without <code>BANK_SCHEDULER_SECRET</code></div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
@@ -670,7 +678,15 @@
               <code class="endpoint-path">/bank/scheduler/sync-now</code>
               <span class="endpoint-auth auth-secret">SECRET</span>
             </div>
-            <div class="endpoint-description">Force a global sync for every connected user</div>
+            <div class="endpoint-description">Sync every connected bank now; responds with counts and per-bank errors only (called by the daily GitHub Actions job)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/bank/scheduler/import</code>
+              <span class="endpoint-auth auth-secret">SECRET</span>
+            </div>
+            <div class="endpoint-description">One batch (<code>?limit=1-100</code>, default 50) of automatic import of booked bank transactions into incomes/expenses, categorized by the LLM with "Altro" as fallback; call again until <code>remaining</code> is 0</div>
           </li>
         </ul>
       </div>

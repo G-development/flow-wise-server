@@ -1,0 +1,72 @@
+# Import automatico giornaliero dei movimenti bancari in Flow-Wise.
+#
+# 1. POST /bank/scheduler/sync-now  -> scarica i movimenti da GoCardless (ultimi 90 giorni)
+# 2. POST /bank/scheduler/import    -> li importa a lotti in entrate/spese, finche' remaining = 0
+#
+# Il repo e' pubblico: i log di questo workflow sono visibili a chiunque. Il server risponde
+# solo con conteggi ed errori per banca, e qui si stampano solo quelli.
+#
+# Segreto richiesto: BANK_SCHEDULER_SECRET (lo stesso valore impostato su Vercel).
+# Nota: GitHub disattiva i workflow pianificati dei repo pubblici dopo 60 giorni senza
+# attivita' sul repo; se succede, si riattiva dalla scheda Actions.
+
+name: Bank auto-import
+
+on:
+  schedule:
+    # 05:00 UTC = 06:00 ora italiana d'inverno, 07:00 d'estate. GitHub puo' partire in ritardo.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: bank-auto-import
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  sync-and-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SERVER_URL: https://flow-wise-server.vercel.app
+      SCHEDULER_SECRET: ${{ secrets.BANK_SCHEDULER_SECRET }}
+    steps:
+      - name: Check secret
+        run: |
+          if [ -z "$SCHEDULER_SECRET" ]; then
+            echo "::error::Manca il segreto BANK_SCHEDULER_SECRET"
+            exit 1
+          fi
+
+      - name: Sync bank transactions
+        run: |
+          status=$(curl -sS -o sync.json -w '%{http_code}' --max-time 120 \
+            -X POST -H "x-scheduler-secret: $SCHEDULER_SECRET" \
+            "$SERVER_URL/bank/scheduler/sync-now")
+          echo "HTTP $status"
+          jq '{success, connections, synced, results: [.results[] | {bank, synced, error}]}' sync.json || cat sync.json
+          if [ "$status" != "200" ] || [ "$(jq -r .success sync.json)" != "true" ]; then
+            echo "::error::Sincronizzazione fallita (vedi errori sopra)"
+            exit 1
+          fi
+
+      - name: Import into Flow-Wise
+        run: |
+          failed=0
+          for round in $(seq 1 20); do
+            status=$(curl -sS -o import.json -w '%{http_code}' --max-time 120 \
+              -X POST -H "x-scheduler-secret: $SCHEDULER_SECRET" \
+              "$SERVER_URL/bank/scheduler/import?limit=50")
+            echo "Lotto $round: HTTP $status"
+            jq '{success, imported, alreadyImported, byModel, byFallback, withoutCategory, remaining, errors}' import.json || cat import.json
+            if [ "$status" != "200" ]; then exit 1; fi
+            if [ "$(jq -r .success import.json)" != "true" ]; then failed=1; fi
+            remaining=$(jq -r .remaining import.json)
+            progress=$(jq -r '.imported + .alreadyImported' import.json)
+            if [ "$remaining" = "0" ] || [ "$progress" = "0" ]; then break; fi
+          done
+          if [ "$failed" = "1" ]; then
+            echo "::error::Import completato con errori (vedi sopra)"
+            exit 1
+          fi

@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `093e46c`.
+Forma `express`, radice sorgente `.`, commit `e1fe748`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -50,6 +50,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `GET /bank/mock-auth` — pubblico
   - `GET /bank/callback` — pubblico
   - `GET /bank/connections` — `requireAuth`
+  - `PUT /bank/connections/:bank/auto-import` — `requireAuth`
   - `GET /bank/status` — `requireAuth`
   - `POST /bank/sync` — `requireAuth`
   - `GET /bank/transactions` — `requireAuth`
@@ -57,6 +58,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `POST /bank/disconnect` — `requireAuth`
   - `GET /bank/scheduler/status` — header `x-scheduler-secret`
   - `POST /bank/scheduler/sync-now` — header `x-scheduler-secret`
+  - `POST /bank/scheduler/import` — header `x-scheduler-secret`
 - `routes/category.js` — mount `/category` — exports: const `createCategoryRouter`
   - `GET /category` — middleware `auth`
   - `GET /category/active` — middleware `auth`
@@ -100,14 +102,18 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 
 ## agents/
 
-- `agents/analyticsAgent.js` — exports: const `analyzeExpensesWithAI`, `summarizeExpensesForAI`
+- `agents/analyticsAgent.js` — exports: const `analyzeExpensesWithAI`, `DEFAULT_LLM_API_BASE_URL`, `DEFAULT_LLM_MODEL`, `summarizeExpensesForAI`
+- `agents/categorizationAgent.js` — exports: const `buildCategorizationRequest`, `CATEGORIZATION_TIMEOUT_MS`, `categorizeBankTransactions`, `extractJsonObject`, `validateAssignments`
+- `agents/categorizationAgent.test.js` — test
 
 ## utils/
 
 - `utils/amount.js` — exports: const `amountToCents`, `signedAmountCents`
 - `utils/amount.test.js` — test
 - `utils/asyncHandler.js` — exports: const `asyncHandler`
-- `utils/bankService.js` — exports: const `createBankOAuthState`, `disconnectBankConnection`, `ensureValidToken`, `fetchAccountBalance`, `fetchTransactions`, `generateMockBankTransactions`, `getAuthorizationUrl`, `getBankConnection`, `getBankSetupStatus`, `getGoCardlessToken`, `getSupportedBanks`, `getUserBankConnections`, `getUserBankTransactions`, `handleGoCardlessCallback`, `importBankTransactionsToApp`, `isMockBankModeEnabled`, `normalizeAccountBalance`, `POPULAR_BANKS`, `saveBankConnection`, `syncBankTransactions`, `verifyBankOAuthState`
+- `utils/bankAutoImport.js` — exports: const `AUTO_IMPORT_DEFAULT_LIMIT`, `AUTO_IMPORT_MAX_LIMIT`, `bankTransactionType`, `clampLimit`, `findFallbackCategories`, `resolveCategories`, `runAutoImport`
+- `utils/bankAutoImport.test.js` — test
+- `utils/bankService.js` — exports: const `buildAppTransactionFromBank`, `createBankOAuthState`, `disconnectBankConnection`, `ensureValidToken`, `fetchAccountBalance`, `fetchTransactions`, `formatSyncedTransaction`, `generateMockBankTransactions`, `getAuthorizationUrl`, `getBankConnection`, `getBankSetupStatus`, `getGoCardlessToken`, `getSupportedBanks`, `getUserBankConnections`, `getUserBankTransactions`, `handleGoCardlessCallback`, `importBankTransactionsToApp`, `insertImportedTransactions`, `isMockBankModeEnabled`, `markBankTransactionsImported`, `normalizeAccountBalance`, `normalizeGoCardlessTransactions`, `POPULAR_BANKS`, `saveBankConnection`, `syncBankTransactions`, `toAutoImportView`, `updateBankAutoImport`, `verifyBankOAuthState`
 - `utils/bankService.test.js` — test
 - `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `startBankSyncScheduler`, `stopBankSyncScheduler`
 - `utils/bankTokenCrypto.js` — exports: const `decryptToken`, `ENCRYPTED_TOKEN_PREFIX`, `encryptToken`, `isEncryptedToken`
@@ -116,7 +122,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`
 - `utils/passwordResetService.test.js` — test
-- `utils/schemas.js` — exports: const `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
+- `utils/schemas.js` — exports: const `bankAutoImportSchema`, `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
 - `utils/schemas.test.js` — test
 - `utils/validate.js` — exports: const `validate`
 - `utils/walletService.js` — exports: const `getWalletBalance`, `getWalletsWithBalances`, `sumBalancesInCents`
@@ -149,6 +155,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/007_budget_wallet_fk_restrict.sql` — 007_budget_wallet_fk_restrict.sql
 - `migrations/008_bank_connection_balance.down.sql` — ALTER TABLE bank_connections
 - `migrations/008_bank_connection_balance.sql` — ALTER TABLE bank_connections
+- `migrations/009_bank_auto_import.down.sql` — DROP INDEX IF EXISTS idx_bank_transactions_auto_import;
+- `migrations/009_bank_auto_import.sql` — 009_bank_auto_import.sql
 
 ## Script di radice
 

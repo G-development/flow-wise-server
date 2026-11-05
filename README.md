@@ -33,7 +33,9 @@ transazioni vengono inviati al provider AI configurato.
 L'integrazione bancaria supporta sia la modalità locale **Sandbox/Mock** (default)
 sia l'integrazione **Open Banking PSD2 reale tramite GoCardless** (configurando
 `GOCARDLESS_SECRET_ID` e `GOCARDLESS_SECRET_KEY`). Usa inoltre `BANK_REDIRECT_URI`,
-`BANK_CLIENT_REDIRECT_URI`, `BANK_SYNC_CRON` e `BANK_SCHEDULER_SECRET`. Il reset
+`BANK_CLIENT_REDIRECT_URI` e `BANK_SCHEDULER_SECRET` (più `BANK_SYNC_CRON`, facoltativa:
+senza valore lo scheduler interno non parte). L'import automatico giornaliero dei
+movimenti è descritto in `BANK_INTEGRATION.md`. Il reset
 password usa la configurazione SMTP e `FRONTEND_URL`. Consulta `.env.example` per
 le altre variabili opzionali Cloudinary e SMTP.
 
@@ -47,8 +49,9 @@ Attenzione a due variabili il cui valore mancante non produce errori evidenti:
   **live**, dove un errore del provider GoCardless risale come errore e non
   diventa mai un movimento finto; il live richiede `GOCARDLESS_SECRET_ID` e
   `GOCARDLESS_SECRET_KEY`.
-- senza `BANK_SCHEDULER_SECRET` le route `/bank/scheduler/status` e
-  `/bank/scheduler/sync-now` rispondono `503`.
+- senza `BANK_SCHEDULER_SECRET` le route `/bank/scheduler/status`,
+  `/bank/scheduler/sync-now` e `/bank/scheduler/import` rispondono `503`, e il
+  workflow giornaliero di import fallisce.
 
 Senza `SMTP_HOST` invece la richiesta di reset fallisce in modo visibile:
 `POST /auth/forgot-password` risponde `502` con l'errore reale e non lascia alcun

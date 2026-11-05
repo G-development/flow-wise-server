@@ -156,3 +156,13 @@ test("lo schema non trasforma i negativi: nessuna coercizione silenziosa", () =>
   assert.equal(parsed.success, false);
   assert.equal(parsed.error.issues[0].path.join("."), "amount");
 });
+
+test("bankAutoImportSchema: wallet intero o null, data YYYY-MM-DD opzionale", async () => {
+  const { bankAutoImportSchema } = await import("./schemas.js");
+  assert.equal(bankAutoImportSchema.safeParse({ walletId: 7, fromDate: "2026-08-07" }).success, true);
+  assert.equal(bankAutoImportSchema.safeParse({ walletId: null }).success, true);
+  assert.equal(bankAutoImportSchema.safeParse({ walletId: "7" }).success, false);
+  assert.equal(bankAutoImportSchema.safeParse({ walletId: 7, fromDate: "07/08/2026" }).success, false);
+  assert.equal(bankAutoImportSchema.safeParse({ walletId: 7, fromDate: "2026-13-45" }).success, false);
+  assert.equal(bankAutoImportSchema.safeParse({}).success, false);
+});

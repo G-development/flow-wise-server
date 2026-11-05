@@ -14,134 +14,108 @@ const supabase = createClient(
 let scheduledTasks = new Map();
 
 /**
- * Sincronizza transazioni per un utente
+ * Sincronizza i movimenti di una connessione.
+ * Restituisce un esito con soli conteggi: finisce nella risposta di
+ * POST /bank/scheduler/sync-now, letta dai log pubblici di GitHub Actions.
  */
 const syncUserBankTransactions = async (userId, bankId) => {
   try {
     const connection = await getBankConnection(userId, bankId);
-
     if (!connection) {
-      console.log(`No bank connection for user ${userId}, bank ${bankId}`);
-      return;
+      return { bank: bankId, synced: 0, error: "Connessione non trovata" };
     }
 
-    // Verifica e rinfresca token se necessario
     const accessToken = await ensureValidToken(userId, bankId);
-
     if (!accessToken) {
-      console.warn(`Failed to get valid token for user ${userId}, bank ${bankId}`);
-      return;
+      return { bank: bankId, synced: 0, error: "Token di accesso non disponibile" };
     }
 
-    // Sincronizza
     const synced = await syncBankTransactions(
       userId,
       bankId,
       connection.account_id,
       accessToken
     );
-
-    console.log(
-      `✓ Synced ${synced?.length || 0} transactions for user ${userId} from ${bankId}`
-    );
+    return { bank: bankId, synced: synced?.length || 0, error: null };
   } catch (error) {
-    console.error(
-      `Error syncing transactions for user ${userId}, bank ${bankId}:`,
-      error.message
-    );
+    console.error(`Error syncing transactions for user ${userId}, bank ${bankId}:`, error.message);
+    return { bank: bankId, synced: 0, error: error.message };
   }
 };
 
-/**
- * Ottieni tutti gli utenti con connessioni bancarie
- */
 const getAllBankConnections = async () => {
-  try {
-    const { data, error } = await supabase
-      .from("bank_connections")
-      .select("user_id, bank_id")
-      .not("user_id", "is", null);
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error("Error fetching bank connections:", error.message);
-    return [];
+  const { data, error } = await supabase
+    .from("bank_connections")
+    .select("user_id, bank_id")
+    .not("user_id", "is", null);
+  if (error) {
+    throw new Error(`Lettura connessioni bancarie fallita: ${error.message}`);
   }
+  return data || [];
 };
 
 /**
- * Sincronizza tutte le transazioni per tutti gli utenti
+ * Sincronizza tutte le connessioni bancarie.
+ * @returns {{ connections: number, synced: number, results: Array<{bank, synced, error}> }}
  */
 const syncAllUserTransactions = async () => {
-  console.log(`\n🔄 Starting bank transaction sync at ${new Date().toISOString()}`);
-
   const connections = await getAllBankConnections();
-
-  if (connections.length === 0) {
-    console.log("No bank connections to sync");
-    return;
-  }
-
-  console.log(`Found ${connections.length} bank connection(s) to sync`);
+  const results = [];
 
   // Sincronizza in parallelo con limite di concorrenza
   const batchSize = 5;
   for (let i = 0; i < connections.length; i += batchSize) {
     const batch = connections.slice(i, i + batchSize);
-    await Promise.all(
-      batch.map(({ user_id, bank_id }) =>
-        syncUserBankTransactions(user_id, bank_id)
-      )
+    results.push(
+      ...(await Promise.all(
+        batch.map(({ user_id, bank_id }) => syncUserBankTransactions(user_id, bank_id))
+      ))
     );
   }
 
-  console.log(`✓ Bank transaction sync completed at ${new Date().toISOString()}\n`);
+  return {
+    connections: connections.length,
+    synced: results.reduce((sum, result) => sum + result.synced, 0),
+    results,
+  };
 };
 
 /**
- * Avvia lo scheduler con pattern cron configurabile
+ * Scheduler in-process, solo su richiesta esplicita (`BANK_SYNC_CRON`).
+ *
+ * Il job ufficiale e' il workflow giornaliero di GitHub Actions
+ * (`.github/workflows/bank-auto-import.yml`). Prima questo cron partiva sempre, ogni ora,
+ * anche in sviluppo locale: oltre a non funzionare su Vercel (funzioni serverless, nessun
+ * processo che resta vivo), consumava le letture che le banche concedono senza utente
+ * presente (PSD2: spesso 4 al giorno per conto).
  */
 export const startBankSyncScheduler = () => {
-  const cronPattern = process.env.BANK_SYNC_CRON || "0 * * * *";
+  const cronPattern = process.env.BANK_SYNC_CRON;
+  if (!cronPattern || process.env.VERCEL) return false;
 
-  console.log(`\n📅 Bank sync scheduler starting with pattern: ${cronPattern}`);
-
-  const task = cron.schedule(cronPattern, syncAllUserTransactions);
-
+  const task = cron.schedule(cronPattern, () =>
+    syncAllUserTransactions().catch((error) =>
+      console.error("Bank sync scheduler run failed:", error.message)
+    )
+  );
   scheduledTasks.set("bankSync", task);
-
-  console.log("✓ Bank sync scheduler is running\n");
+  console.log(`📅 Bank sync scheduler running with pattern: ${cronPattern}`);
+  return true;
 };
 
-/**
- * Ferma lo scheduler
- */
 export const stopBankSyncScheduler = () => {
   const task = scheduledTasks.get("bankSync");
   if (task) {
     task.stop();
     scheduledTasks.delete("bankSync");
-    console.log("✓ Bank sync scheduler stopped");
   }
 };
 
-/**
- * Forza una sincronizzazione immediata
- */
-export const forceBankSync = () => {
-  console.log("⚡ Forcing immediate bank sync...");
-  return syncAllUserTransactions();
-};
+/** Sincronizzazione immediata di tutte le connessioni (POST /bank/scheduler/sync-now). */
+export const forceBankSync = () => syncAllUserTransactions();
 
-/**
- * Ottieni stato dello scheduler
- */
-export const getBankSyncStatus = () => {
-  const task = scheduledTasks.get("bankSync");
-  return {
-    running: !!task,
-    pattern: process.env.BANK_SYNC_CRON || "0 * * * *",
-    lastRun: "Check logs for details",
-  };
-};
+export const getBankSyncStatus = () => ({
+  inProcessScheduler: scheduledTasks.has("bankSync"),
+  pattern: process.env.BANK_SYNC_CRON || null,
+  externalJob: "GitHub Actions: .github/workflows/bank-auto-import.yml",
+});

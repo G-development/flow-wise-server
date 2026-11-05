@@ -15,6 +15,8 @@ import {
   isMockBankModeEnabled,
   saveBankConnection,
   syncBankTransactions,
+  toAutoImportView,
+  updateBankAutoImport,
   verifyBankOAuthState,
   POPULAR_BANKS,
 } from "../utils/bankService.js";
@@ -22,8 +24,11 @@ import {
   forceBankSync,
   getBankSyncStatus,
 } from "../utils/bankSyncScheduler.js";
+import { clampLimit, runAutoImport } from "../utils/bankAutoImport.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { toListResponse } from "../utils/paginatedSelect.js";
+import { bankAutoImportSchema } from "../utils/schemas.js";
+import { validate } from "../utils/validate.js";
 
 const router = express.Router();
 
@@ -455,8 +460,33 @@ router.get(
               providerUpdatedAt: conn.balance_provider_updated_at,
               fetchedAt: conn.balance_fetched_at,
             },
+        autoImport: toAutoImportView(conn),
       })),
     });
+  })
+);
+
+/**
+ * PUT /bank/connections/:bank/auto-import
+ * Body: { walletId: number | null, fromDate?: "YYYY-MM-DD" | null }
+ */
+router.put(
+  "/connections/:bank/auto-import",
+  requireAuth,
+  validate(bankAutoImportSchema),
+  asyncHandler(async (req, res) => {
+    try {
+      const connection = await updateBankAutoImport(req.user.id, req.params.bank, req.body);
+      if (!connection) {
+        return res.status(404).json({ error: "Banca non connessa" });
+      }
+      res.json({ bank: connection.bank_id, autoImport: toAutoImportView(connection) });
+    } catch (error) {
+      if (error.status === 404) {
+        return res.status(404).json({ error: error.message });
+      }
+      throw error;
+    }
   })
 );
 
@@ -489,6 +519,7 @@ router.get(
               providerUpdatedAt: connection.balance_provider_updated_at,
               fetchedAt: connection.balance_fetched_at,
             },
+      autoImport: toAutoImportView(connection),
     });
   })
 );
@@ -612,13 +643,32 @@ router.get(
 
 /**
  * POST /bank/scheduler/sync-now
+ * Sincronizza tutte le connessioni. Risponde con soli conteggi ed errori per banca:
+ * la risposta finisce nei log pubblici di GitHub Actions.
  */
 router.post(
   "/scheduler/sync-now",
   requireSchedulerSecret,
   asyncHandler(async (_req, res) => {
-    await forceBankSync();
-    res.json({ success: true, message: "Sincronizzazione globale avviata manualmente" });
+    const summary = await forceBankSync();
+    res.json({
+      success: summary.results.every((result) => !result.error),
+      ...summary,
+    });
+  })
+);
+
+/**
+ * POST /bank/scheduler/import?limit=<1-100>
+ * Un lotto di import automatico (vedi utils/bankAutoImport.js). Il chiamante richiama
+ * finche' `remaining` e' 0. Soli conteggi in risposta, come sopra.
+ */
+router.post(
+  "/scheduler/import",
+  requireSchedulerSecret,
+  asyncHandler(async (req, res) => {
+    const summary = await runAutoImport({ limit: clampLimit(req.query.limit) });
+    res.json({ success: summary.errors.length === 0, ...summary });
   })
 );
 

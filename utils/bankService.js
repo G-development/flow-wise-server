@@ -619,6 +619,53 @@ export const fetchAccountBalance = async (accountId, accessToken, options = {}) 
   }
 };
 
+/**
+ * Porta la risposta di GoCardless `/accounts/<id>/transactions/` nella forma interna.
+ *
+ * `bookingStatus` conserva da quale lista arriva il movimento: GoCardless separa
+ * `booked` (contabilizzati) e `pending` (in sospeso). Prima i due elenchi venivano
+ * fusi e un movimento in sospeso diventava indistinguibile da uno contabilizzato:
+ * quando la banca lo contabilizza puo' cambiargli id, data o descrizione, e un import
+ * automatico lo avrebbe importato due volte. L'import automatico prende solo i 'booked'.
+ */
+export const normalizeGoCardlessTransactions = (data, accountId) => {
+  const lists = [
+    ["booked", data?.transactions?.booked],
+    ["pending", data?.transactions?.pending],
+  ];
+
+  return lists.flatMap(([bookingStatus, list]) =>
+    (Array.isArray(list) ? list : []).map((txn) => {
+      const rawAmt = txn.transactionAmount?.amount;
+      const amount = typeof rawAmt === "string" ? parseFloat(rawAmt) : Number(rawAmt || 0);
+      const date = txn.bookingDate || txn.valueDate || new Date().toISOString().split("T")[0];
+      const desc =
+        txn.remittanceInformationUnstructured ||
+        (Array.isArray(txn.remittanceInformationUnstructuredArray)
+          ? txn.remittanceInformationUnstructuredArray.join(" ")
+          : "") ||
+        txn.creditorName ||
+        txn.debtorName ||
+        "Transazione Bancaria";
+      const counterparty = txn.creditorName || txn.debtorName || "";
+
+      return {
+        transactionId:
+          txn.transactionId ||
+          txn.internalTransactionId ||
+          `gc_${accountId}_${date}_${Math.abs(amount)}`,
+        amount,
+        currency: txn.transactionAmount?.currency || "EUR",
+        bookingDate: date,
+        bookingStatus,
+        remittanceInformationUnstructured: desc,
+        purpose: desc,
+        counterparty: { name: counterparty },
+      };
+    })
+  );
+};
+
 export const fetchTransactions = async (
   bankId,
   accessToken,
@@ -647,37 +694,7 @@ export const fetchTransactions = async (
         }
       );
 
-      const booked = response.data?.transactions?.booked || [];
-      const pending = response.data?.transactions?.pending || [];
-      const allTxns = [...booked, ...pending];
-
-      return allTxns.map((txn) => {
-        const rawAmt = txn.transactionAmount?.amount;
-        const amount = typeof rawAmt === "string" ? parseFloat(rawAmt) : Number(rawAmt || 0);
-        const date = txn.bookingDate || txn.valueDate || new Date().toISOString().split("T")[0];
-        const desc =
-          txn.remittanceInformationUnstructured ||
-          (Array.isArray(txn.remittanceInformationUnstructuredArray)
-            ? txn.remittanceInformationUnstructuredArray.join(" ")
-            : "") ||
-          txn.creditorName ||
-          txn.debtorName ||
-          "Transazione Bancaria";
-        const counterparty = txn.creditorName || txn.debtorName || "";
-
-        return {
-          transactionId:
-            txn.transactionId ||
-            txn.internalTransactionId ||
-            `gc_${accountId}_${date}_${Math.abs(amount)}`,
-          amount,
-          currency: txn.transactionAmount?.currency || "EUR",
-          bookingDate: date,
-          remittanceInformationUnstructured: desc,
-          purpose: desc,
-          counterparty: { name: counterparty },
-        };
-      });
+      return normalizeGoCardlessTransactions(response.data, accountId);
     } catch (err) {
       const detail =
         err.response?.data?.detail ||
@@ -817,41 +834,9 @@ export const syncBankTransactions = async (
     options
   );
 
-  const formatted = transactions.map((txn) => {
-    const externalIdValue = txn.transactionId ?? txn.id;
-    const externalId =
-      externalIdValue === undefined || externalIdValue === null
-        ? ""
-        : String(externalIdValue);
-    const amount = Number(txn.amount ?? txn.transactionAmount?.amount);
-    const date = txn.bookingDate || txn.date || txn.valueDate;
-
-    if (
-      !externalId ||
-      !Number.isFinite(amount) ||
-      typeof date !== "string" ||
-      Number.isNaN(Date.parse(date))
-    ) {
-      throw new Error("Bank provider returned a transaction with invalid fields");
-    }
-
-    return {
-      user_id: userId,
-      bank_id: bankId,
-      account_id: accountId,
-      external_id: externalId,
-      amount,
-      currency: txn.currency || "EUR",
-      description: txn.purpose || txn.remittanceInformationUnstructured || "",
-      date,
-      counterparty:
-        typeof txn.counterparty === "string"
-          ? txn.counterparty
-          : txn.counterparty?.name || "",
-      status: "synced",
-      raw_data: txn,
-    };
-  });
+  const formatted = transactions.map((txn) =>
+    formatSyncedTransaction(txn, { userId, bankId, accountId })
+  );
 
   let savedData = [];
   if (formatted.length > 0) {
@@ -867,6 +852,14 @@ export const syncBankTransactions = async (
     }
     savedData = result.data ?? [];
   }
+
+  await removeVanishedPendingTransactions({
+    userId,
+    bankId,
+    accountId,
+    dateFrom,
+    freshExternalIds: new Set(formatted.map((row) => row.external_id)),
+  });
 
   try {
     const balance = await fetchAccountBalance(accountId, accessToken, options);
@@ -895,13 +888,108 @@ export const syncBankTransactions = async (
     console.warn(`Could not refresh bank balance for ${bankId}:`, error.message);
   }
 
-  await supabase
+  const { error: lastSyncedError } = await supabase
     .from("bank_connections")
     .update({ last_synced: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("bank_id", bankId);
+  if (lastSyncedError) {
+    // I movimenti sono gia' salvati: non si annulla la sincronizzazione, ma l'errore
+    // non deve sparire (prima l'esito di questo update non veniva nemmeno letto).
+    console.error(`Could not update last_synced for ${bankId}:`, lastSyncedError.message);
+  }
 
   return savedData;
+};
+
+/**
+ * Riga di `bank_transactions` per l'upsert della sincronizzazione.
+ *
+ * Non contiene `status`, di proposito: l'upsert aggiorna solo le colonne presenti, quindi
+ * una riga nuova prende il default del DB ('synced') e una gia' esistente conserva il suo.
+ * Prima il payload scriveva sempre `status: "synced"` e ogni sincronizzazione riportava a
+ * 'synced' i movimenti gia' importati, che potevano cosi' essere importati di nuovo.
+ */
+export const formatSyncedTransaction = (txn, { userId, bankId, accountId }) => {
+  const externalIdValue = txn.transactionId ?? txn.id;
+  const externalId =
+    externalIdValue === undefined || externalIdValue === null
+      ? ""
+      : String(externalIdValue);
+  const amount = Number(txn.amount ?? txn.transactionAmount?.amount);
+  const date = txn.bookingDate || txn.date || txn.valueDate;
+
+  if (
+    !externalId ||
+    !Number.isFinite(amount) ||
+    typeof date !== "string" ||
+    Number.isNaN(Date.parse(date))
+  ) {
+    throw new Error("Bank provider returned a transaction with invalid fields");
+  }
+
+  return {
+    user_id: userId,
+    bank_id: bankId,
+    account_id: accountId,
+    external_id: externalId,
+    amount,
+    currency: txn.currency || "EUR",
+    description: txn.purpose || txn.remittanceInformationUnstructured || "",
+    date,
+    counterparty:
+      typeof txn.counterparty === "string"
+        ? txn.counterparty
+        : txn.counterparty?.name || "",
+    // Il mock non distingue: i suoi movimenti sono tutti contabilizzati.
+    booking_status: txn.bookingStatus === "pending" ? "pending" : "booked",
+    raw_data: txn,
+  };
+};
+
+/**
+ * Elimina i movimenti in sospeso che la banca non restituisce piu' nella finestra appena
+ * sincronizzata: di solito sono stati contabilizzati con un altro id, e la versione
+ * contabilizzata e' arrivata con la stessa sincronizzazione. Tocca solo righe 'pending'
+ * mai importate ('synced'), quindi nessun movimento contabilizzato o importato.
+ */
+const removeVanishedPendingTransactions = async ({
+  userId,
+  bankId,
+  accountId,
+  dateFrom,
+  freshExternalIds,
+}) => {
+  const { data: pendingRows, error } = await supabase
+    .from("bank_transactions")
+    .select("id, external_id")
+    .eq("user_id", userId)
+    .eq("bank_id", bankId)
+    .eq("account_id", accountId)
+    .eq("booking_status", "pending")
+    .eq("status", "synced")
+    .gte("date", dateFrom);
+
+  if (error) {
+    console.error(`Could not read pending bank transactions for ${bankId}:`, error.message);
+    return;
+  }
+
+  const vanishedIds = (pendingRows ?? [])
+    .filter((row) => !freshExternalIds.has(row.external_id))
+    .map((row) => row.id);
+
+  for (let i = 0; i < vanishedIds.length; i += 100) {
+    const { error: deleteError } = await supabase
+      .from("bank_transactions")
+      .delete()
+      .eq("user_id", userId)
+      .in("id", vanishedIds.slice(i, i + 100));
+    if (deleteError) {
+      console.error(`Could not remove vanished pending transactions for ${bankId}:`, deleteError.message);
+      return;
+    }
+  }
 };
 
 /**
@@ -957,6 +1045,56 @@ export const ensureValidToken = async (userId, bankId) => {
 
   return connection.access_token || "mock_token";
 };
+
+/**
+ * Configura l'import automatico di una banca collegata.
+ * `walletId: null` lo disattiva (resta la data, che non ha effetto senza wallet).
+ * Attivandolo senza `fromDate` l'import parte da oggi: niente movimenti passati importati
+ * di sorpresa. Restituisce la connessione aggiornata, o `null` se la banca non e' collegata.
+ */
+export const updateBankAutoImport = async (userId, bankId, { walletId, fromDate }) => {
+  const connection = await getBankConnection(userId, bankId);
+  if (!connection) return null;
+
+  if (walletId != null) {
+    const { data: wallet, error: walletError } = await supabase
+      .from("Wallet")
+      .select("id")
+      .eq("id", walletId)
+      .eq("userid", userId)
+      .maybeSingle();
+    if (walletError) throw new Error(`Lettura wallet fallita: ${walletError.message}`);
+    if (!wallet) {
+      const error = new Error("Wallet di destinazione non trovato");
+      error.status = 404;
+      throw error;
+    }
+  }
+
+  const update = { import_wallet_id: walletId };
+  if (fromDate !== undefined) {
+    update.auto_import_from = fromDate;
+  } else if (walletId != null && !connection.auto_import_from) {
+    update.auto_import_from = new Date().toISOString().split("T")[0];
+  }
+
+  const { data, error } = await supabase
+    .from("bank_connections")
+    .update(update)
+    .eq("user_id", userId)
+    .eq("bank_id", bankId)
+    .select("*")
+    .single();
+  if (error) throw new Error(`Impossibile salvare l'import automatico: ${error.message}`);
+  return data;
+};
+
+/** Vista dell'import automatico per le risposte di /bank/connections e /bank/status. */
+export const toAutoImportView = (connection) => ({
+  enabled: connection?.import_wallet_id != null,
+  walletId: connection?.import_wallet_id ?? null,
+  fromDate: connection?.auto_import_from ?? null,
+});
 
 /**
  * Disconnette una banca
@@ -1018,44 +1156,84 @@ export const importBankTransactionsToApp = async (
     throw new Error("Nessun movimento bancario corrispondente trovato");
   }
 
-  // Crea i record per la tabella Transaction
-  const appTransactions = bankTxns.map((bankTxn) => {
-    const rawAmount = Number(bankTxn.amount);
-    const type =
-      defaultType || (rawAmount >= 0 ? "I" : "E");
-    const positiveAmount = Math.abs(rawAmount);
+  const appTransactions = bankTxns.map((bankTxn) =>
+    buildAppTransactionFromBank(bankTxn, { userId, walletId, categoryId, defaultType })
+  );
 
-    return {
-      userid: userId,
-      description: bankTxn.description || bankTxn.counterparty || "Movimento Bancario",
-      note: `Importato da banca (${bankTxn.bank_id})`,
-      amount: positiveAmount,
-      date: new Date(bankTxn.date).toISOString(),
-      type,
-      wallet_id: Number(walletId),
-      category_id: Number(categoryId),
-    };
-  });
-
-  const { data: inserted, error: insertError } = await supabase
-    .from("Transaction")
-    .insert(appTransactions)
-    .select();
-
-  if (insertError) {
-    throw new Error(`Impossibile inserire le transazioni: ${insertError.message}`);
-  }
-
-  // Aggiorna lo stato dei movimenti bancari a "imported"
-  await supabase
-    .from("bank_transactions")
-    .update({ status: "imported" })
-    .eq("user_id", userId)
-    .in("id", transactionIds);
+  const inserted = await insertImportedTransactions(supabase, appTransactions);
+  await markBankTransactionsImported(
+    supabase,
+    userId,
+    bankTxns.map((bankTxn) => bankTxn.id)
+  );
 
   return {
     success: true,
     importedCount: inserted.length,
+    // Movimenti gia' importati in precedenza (stesso bank_transaction_id): ignorati.
+    alreadyImportedCount: appTransactions.length - inserted.length,
     transactions: inserted,
   };
+};
+
+/**
+ * Riga di `Transaction` per un movimento bancario: unico punto usato dall'import manuale
+ * (`POST /bank/import`) e da quello automatico (`utils/bankAutoImport.js`).
+ * `amount` e' sempre il valore assoluto; il segno del movimento decide `type`, salvo un
+ * `defaultType` esplicito. `bank_transaction_id` collega la riga al movimento di origine.
+ */
+export const buildAppTransactionFromBank = (
+  bankTxn,
+  { userId, walletId, categoryId, defaultType }
+) => {
+  const rawAmount = Number(bankTxn.amount);
+  return {
+    userid: userId,
+    description: bankTxn.description || bankTxn.counterparty || "Movimento Bancario",
+    note: `Importato da banca (${bankTxn.bank_id})`,
+    amount: Math.abs(rawAmount),
+    date: new Date(bankTxn.date).toISOString(),
+    type: defaultType || (rawAmount >= 0 ? "I" : "E"),
+    wallet_id: Number(walletId),
+    category_id: Number(categoryId),
+    bank_transaction_id: bankTxn.id,
+  };
+};
+
+/**
+ * Inserisce le righe ignorando quelle il cui `bank_transaction_id` esiste gia'
+ * (indice univoco della migrazione 009): lo stesso movimento non entra mai due volte,
+ * neanche se import manuale e automatico si sovrappongono. Restituisce solo le righe
+ * davvero inserite.
+ */
+export const insertImportedTransactions = async (client, appTransactions) => {
+  if (appTransactions.length === 0) return [];
+  const { data, error } = await client
+    .from("Transaction")
+    .upsert(appTransactions, {
+      onConflict: "bank_transaction_id",
+      ignoreDuplicates: true,
+    })
+    .select();
+
+  if (error) {
+    throw new Error(`Impossibile inserire le transazioni: ${error.message}`);
+  }
+  return data ?? [];
+};
+
+/** Segna come 'imported' i movimenti bancari indicati (gia' inseriti o gia' presenti). */
+export const markBankTransactionsImported = async (client, userId, bankTransactionIds) => {
+  for (let i = 0; i < bankTransactionIds.length; i += 100) {
+    const { error } = await client
+      .from("bank_transactions")
+      .update({ status: "imported" })
+      .eq("user_id", userId)
+      .in("id", bankTransactionIds.slice(i, i + 100));
+    if (error) {
+      // Le Transaction sono gia' inserite e collegate: al giro successivo l'insert le
+      // ignora come duplicati e questo update viene ritentato. Va comunque segnalato.
+      throw new Error(`Movimenti importati ma stato non aggiornato: ${error.message}`);
+    }
+  }
 };

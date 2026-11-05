@@ -57,3 +57,20 @@ export const userRegisterSchema = z.object({
   email: z.string().email("invalid email"),
   password: z.string().min(6, "password too short"),
 });
+
+// Import automatico per una banca collegata (PUT /bank/connections/:bank/auto-import).
+// `walletId: null` lo disattiva. `fromDate` e' la data da cui prendere i movimenti:
+// evita di reimportare quelli piu' vecchi gia' inseriti prima del collegamento.
+export const bankAutoImportSchema = z.object({
+  walletId: z
+    .number({ invalid_type_error: "walletId must be a number or null" })
+    .int()
+    .positive()
+    .nullable(),
+  fromDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "fromDate must be YYYY-MM-DD")
+    .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), "fromDate is not a valid date")
+    .nullable()
+    .optional(),
+});
