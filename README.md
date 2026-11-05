@@ -7,7 +7,9 @@ route utente filtrano i dati con l'ID ottenuto dal bearer token.
 ## Struttura
 
 ```text
-server.js             bootstrap Express, CORS, statici e route
+app.js                app Express: CORS, statici e route (esportata, non apre porte)
+server.js             avvio locale: importa app.js e fa listen
+api/index.js          funzione Vercel: espone app.js (vedi vercel.json)
 config/               client Supabase, auth e Cloudinary
 routes/               API HTTP
 agents/               integrazioni e logica dell'agente AI
@@ -71,7 +73,7 @@ bancario all'avvio (cron configurabile, default ogni ora).
 
 ## Route
 
-Tutte le route principali sono montate in `server.js`.
+Tutte le route principali sono montate in `app.js`. Su Vercel l'intera app è una sola funzione (`api/index.js`): `vercel.json` rimanda ogni richiesta a `/api` e porta la durata massima a 60 secondi, che servono alla sincronizzazione bancaria.
 
 | Prefisso | Funzioni |
 | --- | --- |
