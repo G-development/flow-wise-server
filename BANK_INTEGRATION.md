@@ -50,9 +50,10 @@ BANK_SCHEDULER_SECRET=il_tuo_segreto_scheduler_lungo_e_casuale
 Assicurati di aver eseguito le seguenti migrazioni SQL nel database Supabase:
 1. `migrations/001_create_bank_tables.sql`: creazione tabelle `bank_connections` e `bank_transactions`, con indici e RLS.
 2. `migrations/002_scope_bank_transaction_ids.sql`: vincolo di unicità `(user_id, bank_id, account_id, external_id)` per prevenire duplicati nei movimenti.
+3. `migrations/008_bank_connection_balance.sql`: colonne `balance_*` su `bank_connections` per l'ultimo saldo del conto (reversibile con `008_bank_connection_balance.down.sql`).
 
 ### Struttura Tabelle:
-- **`bank_connections`**: memorizza `user_id`, `bank_id`, `account_id`, `access_token`, `refresh_token`, `token_expires_at`, `last_synced`.
+- **`bank_connections`**: memorizza `user_id`, `bank_id`, `account_id`, `access_token`, `refresh_token` (entrambi cifrati at-rest), `token_expires_at`, `last_synced` e l'ultimo saldo letto: `balance_amount`, `balance_currency`, `balance_type`, `balance_reference_date`, `balance_provider_updated_at`, `balance_fetched_at`, `balance_raw_data`.
 - **`bank_transactions`**: memorizza `id`, `user_id`, `bank_id`, `account_id`, `external_id`, `amount`, `currency`, `description`, `date`, `counterparty`, `status` (`synced` | `imported`), `raw_data`.
 
 ---
@@ -68,14 +69,20 @@ Tutte le route (tranne `/bank/mock-auth`, `/bank/callback` e scheduler) richiedo
 | `GET` | `/bank/authorize` | `?bank=<id>` | Genera URL per l'autorizzazione bancaria (GoCardless requisition o Sandbox) |
 | `GET` | `/bank/mock-auth` | `?state=<aes_gcm_token>&bank=<id>` | Pagina web sandbox per autorizzare il conto di test |
 | `GET` | `/bank/callback` | `?code=<code>&state=<state>` | Callback OAuth: scambia codice, salva conto e avvia primo sync |
-| `GET` | `/bank/status` | `?bank=<id>` | Stato connessione, account ID e timestamp ultimo sync |
-| `GET` | `/bank/connections` | — | Elenco di tutte le banche connesse dall'utente |
+| `GET` | `/bank/status` | `?bank=<id>` | Stato connessione, account ID, timestamp ultimo sync e `balance` (o `null`) |
+| `GET` | `/bank/connections` | — | Elenco di tutte le banche connesse dall'utente, ciascuna con il suo `balance` (o `null`) |
 | `POST` | `/bank/sync` | `?bank=<id>` | Sincronizza manualmente i movimenti del conto |
 | `GET` | `/bank/transactions` | `?bank=<id>&startDate=<YYYY-MM-DD>&endDate=<YYYY-MM-DD>` | Elenco movimenti sincronizzati con filtri periodo |
 | `POST` | `/bank/import` | `{ transactionIds: string[], walletId: number, categoryId: number, defaultType?: "I" \| "E" }` | Converte transazioni bancarie in entrate/spese nei Wallet |
 | `POST` | `/bank/disconnect` | `?bank=<id>` | Disconnette la banca conservando lo storico dei movimenti |
 | `GET` | `/bank/scheduler/status` | Header `x-scheduler-secret` | Stato dello scheduler di sincronizzazione periodica |
 | `POST` | `/bank/scheduler/sync-now` | Header `x-scheduler-secret` | Forza sincronizzazione globale per tutti gli utenti connessi |
+
+### Saldo del conto
+
+A ogni sincronizzazione, dopo l'upsert dei movimenti, `syncBankTransactions` legge il saldo del conto (`fetchAccountBalance`, endpoint GoCardless `/accounts/<id>/balances/`) e lo salva nelle colonne `balance_*` di `bank_connections`. Se il provider restituisce più saldi, `normalizeAccountBalance` sceglie in quest'ordine: `available`, `current`, `interimAvailable`, `interimBooked`, `booked`, `closingBooked`. In modalità mock il saldo è fisso (2450,75 EUR, tipo `mock`).
+
+Il saldo è informativo: se la sua lettura fallisce, la sincronizzazione dei movimenti va avanti e resta l'ultimo saldo salvato. `/bank/status` e `/bank/connections` lo espongono come `balance: { amount, currency, type, referenceDate, providerUpdatedAt, fetchedAt }`, oppure `null` se non è mai stato letto.
 
 ---
 
@@ -85,10 +92,10 @@ Tutte le route (tranne `/bank/mock-auth`, `/bank/callback` e scheduler) richiedo
 2. Le transazioni vengono filtrate per periodo (default: dal 1° del mese corrente a oggi).
 3. L'utente seleziona una o più transazioni (selezione singola o massiva con checkbox header).
 4. Apre il modale di importazione ([ImportTransactionDialog.tsx](../flow-wise-client/app/settings/yourbank/ImportTransactionDialog.tsx)).
-5. Sceglie il **Wallet di destinazione**. Per la **Categoria** il modale distingue due casi:
-   - *singolo movimento*: la categoria si seleziona a mano ed è filtrata sul tipo atteso dal segno dell'importo;
-   - *import massivo*: l'**auto-suggerimento** è attivo di default e propone a ogni movimento una categoria attiva del tipo corretto, scelta confrontando descrizione e controparte con il nome della categoria. I movimenti vengono raggruppati per categoria suggerita e il client ripete la chiamata una volta per gruppo. Disattivando l'auto-suggerimento si indica un'unica categoria per tutti i movimenti selezionati.
-6. Il client invia la richiesta a `POST /bank/import` con `{ transactionIds, walletId, categoryId }`:
+5. Sceglie il **Wallet di destinazione** e, **per ogni movimento**, la **Categoria**: un menu filtrato sul tipo atteso dal segno dell'importo, precompilato da un suggerimento calcolato nel client (`lib/bankCategorySuggestion.ts` del client — sul server non esiste codice di categorizzazione):
+   - il suggerimento è *sicuro* solo se il nome di **una sola** categoria attiva del tipo giusto (almeno 3 caratteri) compare come parola intera in descrizione + controparte normalizzate;
+   - altrimenti (nessuna corrispondenza o pareggio) il movimento è marcato **incerto** (icona di avviso) e precompilato con la categoria `Altro` del suo tipo; se `Altro` non esiste il modale propone di crearla, e se l'utente rifiuta la categoria va scelta a mano.
+6. All'invio il client raggruppa i movimenti per categoria e chiama `POST /bank/import` con `{ transactionIds, walletId, categoryId }` **una volta per gruppo**, perché la route accetta un solo `categoryId` per chiamata. Se un gruppo fallisce dopo che altri sono andati a buon fine, l'import è parziale e il modale lo segnala. Per ogni chiamata il server:
    - Crea i record nella tabella `Transaction` di Flow Wise. Il tipo è `defaultType` se il campo opzionale è presente nella richiesta, altrimenti è deciso dal segno dell'importo (`amount >= 0` &rarr; Entrata `"I"`, `amount < 0` &rarr; Spesa `"E"`); l'importo viene salvato in valore assoluto. Il client attuale non invia `defaultType`, quindi per l'import da interfaccia vale sempre il segno.
    - Aggiorna lo stato in `bank_transactions` a `"imported"`.
    - Invalida la cache TanStack Query per aggiornare istantaneamente Dashboard, Wallet ed elenchi Entrate/Spese.

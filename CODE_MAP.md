@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `bf5772e`.
+Forma `express`, radice sorgente `.`, commit `093e46c`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -107,7 +107,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/amount.js` — exports: const `amountToCents`, `signedAmountCents`
 - `utils/amount.test.js` — test
 - `utils/asyncHandler.js` — exports: const `asyncHandler`
-- `utils/bankService.js` — exports: const `createBankOAuthState`, `disconnectBankConnection`, `ensureValidToken`, `fetchTransactions`, `generateMockBankTransactions`, `getAuthorizationUrl`, `getBankConnection`, `getBankSetupStatus`, `getGoCardlessToken`, `getSupportedBanks`, `getUserBankConnections`, `getUserBankTransactions`, `handleGoCardlessCallback`, `importBankTransactionsToApp`, `isMockBankModeEnabled`, `POPULAR_BANKS`, `saveBankConnection`, `syncBankTransactions`, `verifyBankOAuthState`
+- `utils/bankService.js` — exports: const `createBankOAuthState`, `disconnectBankConnection`, `ensureValidToken`, `fetchAccountBalance`, `fetchTransactions`, `generateMockBankTransactions`, `getAuthorizationUrl`, `getBankConnection`, `getBankSetupStatus`, `getGoCardlessToken`, `getSupportedBanks`, `getUserBankConnections`, `getUserBankTransactions`, `handleGoCardlessCallback`, `importBankTransactionsToApp`, `isMockBankModeEnabled`, `normalizeAccountBalance`, `POPULAR_BANKS`, `saveBankConnection`, `syncBankTransactions`, `verifyBankOAuthState`
 - `utils/bankService.test.js` — test
 - `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `startBankSyncScheduler`, `stopBankSyncScheduler`
 - `utils/bankTokenCrypto.js` — exports: const `decryptToken`, `ENCRYPTED_TOKEN_PREFIX`, `encryptToken`, `isEncryptedToken`
@@ -147,6 +147,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/006_budget_category_fk_restrict.sql` — 006_budget_category_fk_restrict.sql
 - `migrations/007_budget_wallet_fk_restrict.down.sql` — 007_budget_wallet_fk_restrict.down.sql
 - `migrations/007_budget_wallet_fk_restrict.sql` — 007_budget_wallet_fk_restrict.sql
+- `migrations/008_bank_connection_balance.down.sql` — ALTER TABLE bank_connections
+- `migrations/008_bank_connection_balance.sql` — ALTER TABLE bank_connections
 
 ## Script di radice
 
