@@ -26,7 +26,7 @@ Configura `ALLOWED_ORIGINS` per le origini frontend non incluse nelle
 impostazioni di sviluppo. Conserva le chiavi solo nell'ambiente server e non
 committare `.env`.
 
-Per l'agente AI configura `LLM_API_KEY`. In assenza di override, usa l'API
+Per l'agente AI di analisi spese (`/ai-beta`) configura `LLM_API_KEY`; l'import automatico dei movimenti bancari non lo usa (categorie con regole locali, vedi `BANK_INTEGRATION.md`). In assenza di override, usa l'API
 compatibile OpenAI di Groq (`LLM_API_BASE_URL=https://api.groq.com/openai/v1`)
 e il modello `qwen/qwen3.8-27b`; entrambi possono essere cambiati con
 `LLM_API_BASE_URL` e `LLM_MODEL`. Le spese aggregate e alcuni dettagli delle

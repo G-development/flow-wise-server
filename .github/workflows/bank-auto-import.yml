@@ -59,7 +59,7 @@ jobs:
               -X POST -H "x-scheduler-secret: $SCHEDULER_SECRET" \
               "$SERVER_URL/bank/scheduler/import?limit=50")
             echo "Lotto $round: HTTP $status"
-            jq '{success, imported, alreadyImported, byModel, byFallback, withoutCategory, remaining, errors}' import.json || cat import.json
+            jq '{success, imported, alreadyImported, byRule, byFallback, withoutCategory, remaining, errors}' import.json || cat import.json
             if [ "$status" != "200" ]; then exit 1; fi
             if [ "$(jq -r .success import.json)" != "true" ]; then failed=1; fi
             remaining=$(jq -r .remaining import.json)

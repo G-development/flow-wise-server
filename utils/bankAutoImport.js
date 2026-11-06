@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { categorizeBankTransactions } from "../agents/categorizationAgent.js";
+import { categorizeWithRules, loadRules } from "./categoryRules.js";
 import {
   buildAppTransactionFromBank,
   insertImportedTransactions,
@@ -15,9 +15,10 @@ import {
  *   - mai importati (`status = 'synced'`),
  *   - contabilizzati (`booking_status = 'booked'`; i 'pending' e i NULL restano fuori),
  *   - con data >= `auto_import_from`, se impostata;
- * chiede la categoria al modello e usa 'Altro' del tipo giusto quando il modello non
- * sceglie, sceglie male o non risponde. Lavora a lotti (`limit`) perche' la funzione su
- * Vercel ha una durata massima: il workflow richiama l'endpoint finche' `remaining` e' 0.
+ * e decide la categoria con le regole locali dell'utente (`category_rules`, vedi
+ * utils/categoryRules.js): nessun dato esce da Flow-Wise. Senza una regola che combacia il
+ * movimento va in 'Altro' del tipo giusto. Lavora a lotti (`limit`): il workflow richiama
+ * l'endpoint finche' `remaining` e' 0.
  *
  * Il risultato contiene solo conteggi: finisce nei log pubblici di GitHub Actions.
  */
@@ -54,12 +55,12 @@ export const bankTransactionType = (amount) => (Number(amount) >= 0 ? "I" : "E")
 
 /**
  * Decide la categoria finale di ogni movimento.
- * @returns {Array<{row, categoryId: number|null, source: "model"|"fallback"|"none"}>}
+ * @returns {Array<{row, categoryId: number|null, source: "rule"|"fallback"|"none"}>}
  */
 export const resolveCategories = (rows, assignments, fallback) =>
   rows.map((row, index) => {
-    const fromModel = assignments.get(String(index));
-    if (fromModel != null) return { row, categoryId: fromModel, source: "model" };
+    const fromRule = assignments.get(String(index));
+    if (fromRule != null) return { row, categoryId: fromRule, source: "rule" };
     const fallbackId = fallback[bankTransactionType(row.amount)];
     return fallbackId != null
       ? { row, categoryId: fallbackId, source: "fallback" }
@@ -94,10 +95,9 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
   const outcome = {
     imported: 0,
     alreadyImported: 0,
-    byModel: 0,
+    byRule: 0,
     byFallback: 0,
     withoutCategory: 0,
-    modelError: null,
   };
 
   const { data: wallet, error: walletError } = await client
@@ -123,27 +123,21 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
     .eq("active", true);
   if (categoriesError) throw new Error(`Lettura categorie fallita: ${categoriesError.message}`);
 
-  let assignments = new Map();
-  try {
-    assignments = await categorize(
-      rows.map((row, index) => ({
-        ref: String(index),
-        type: bankTransactionType(row.amount),
-        description: row.description,
-        counterparty: row.counterparty,
-        amount: row.amount,
-      })),
-      categories ?? []
-    );
-  } catch (error) {
-    // Scelta concordata: se il modello non risponde i movimenti vanno su 'Altro'.
-    outcome.modelError = error.message;
-  }
+  const rules = await loadRules(client, connection.user_id);
+  const assignments = categorize(
+    rows.map((row, index) => ({
+      ref: String(index),
+      type: bankTransactionType(row.amount),
+      description: row.description,
+      counterparty: row.counterparty,
+    })),
+    { rules, categories: categories ?? [] }
+  );
 
   const resolved = resolveCategories(rows, assignments, findFallbackCategories(categories ?? []));
   const toImport = resolved.filter((item) => item.categoryId != null);
   outcome.withoutCategory = resolved.length - toImport.length;
-  outcome.byModel = toImport.filter((item) => item.source === "model").length;
+  outcome.byRule = toImport.filter((item) => item.source === "rule").length;
   outcome.byFallback = toImport.filter((item) => item.source === "fallback").length;
 
   const inserted = await insertImportedTransactions(
@@ -175,13 +169,13 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
 export const runAutoImport = async ({
   limit = AUTO_IMPORT_DEFAULT_LIMIT,
   client = supabase,
-  categorize = categorizeBankTransactions,
+  categorize = categorizeWithRules,
 } = {}) => {
   const summary = {
     connections: 0,
     imported: 0,
     alreadyImported: 0,
-    byModel: 0,
+    byRule: 0,
     byFallback: 0,
     withoutCategory: 0,
     remaining: 0,
@@ -202,13 +196,10 @@ export const runAutoImport = async ({
         const outcome = await importConnection({ client, connection, limit: budget, categorize });
         summary.imported += outcome.imported;
         summary.alreadyImported += outcome.alreadyImported;
-        summary.byModel += outcome.byModel;
+        summary.byRule += outcome.byRule;
         summary.byFallback += outcome.byFallback;
         summary.withoutCategory += outcome.withoutCategory;
         budget -= outcome.imported + outcome.alreadyImported + outcome.withoutCategory;
-        if (outcome.modelError) {
-          summary.errors.push({ bank: connection.bank_id, step: "categorize", message: outcome.modelError });
-        }
         if (outcome.withoutCategory > 0) {
           summary.errors.push({
             bank: connection.bank_id,

@@ -1,5 +1,5 @@
-export const DEFAULT_LLM_API_BASE_URL = "https://api.groq.com/openai/v1";
-export const DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b";
+const DEFAULT_LLM_API_BASE_URL = "https://api.groq.com/openai/v1";
+const DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b";
 const toMoney = (cents) => Number((cents / 100).toFixed(2));
 
 export const summarizeExpensesForAI = (transactions, categories) => {

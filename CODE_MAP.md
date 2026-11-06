@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `61f23d6`.
+Forma `express`, radice sorgente `.`, commit `bfa3a10`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -102,9 +102,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 
 ## agents/
 
-- `agents/analyticsAgent.js` — exports: const `analyzeExpensesWithAI`, `DEFAULT_LLM_API_BASE_URL`, `DEFAULT_LLM_MODEL`, `summarizeExpensesForAI`
-- `agents/categorizationAgent.js` — exports: const `buildCategorizationRequest`, `CATEGORIZATION_TIMEOUT_MS`, `categorizeBankTransactions`, `extractJsonObject`, `validateAssignments`
-- `agents/categorizationAgent.test.js` — test
+- `agents/analyticsAgent.js` — exports: const `analyzeExpensesWithAI`, `summarizeExpensesForAI`
 
 ## utils/
 
@@ -118,6 +116,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `startBankSyncScheduler`, `stopBankSyncScheduler`
 - `utils/bankTokenCrypto.js` — exports: const `decryptToken`, `ENCRYPTED_TOKEN_PREFIX`, `encryptToken`, `isEncryptedToken`
 - `utils/bankTokenCrypto.test.js` — test
+- `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractMerchantKey`, `findMatchingRule`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `upsertRule`
+- `utils/categoryRules.test.js` — test
 - `utils/paginatedSelect.js` — exports: const `DEFAULT_MAX_PAGES`, `DEFAULT_PAGE_SIZE`, `fetchAllRows`, `toListResponse`
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`
@@ -157,6 +157,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/008_bank_connection_balance.sql` — ALTER TABLE bank_connections
 - `migrations/009_bank_auto_import.down.sql` — DROP INDEX IF EXISTS idx_bank_transactions_auto_import;
 - `migrations/009_bank_auto_import.sql` — 009_bank_auto_import.sql
+- `migrations/010_category_rules.down.sql` — DROP TABLE IF EXISTS category_rules;
+- `migrations/010_category_rules.sql` — 010_category_rules.sql
 
 ## Script di radice
 

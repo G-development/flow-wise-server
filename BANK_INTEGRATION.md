@@ -56,8 +56,9 @@ Assicurati di aver eseguito le seguenti migrazioni SQL nel database Supabase:
 2. `migrations/002_scope_bank_transaction_ids.sql`: vincolo di unicità `(user_id, bank_id, account_id, external_id)` per prevenire duplicati nei movimenti.
 3. `migrations/008_bank_connection_balance.sql`: colonne `balance_*` su `bank_connections` per l'ultimo saldo del conto (reversibile con `008_bank_connection_balance.down.sql`).
 4. `migrations/009_bank_auto_import.sql`: import automatico — `bank_connections.import_wallet_id` e `auto_import_from`, `bank_transactions.booking_status` (`booked` | `pending`), `Transaction.bank_transaction_id` con indice univoco (reversibile con `009_bank_auto_import.down.sql`).
+5. `migrations/010_category_rules.sql`: tabella `category_rules` delle regole locali di categoria (reversibile con `010_category_rules.down.sql`).
 
-**Ordine di rilascio:** `008` e `009` vanno applicate sul database **prima** di pubblicare il codice che le usa. Senza `009` la sincronizzazione fallisce (scrive `booking_status`) e l'import, manuale o automatico, fallisce (scrive `bank_transaction_id`).
+**Ordine di rilascio:** `008`, `009` e `010` vanno applicate sul database **prima** di pubblicare il codice che le usa. Senza `009` la sincronizzazione fallisce (scrive `booking_status`) e l'import, manuale o automatico, fallisce (scrive `bank_transaction_id`); senza `010` fallisce l'import automatico (legge `category_rules`).
 
 ### Struttura Tabelle:
 - **`bank_connections`**: memorizza `user_id`, `bank_id`, `account_id`, `access_token`, `refresh_token` (entrambi cifrati at-rest), `token_expires_at`, `last_synced` e l'ultimo saldo letto: `balance_amount`, `balance_currency`, `balance_type`, `balance_reference_date`, `balance_provider_updated_at`, `balance_fetched_at`, `balance_raw_data`.
@@ -109,19 +110,24 @@ Ogni mattina il workflow `.github/workflows/bank-auto-import.yml` (GitHub Action
 1. `POST /bank/scheduler/sync-now` — scarica i movimenti di tutte le banche connesse;
 2. `POST /bank/scheduler/import?limit=50` — più volte, finché `remaining` è 0 (massimo 20 lotti).
 
-Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l'import riportano errori: per esempio consenso GoCardless scaduto, provider AI non raggiungibile, categoria `Altro` mancante. Si può lanciare a mano dalla scheda **Actions** (`workflow_dispatch`).
+Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l'import riportano errori: per esempio consenso GoCardless scaduto o categoria `Altro` mancante. Si può lanciare a mano dalla scheda **Actions** (`workflow_dispatch`).
 
 **Cosa importa** (`utils/bankAutoImport.js`), per ogni banca con un wallet di destinazione impostato da *Your Bank*:
 - solo movimenti mai importati (`status = 'synced'`) e **contabilizzati** (`booking_status = 'booked'`);
 - solo con data uguale o successiva a `auto_import_from` (attivando senza data si parte da oggi);
 - nel wallet scelto, con importo assoluto e tipo deciso dal segno, collegati al movimento di origine (`Transaction.bank_transaction_id`).
 
-**Categorie** (`agents/categorizationAgent.js`): una sola chiamata al provider LLM (`LLM_API_KEY`, default Groq) per lotto. Al modello vanno descrizione, controparte, tipo e importo di ogni movimento, mai gli id del database. Può scegliere solo tra le categorie attive dell'utente del tipo giusto; un id inesistente, di un altro tipo o `null` diventa la categoria `Altro` del tipo. Se il provider non risponde, l'intero lotto va su `Altro` e la risposta lo segnala in `errors`. Senza una `Altro` attiva per quel tipo il movimento non viene importato e resta `synced`.
+**Categorie: regole locali** (`utils/categoryRules.js`, tabella `category_rules` della migrazione `010`). Nessun servizio esterno: descrizioni e importi non escono da Flow-Wise. *(Fino al 2026-11-06 la categoria la sceglieva un LLM esterno, Groq: tolto per tenere i dati in casa e perché i limiti di richieste del piano gratuito mandavano interi lotti su `Altro`.)*
+- Una regola è "parola chiave → categoria" per un tipo (`I`/`E`). Combacia se la parola chiave compare a parole intere nella descrizione o nella controparte normalizzate (minuscole, senza accenti, solo lettere): `conad` trova `PAGAM. TRAMITE POS CONAD SUPERMERCATO`. Tra più regole vince la parola chiave più lunga.
+- Una regola verso una categoria disattivata o di un altro tipo viene ignorata.
+- Senza regola il movimento va nella categoria `Altro` del suo tipo; senza una `Altro` attiva non viene importato e resta `synced`.
+- **Le regole si imparano dalle correzioni:** quando cambi la categoria di un movimento importato dalla banca (`PUT /transaction/:id`), il server ricava il nome del negozio o della controparte dal movimento bancario (`extractMerchantKey`, per esempio `conad supermercato`, `verso mario rossi`) e salva o aggiorna la regola (`source = 'learned'`). Non impara mai `Altro`.
+- Le regole iniziali si inseriscono una volta (`source = 'manual'`); non c'è ancora una schermata per gestirle.
 
 **Niente doppioni:** l'indice univoco su `Transaction.bank_transaction_id` fa ignorare (`ON CONFLICT DO NOTHING`) un movimento già importato, anche se import manuale e automatico si sovrappongono. Il conteggio finisce in `alreadyImported`.
 
 **Configurazione richiesta**
-- Vercel: `BANK_SCHEDULER_SECRET`, `LLM_API_KEY`, `GOCARDLESS_SECRET_ID`, `GOCARDLESS_SECRET_KEY`.
+- Vercel: `BANK_SCHEDULER_SECRET`, `GOCARDLESS_SECRET_ID`, `GOCARDLESS_SECRET_KEY`.
 - GitHub (repo `flow-wise-server`, *Settings → Secrets and variables → Actions*): `BANK_SCHEDULER_SECRET` con lo stesso valore. L'URL del server è scritto nel workflow.
 
 **Limiti noti**

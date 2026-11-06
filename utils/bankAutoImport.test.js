@@ -62,10 +62,11 @@ const categories = [
   { id: 3, name: " altro ", type: "I", active: true },
 ];
 
-const standardResponder = ({ remainingAfter = 0, insertedIds = ["t1", "t2"] } = {}) => (request) => {
+const standardResponder = ({ remainingAfter = 0, insertedIds = ["t1", "t2"], rules = [] } = {}) => (request) => {
   if (request.table === "bank_connections") return { data: [connection], error: null };
   if (request.table === "Wallet") return { data: { id: 7 }, error: null };
   if (request.table === "Category") return { data: categories, error: null };
+  if (request.table === "category_rules") return { data: rules, error: null };
   if (request.table === "bank_transactions" && request.op === "select") {
     if (request.selectOptions?.head) return { count: remainingAfter, error: null };
     return { data: bankRows, error: null };
@@ -85,9 +86,9 @@ test("findFallbackCategories trova 'Altro' attiva per tipo, ignorando maiuscole 
   );
 });
 
-test("resolveCategories: modello se valido, altrimenti Altro del tipo, altrimenti nessuna", () => {
+test("resolveCategories: regola se trovata, altrimenti Altro del tipo, altrimenti nessuna", () => {
   const resolved = resolveCategories(bankRows, new Map([["0", 1], ["1", null]]), { I: 3, E: 2 });
-  assert.deepEqual(resolved.map((r) => [r.categoryId, r.source]), [[1, "model"], [3, "fallback"]]);
+  assert.deepEqual(resolved.map((r) => [r.categoryId, r.source]), [[1, "rule"], [3, "fallback"]]);
 
   const none = resolveCategories(bankRows, new Map(), { I: null, E: 2 });
   assert.deepEqual(none.map((r) => [r.categoryId, r.source]), [[2, "fallback"], [null, "none"]]);
@@ -102,7 +103,7 @@ test("clampLimit: default 50, massimo 100, valori non validi tornano al default"
 
 test("runAutoImport legge solo movimenti synced, booked e dalla data configurata", async () => {
   const { client, requests } = fakeClient(standardResponder());
-  await runAutoImport({ client, categorize: async () => new Map([["0", 1], ["1", 3]]) });
+  await runAutoImport({ client, categorize: () => new Map([["0", 1], ["1", 3]]) });
 
   const read = requests.find((r) => r.table === "bank_transactions" && r.op === "select" && !r.selectOptions?.head);
   assert.deepEqual(
@@ -120,7 +121,7 @@ test("runAutoImport legge solo movimenti synced, booked e dalla data configurata
 
 test("runAutoImport inserisce con collegamento e ON CONFLICT, poi segna imported", async () => {
   const { client, requests } = fakeClient(standardResponder());
-  const summary = await runAutoImport({ client, categorize: async () => new Map([["0", 1], ["1", 3]]) });
+  const summary = await runAutoImport({ client, categorize: () => new Map([["0", 1], ["1", 3]]) });
 
   const upsert = requests.find((r) => r.table === "Transaction");
   assert.deepEqual(upsert.options, { onConflict: "bank_transaction_id", ignoreDuplicates: true });
@@ -134,36 +135,36 @@ test("runAutoImport inserisce con collegamento e ON CONFLICT, poi segna imported
   assert.deepEqual(mark.filters.find((f) => f[0] === "in")[2], ["b1", "b2"]);
 
   assert.equal(summary.imported, 2);
-  assert.equal(summary.byModel, 2);
+  assert.equal(summary.byRule, 2);
   assert.equal(summary.remaining, 0);
   assert.deepEqual(summary.errors, []);
 });
 
-test("runAutoImport: se il modello fallisce importa su Altro e lo segnala", async () => {
-  const { client, requests } = fakeClient(standardResponder());
-  const summary = await runAutoImport({
-    client,
-    categorize: async () => {
-      throw new Error("Il provider AI non ha risposto entro il tempo previsto");
-    },
-  });
+test("runAutoImport usa le regole locali dell'utente, senza servizi esterni", async () => {
+  const rules = [{ keyword: "esselunga", type: "E", category_id: 1, updated_at: "2026-11-01" }];
+  const { client, requests } = fakeClient(standardResponder({ rules }));
+  const summary = await runAutoImport({ client });
 
+  const rulesRead = requests.find((r) => r.table === "category_rules");
+  assert.deepEqual(rulesRead.filters, [["eq", "user_id", "u1"]]);
   const upsert = requests.find((r) => r.table === "Transaction");
-  assert.deepEqual(upsert.payload.map((t) => t.category_id), [2, 3]);
-  assert.equal(summary.byFallback, 2);
-  assert.equal(summary.errors[0].step, "categorize");
+  // ESSELUNGA -> regola (Spesa, 1); STIPENDIO senza regola -> Altro entrate (3)
+  assert.deepEqual(upsert.payload.map((t) => t.category_id), [1, 3]);
+  assert.equal(summary.byRule, 1);
+  assert.equal(summary.byFallback, 1);
+  assert.deepEqual(summary.errors, []);
 });
 
 test("runAutoImport conta come gia' importati i movimenti ignorati dal conflitto", async () => {
   const { client } = fakeClient(standardResponder({ insertedIds: ["t1"] }));
-  const summary = await runAutoImport({ client, categorize: async () => new Map() });
+  const summary = await runAutoImport({ client, categorize: () => new Map() });
   assert.equal(summary.imported, 1);
   assert.equal(summary.alreadyImported, 1);
 });
 
 test("runAutoImport riporta remaining per far richiamare il workflow", async () => {
   const { client } = fakeClient(standardResponder({ remainingAfter: 30 }));
-  const summary = await runAutoImport({ client, categorize: async () => new Map() });
+  const summary = await runAutoImport({ client, categorize: () => new Map() });
   assert.equal(summary.remaining, 30);
 });
 
@@ -172,7 +173,7 @@ test("runAutoImport non importa su un wallet di un altro utente", async () => {
   const { client, requests } = fakeClient((request) =>
     request.table === "Wallet" ? { data: null, error: null } : responder(request)
   );
-  const summary = await runAutoImport({ client, categorize: async () => new Map() });
+  const summary = await runAutoImport({ client, categorize: () => new Map() });
 
   assert.equal(requests.some((r) => r.table === "Transaction"), false);
   assert.equal(summary.errors[0].step, "import");

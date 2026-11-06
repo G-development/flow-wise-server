@@ -5,6 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../utils/validate.js";
 import { transactionCreateSchema, transactionUpdateSchema } from "../utils/schemas.js";
 import { fetchAllRows, toListResponse } from "../utils/paginatedSelect.js";
+import { learnRuleFromCorrection } from "../utils/categoryRules.js";
 
 const router = express.Router();
 
@@ -90,6 +91,14 @@ router.put(
     const { description, note, amount, date, type, wallet_id, category_id } =
       req.body;
 
+    // Categoria prima della modifica: serve a capire se l'utente l'ha corretta.
+    const { data: previous } = await supabase
+      .from("Transaction")
+      .select("category_id")
+      .eq("id", id)
+      .eq("userid", req.user.id)
+      .maybeSingle();
+
     const { data, error } = await supabase
       .from("Transaction")
       .update({
@@ -107,6 +116,20 @@ router.put(
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
+
+    // Una correzione della categoria di un movimento importato dalla banca diventa una
+    // regola locale (utils/categoryRules.js): la prossima volta lo stesso negozio prende
+    // da solo questa categoria. Un errore qui non deve far fallire la modifica.
+    try {
+      await learnRuleFromCorrection(supabase, {
+        userId: req.user.id,
+        previousCategoryId: previous?.category_id,
+        transaction: data,
+      });
+    } catch (learnError) {
+      console.error("Could not learn category rule:", learnError.message);
+    }
+
     res.status(200).json(data);
   })
 );
