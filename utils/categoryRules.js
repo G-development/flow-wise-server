@@ -18,7 +18,8 @@
 const GENERIC_WORDS = new Set(
   `srl spa sas snc sarl sca cie srls s r l et e di da del dei della delle il la lo le
   via viale piazza corso largo lungomare lungomar loc localita
-  roma milano napoli italia italy it data ore`.split(/\s+/)
+  roma milano napoli italia italy it data ore
+  pagam pagamento tramite pos carta identific univoco transazione iban benef`.split(/\s+/)
 );
 
 export const normalizeForRules = (text) =>
