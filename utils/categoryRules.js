@@ -109,6 +109,15 @@ export const findMatchingRule = (text, type, rules) => {
 };
 
 /**
+ * Testo su cui si cercano le regole: descrizione, controparte e il nome estratto.
+ * Il nome estratto serve alle chiavi con prefisso ("verso anna bianchi", "da luca verdi"):
+ * "verso"/"da" non compaiono nel testo di un bonifico ("a favore di: Anna Bianchi"), quindi
+ * senza di esso una regola imparata da una correzione non combacerebbe mai.
+ */
+export const ruleTextFor = (description, counterparty = "") =>
+  `${description ?? ""} ${counterparty ?? ""} | ${extractMerchantKey(description, counterparty)}`;
+
+/**
  * Categoria per ogni movimento: Map ref -> categoryId, oppure null se nessuna regola
  * combacia o la regola punta a una categoria non attiva o di un altro tipo.
  * @param {Array<{ref, type, description, counterparty}>} items
@@ -119,7 +128,7 @@ export const categorizeWithRules = (items, { rules, categories }) => {
   );
   const result = new Map();
   for (const item of items) {
-    const rule = findMatchingRule(`${item.description ?? ""} ${item.counterparty ?? ""}`, item.type, rules);
+    const rule = findMatchingRule(ruleTextFor(item.description, item.counterparty), item.type, rules);
     const categoryId = rule ? Number(rule.category_id) : null;
     result.set(
       item.ref,

@@ -131,3 +131,23 @@ test("learnRuleFromCorrection non impara 'Altro', ne' una categoria invariata, n
   );
   assert.equal(same.upserts.length + manual.upserts.length, 0);
 });
+
+test("categorizeWithRules: le chiavi con prefisso combaciano anche con i bonifici", () => {
+  const personRules = [
+    { keyword: "verso anna bianchi", type: "E", category_id: 40 },
+    { keyword: "da luca verdi", type: "I", category_id: 41 },
+  ];
+  const categories = [
+    { id: 40, type: "E", active: true },
+    { id: 41, type: "I", active: true },
+  ];
+  const result = categorizeWithRules(
+    [
+      { ref: "0", type: "E", description: "ADDEBITO BON IST 0126 Bonifico da Voi disposto a favore di: Anna Bianchi Affitto", counterparty: "" },
+      { ref: "1", type: "I", description: "ACCR BON ISTANT Bonifico a Vostro favore disposto da: MITT.: Luca Verdi BENEF.: Mario Rossi", counterparty: "" },
+    ],
+    { rules: personRules, categories }
+  );
+  assert.equal(result.get("0"), 40);
+  assert.equal(result.get("1"), 41);
+});
