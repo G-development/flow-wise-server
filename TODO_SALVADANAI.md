@@ -276,7 +276,8 @@ Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, 
   (server 230/230 + `node --check`; client 30/30 + `tsc` + `next build`). Non ancora su `main`, quindi non pubblicati
 - [x] Server su `main` e in produzione — 9/11: push di Gio `3c42005..4748414`, deploy Vercel Production riuscito,
   `flow-wise-server.vercel.app` risponde (`/healthz` 204) e serve la pagina API nuova
-- [ ] Client su `main` e in produzione
+- [x] Client su `main` e in produzione — 9/11: push di Gio `a22bf51..b6a18f0`, deploy Vercel Production riuscito,
+  `flow-wise-client.vercel.app/transfers` risponde 200
 - [ ] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
