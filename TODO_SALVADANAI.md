@@ -196,6 +196,9 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   barra di navigazione in basso a 5 colonne (prima era fissa a 4 e "Wallet" andava a capo); selettore
   Income/Expense/Transfer su una riga sua, griglia a 3 colonne, icone nascoste sotto i 640 px (prima
   "Transfer" usciva dal riquadro, poi le etichette venivano tagliate)
+- [x] Branch `plan/salvadanai-annuali` pushati da Gio su GitHub (server e client) — 9/11, con `pre-push` verde
+  (server 230/230 + `node --check`; client 30/30 + `tsc` + `next build`). Non ancora su `main`, quindi non pubblicati
+- [ ] Merge su `main` e pubblicazione: prima il server, poi il client (la `011` è già applicata). Decisione di Gio
 - [ ] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
