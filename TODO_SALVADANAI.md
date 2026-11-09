@@ -159,9 +159,11 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
     intatte); up di nuovo dopo down: ok
   - Limite della prova: lo schema locale è ricostruito, non un dump. Non contiene trigger, policy
     RLS e vincoli del live che PostgREST non espone
-- [ ] Applicare `011` sul database live (SQL editor di Supabase, lo fa Gio). **Quando:** insieme al
-  codice dei passi server e client, non prima. La migrazione è innocua per i dati, ma la categoria
-  "Trasferimento" comparirebbe subito nella pagina Categorie dell'app attuale come se fosse una spesa
+- [x] `011` applicata sul database live da Gio (SQL editor, "Success. No rows returned") — 9/11.
+  Verificato in sola lettura: colonna `to_wallet_id` presente, 4 categorie "Trasferimento" attive
+  (una per ciascuno dei 4 utenti), transazioni intatte (223 `I` + 1.388 `E` = 1.611), nessuna `T`.
+  Fino alla pubblicazione del codice nuovo l'app attuale mostra "Trasferimento" tra le categorie e
+  ne permette l'eliminazione: non eliminarla (rieseguire la `011` la ricreerebbe)
 - [x] Server (passo 2) — 9/11, branch `plan/salvadanai-annuali`, non pubblicato:
   - `utils/amount.js`: `walletDeltasCents` (T − origine, + destinazione, lato vuoto ignorato);
     `signedAmountCents` lancia per ogni tipo diverso da `I`/`E`
