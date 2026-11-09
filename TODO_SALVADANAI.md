@@ -175,7 +175,14 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - **Ordine di rilascio:** questo server legge e scrive `to_wallet_id`, quindi va pubblicato **dopo** aver applicato la `011`
 - [ ] Import CSV e import bancario: restano `I`/`E` per ora (CSV deciso; banca al passo 4)
 - [ ] Anomalie trovate nei dati live (9/11), da sistemare a parte: 24 transazioni con una categoria di tipo diverso dal loro, 1 con la categoria di un altro utente. Per non bloccarne la modifica, i controlli nuovi valgono solo per le T
-- [ ] Client: inserimento e modifica di una `T`; i widget la ignorano; test
+- [x] Client (passo 3) — 9/11, branch `plan/salvadanai-annuali` di `flow-wise-client`, non pubblicato:
+  - "Add transaction" ha una terza scelta **Transfer**: wallet "From" e "To", categoria di sistema scelta da sola
+  - nuova pagina **/transfers** (voce "Transfers" nel menu): in alto i trasferimenti **da assegnare**, ognuno con la scelta del wallet mancante e "Assegna"; sotto l'elenco completo con eliminazione
+  - pagina Categorie: "Trasferimento" con badge "Transfer", interruttore disattivato e nessuna azione
+  - `lib/transfer.ts` (lato mancante, corpo del PUT di assegnazione) con test; `signedAmount` rifiuta i tipi sconosciuti come nel server
+  - widget, liste Incomes/Expenses e import bancario manuale non cambiano: leggono `/income` e `/expense` o filtrano per `I`/`E`, quindi ignorano le `T`
+  - verificato: `npm test` (30/30 test, `tsc`, `next build` con la route `/transfers`). **Non verificato nell'app vera**: serve la `011` applicata e il server nuovo in esecuzione
+  - Modifica completa di una `T` già assegnata (importo, data): per ora si elimina e si ricrea
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
 - [ ] Le regole costruite solo sul nome di una persona (`verso michele scaldarella`, `da eduard echimov`…) smettono di categorizzare in automatico: rimangono, ma come suggerimento da confermare
