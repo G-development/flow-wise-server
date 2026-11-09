@@ -182,7 +182,10 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - client: nella finestra di import manuale si può scegliere "Trasferimento" per qualsiasi movimento
   - test: server 234/234 (4 nuovi), client `tsc` + lint
   - **Effetto solo dopo l'aggiornamento delle 4 regole** (sotto) e la pubblicazione del server
-- [ ] Aggiornare le regole `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`, `revolut dublin` → categoria "Trasferimento" (54), tutte senza wallet. Elenco **approvato da Gio il 9/11**. **Quando:** subito dopo la pubblicazione del server nuovo, non prima: il server pubblicato oggi scarta le regole verso una categoria `T` e manderebbe quei movimenti in "Altro"
+- [x] Regole aggiornate il 9/11, dopo il deploy del server: `salvadanaio` (E 51→54, I 52→54),
+  `verso giovanni cuozzo` (51→54), `da giovanni cuozzo` (52→54), `revolut dublin` (51→54).
+  Su Giroconto restano solo le 7 regole sulle persone (passo 5)
+- [ ] Controllare il primo import automatico dopo il deploy (job delle 06:00): accantonamenti e riunioni somme devono entrare come `T` da assegnare
 - [ ] Creare il wallet "Revolut" (conto) — D-R1
 
 ### Progetto del passo 4: import bancario dei trasferimenti (proposta, 9/11)
@@ -271,7 +274,9 @@ Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, 
   "Transfer" usciva dal riquadro, poi le etichette venivano tagliate)
 - [x] Branch `plan/salvadanai-annuali` pushati da Gio su GitHub (server e client) — 9/11, con `pre-push` verde
   (server 230/230 + `node --check`; client 30/30 + `tsc` + `next build`). Non ancora su `main`, quindi non pubblicati
-- [ ] Merge su `main` e pubblicazione: prima il server, poi il client (la `011` è già applicata). Decisione di Gio
+- [x] Server su `main` e in produzione — 9/11: push di Gio `3c42005..4748414`, deploy Vercel Production riuscito,
+  `flow-wise-server.vercel.app` risponde (`/healthz` 204) e serve la pagina API nuova
+- [ ] Client su `main` e in produzione
 - [ ] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
