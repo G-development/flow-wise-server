@@ -185,6 +185,15 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - widget, liste Incomes/Expenses e import bancario manuale non cambiano: leggono `/income` e `/expense` o filtrano per `I`/`E`, quindi ignorano le `T`
   - verificato: `npm test` (30/30 test, `tsc`, `next build` con la route `/transfers`). **Non verificato nell'app vera**: serve la `011` applicata e il server nuovo in esecuzione
   - Modifica completa di una `T` già assegnata (importo, data): per ora si elimina e si ricrea
+- [x] Prova nell'app vera — 9/11, server e client dei branch in locale (porte 5030 e 3000) sul database live, login di Gio:
+  - creata da "Add Transfer" la `T` "TEST trasferimento", 1 €, GC Default wallet → Trade Republic:
+    saldi da 4.000,00 / −1.248,92 a 4.001,00 / −1.249,92; nel database riga 1880 `type T`,
+    `wallet_id 1`, `to_wallet_id 11`, categoria "Trasferimento" (54); nessuna spesa con quella descrizione
+  - eliminata da /transfers: lista vuota, saldi di nuovo 4.000,00 / −1.248,92
+  - pagina Categorie: "Trasferimento" con badge "Transfer", interruttore bloccato, "Gestita dall'app"
+  - **non provato nell'app vera:** l'assegnazione di un trasferimento "da assegnare" (dall'app non se ne crea uno; arriverà dall'import bancario al passo 4). È coperta dai test end-to-end del server
+- [ ] Difetti di layout visti nella prova (finestra stretta): la barra di navigazione in basso va a capo con 5 voci ("Wallet" finisce su una seconda riga); nel pannello "Add transaction" il pulsante "Transfer" esce dal riquadro
+- [ ] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
 - [ ] Le regole costruite solo sul nome di una persona (`verso michele scaldarella`, `da eduard echimov`…) smettono di categorizzare in automatico: rimangono, ma come suggerimento da confermare
