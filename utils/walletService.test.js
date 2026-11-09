@@ -46,6 +46,7 @@ const wallet = (id, opening_balance_cents) => ({
 
 const income = (wallet_id, amount) => ({ wallet_id, amount, type: "I" });
 const expense = (wallet_id, amount) => ({ wallet_id, amount, type: "E" });
+const transfer = (wallet_id, to_wallet_id, amount) => ({ wallet_id, to_wallet_id, amount, type: "T" });
 
 // Cifre reali del progetto live, così il test parla della stessa aritmetica che
 // il verifier controlla sul DB: Trade Republic (apertura 2150.00, movimenti
@@ -163,4 +164,27 @@ test("nessun wallet: risultato vuoto", async () => {
   const balances = await sumBalancesInCents("user-1", [], { client: fakeClient([]) });
 
   assert.equal(balances.size, 0);
+});
+
+test("un trasferimento sposta il saldo tra due wallet e non cambia il totale", async () => {
+  const balances = await sumBalancesInCents(
+    "user-1",
+    [wallet(1, 100000), wallet(11, 0)],
+    { client: fakeClient([expense(1, 50), transfer(1, 11, 150)]) }
+  );
+
+  assert.equal(balances.get("1"), 100000 - 5000 - 15000);
+  assert.equal(balances.get("11"), 15000);
+  assert.equal(balances.get("1") + balances.get("11"), 100000 - 5000, "il totale perde solo la spesa");
+});
+
+test("un trasferimento da assegnare aggiorna solo il lato noto", async () => {
+  const balances = await sumBalancesInCents(
+    "user-1",
+    [wallet(1, 100000), wallet(20, 50000)],
+    { client: fakeClient([transfer(1, null, 100), transfer(null, 1, 60)]) }
+  );
+
+  assert.equal(balances.get("1"), 100000 - 10000 + 6000);
+  assert.equal(balances.get("20"), 50000, "il salvadanaio non si muove finche' non e' assegnato");
 });

@@ -203,18 +203,33 @@ router.delete(
     // cascade. Same contract as the `DELETE /category/:id` guard.
     // Migration 007 moves the Budget side to RESTRICT as a backstop at the DB level; the
     // 23503 branch after the delete stays as the net under this guard.
-    const [transactions, budgets] = await Promise.all([
+    // Since migration 011 a transfer (type T) also references a wallet through
+    // `Transaction.to_wallet_id` (its destination, no ON DELETE action either): both
+    // columns are counted and reported together as transactions.
+    const [outgoing, incoming, budgets] = await Promise.all([
       supabase
         .from("Transaction")
         .select("id", { count: "exact", head: true })
         .eq("userid", req.user.id)
         .eq("wallet_id", id),
       supabase
+        .from("Transaction")
+        .select("id", { count: "exact", head: true })
+        .eq("userid", req.user.id)
+        .eq("to_wallet_id", id),
+      supabase
         .from("Budget")
         .select("id", { count: "exact", head: true })
         .eq("userid", req.user.id)
         .eq("walletid", id),
     ]);
+    const transactions = {
+      error: outgoing.error ?? incoming.error,
+      count:
+        outgoing.count == null || incoming.count == null
+          ? null
+          : outgoing.count + incoming.count,
+    };
 
     // No count means we cannot know whether the wallet is in use, so nothing is
     // deleted either way. Same error shape as the rest of this router.

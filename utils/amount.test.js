@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { amountToCents, signedAmountCents } from "./amount.js";
+import { amountToCents, signedAmountCents, walletDeltasCents } from "./amount.js";
 
 test("amountToCents legge la magnitudine e ignora il segno del numero", () => {
   assert.equal(amountToCents(50), 5000);
@@ -62,4 +62,41 @@ test("saldo e totali per tipo concordano su un set misto, righe negative incluse
   // L'identità che tiene insieme saldo e widget: il saldo è la differenza dei
   // due totali di periodo, non la somma dei valori grezzi.
   assert.equal(balance, incomes - expenses);
+});
+
+test("signedAmountCents rifiuta ogni tipo che non sia I o E (T compreso)", () => {
+  // Prima della migrazione 011 tutto cio' che non era "I" diventava una spesa: una
+  // "T" avrebbe scalato l'origine senza accreditare la destinazione.
+  assert.throws(() => signedAmountCents(50, "T"), /non è un'entrata né una spesa/);
+  assert.throws(() => signedAmountCents(50, undefined), /non è un'entrata né una spesa/);
+  assert.throws(() => signedAmountCents(50, "e"), /non è un'entrata né una spesa/);
+});
+
+test("walletDeltasCents: entrate e spese toccano solo wallet_id", () => {
+  assert.deepEqual(walletDeltasCents({ amount: 50, type: "I", wallet_id: 1 }), [["1", 5000]]);
+  assert.deepEqual(walletDeltasCents({ amount: -50, type: "E", wallet_id: 1 }), [["1", -5000]]);
+});
+
+test("walletDeltasCents: un trasferimento toglie dall'origine e aggiunge alla destinazione", () => {
+  assert.deepEqual(
+    walletDeltasCents({ amount: 150, type: "T", wallet_id: 1, to_wallet_id: 11 }),
+    [["1", -15000], ["11", 15000]]
+  );
+});
+
+test("walletDeltasCents: un lato da assegnare non tocca nessun saldo", () => {
+  // "Accantonamento somma sul Salvadanaio": conto noto, salvadanaio da scegliere.
+  assert.deepEqual(
+    walletDeltasCents({ amount: 100, type: "T", wallet_id: 1, to_wallet_id: null }),
+    [["1", -10000]]
+  );
+  // "Riunione somme dal salvadanaio": salvadanaio da scegliere, conto noto.
+  assert.deepEqual(
+    walletDeltasCents({ amount: 100, type: "T", wallet_id: null, to_wallet_id: 1 }),
+    [["1", 10000]]
+  );
+});
+
+test("walletDeltasCents rifiuta un tipo sconosciuto", () => {
+  assert.throws(() => walletDeltasCents({ amount: 1, type: "X", wallet_id: 1 }), /non è un'entrata né una spesa/);
 });

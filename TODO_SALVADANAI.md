@@ -162,7 +162,19 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
 - [ ] Applicare `011` sul database live (SQL editor di Supabase, lo fa Gio). **Quando:** insieme al
   codice dei passi server e client, non prima. La migrazione è innocua per i dati, ma la categoria
   "Trasferimento" comparirebbe subito nella pagina Categorie dell'app attuale come se fosse una spesa
-- [ ] Server: saldo dei wallet, Zod, route, import CSV e bancario gestiscono `T`; test
+- [x] Server (passo 2) — 9/11, branch `plan/salvadanai-annuali`, non pubblicato:
+  - `utils/amount.js`: `walletDeltasCents` (T − origine, + destinazione, lato vuoto ignorato);
+    `signedAmountCents` lancia per ogni tipo diverso da `I`/`E`
+  - `utils/walletService.js`: il saldo legge `to_wallet_id` e usa `walletDeltasCents`
+  - `utils/schemas.js`: Zod per tipo (`I`/`E` con wallet e senza destinazione; `T` con almeno un lato e lati diversi)
+  - `routes/transaction.js`: una T usa la categoria `T` dell'utente e wallet dell'utente; un'entrata o una spesa non può usare la categoria `T`
+  - `routes/wallet.js`: un wallet usato come destinazione è "in uso"
+  - `routes/category.js`: la categoria `T` si rinomina e basta (409 `SYSTEM_CATEGORY` per elimina, disattiva, cambia tipo)
+  - `routes/user.js`: la registrazione crea anche "Trasferimento"
+  - test: 230/230 (24 nuovi in `routes/transfer.test.js`, `utils/amount.test.js`, `utils/walletService.test.js`, `utils/schemas.test.js`); due test esistenti aggiornati perché ora la guardia fa una query in più
+  - **Ordine di rilascio:** questo server legge e scrive `to_wallet_id`, quindi va pubblicato **dopo** aver applicato la `011`
+- [ ] Import CSV e import bancario: restano `I`/`E` per ora (CSV deciso; banca al passo 4)
+- [ ] Anomalie trovate nei dati live (9/11), da sistemare a parte: 24 transazioni con una categoria di tipo diverso dal loro, 1 con la categoria di un altro utente. Per non bloccarne la modifica, i controlli nuovi valgono solo per le T
 - [ ] Client: inserimento e modifica di una `T`; i widget la ignorano; test
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima

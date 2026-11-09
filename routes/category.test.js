@@ -14,11 +14,12 @@ const USER_ID = "11111111-1111-1111-1111-111111111111";
 const OTHER_USER_ID = "22222222-2222-2222-2222-222222222222";
 
 /**
- * Le due query di guardia, nell'ordine in cui la route le emette: una categoria e' in
- * uso se la referenzia almeno una `Transaction` **o** un `Budget`. Un assert sulla
+ * Le query di guardia, nell'ordine in cui la route le emette: prima la categoria stessa
+ * (quella di sistema dei trasferimenti non si elimina, migrazione 011), poi i riferimenti:
+ * una categoria e' in uso se la referenzia almeno una `Transaction` **o** un `Budget`. Un assert sulla
  * sequenza esatta dice anche che la delete non e' stata tentata.
  */
-const GUARD_CALLS = ["Transaction:select", "Budget:select"];
+const GUARD_CALLS = ["Category:select", "Transaction:select", "Budget:select"];
 
 const matches = (row, filters) =>
   filters.every(({ column, value }) => String(row[column]) === String(value));
@@ -56,6 +57,8 @@ const createFakeSupabase = ({
       // count: null then). Distinct from `countErrors`, which sets an error too.
       const missingCount = nullCounts[state.table] === true;
 
+      if (state.single) return { data: matched[0] ?? null, error: null };
+
       return {
         data: state.options?.head === true ? null : matched,
         error: null,
@@ -90,6 +93,10 @@ const createFakeSupabase = ({
       },
       eq(column, value) {
         state.filters.push({ column, value });
+        return builder;
+      },
+      maybeSingle() {
+        state.single = true;
         return builder;
       },
       then(onFulfilled, onRejected) {
@@ -258,10 +265,11 @@ test("se il conteggio fallisce la categoria non viene cancellata", async () => {
   assert.equal(body.error, "failed to fetch");
   assert.equal(body.code, undefined);
 
-  // No delete was attempted: only the two guard counts, both failing on the same error.
+  // No delete was attempted: `countError` fails every select, so the route stops at the
+  // first one — the lookup of the category itself (migration 011) — before any count.
   assert.deepEqual(
     fake.calls.map((call) => `${call.table}:${call.op}`),
-    GUARD_CALLS
+    ["Category:select"]
   );
 
   // The category survives.

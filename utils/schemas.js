@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const transactionCreateSchema = z.object({
+const transactionBaseShape = {
   description: z.string().min(1, "description is required"),
   note: z.string().optional().nullable(),
   // Convenzione unica del progetto: `amount` è sempre >= 0, il segno lo decide
@@ -14,10 +14,48 @@ export const transactionCreateSchema = z.object({
         'amount must not be negative: enter the absolute value and use type ("I" for income, "E" for expense) to express the sign',
     }),
   date: z.string().min(1, "date is required"),
+  category_id: z.number(),
+};
+
+// Entrata o spesa: sempre un wallet, mai una destinazione (vincolo
+// `transaction_income_expense_wallets_chk` della migrazione 011).
+const incomeExpenseSchema = z.object({
+  ...transactionBaseShape,
   type: z.enum(["I", "E"]),
   wallet_id: z.number(),
-  category_id: z.number(),
+  to_wallet_id: z.null({ invalid_type_error: "to_wallet_id is only allowed for transfers (type T)" }).optional(),
 });
+
+// Trasferimento: `amount` va da `wallet_id` (origine) a `to_wallet_id`
+// (destinazione). Un lato può mancare ("da assegnare"), non entrambi, e i due
+// lati devono essere diversi (`transaction_transfer_wallets_chk`, migrazione 011).
+const transferSchema = z.object({
+  ...transactionBaseShape,
+  type: z.literal("T"),
+  wallet_id: z.number().nullable().optional(),
+  to_wallet_id: z.number().nullable().optional(),
+});
+
+export const transactionCreateSchema = z
+  .discriminatedUnion("type", [incomeExpenseSchema, transferSchema])
+  .superRefine((value, ctx) => {
+    if (value.type !== "T") return;
+    const from = value.wallet_id ?? null;
+    const to = value.to_wallet_id ?? null;
+    if (from == null && to == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["wallet_id"],
+        message: "a transfer needs at least one side: wallet_id (from) or to_wallet_id (to)",
+      });
+    } else if (from === to) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["to_wallet_id"],
+        message: "a transfer must move money between two different wallets",
+      });
+    }
+  });
 
 export const transactionUpdateSchema = transactionCreateSchema; // same shape expected by current code
 

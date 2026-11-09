@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `eaca70c`.
+Forma `express`, radice sorgente `.`, commit `0ad7487`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -87,6 +87,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `POST /transaction` — `requireAuth`
   - `PUT /transaction/:id` — `requireAuth`
   - `DELETE /transaction/:id` — `requireAuth`
+- `routes/transfer.test.js` — test
 - `routes/user.js` — mount `/users` — exports: default `router`
   - `POST /users/register` — pubblico
   - `GET /users/profile` — `requireAuth`
@@ -106,7 +107,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 
 ## utils/
 
-- `utils/amount.js` — exports: const `amountToCents`, `signedAmountCents`
+- `utils/amount.js` — exports: const `amountToCents`, `signedAmountCents`, `walletDeltasCents`
 - `utils/amount.test.js` — test
 - `utils/asyncHandler.js` — exports: const `asyncHandler`
 - `utils/bankAutoImport.js` — exports: const `AUTO_IMPORT_DEFAULT_LIMIT`, `AUTO_IMPORT_MAX_LIMIT`, `bankTransactionType`, `clampLimit`, `findFallbackCategories`, `resolveCategories`, `runAutoImport`

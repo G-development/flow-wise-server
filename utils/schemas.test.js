@@ -166,3 +166,64 @@ test("bankAutoImportSchema: wallet intero o null, data YYYY-MM-DD opzionale", as
   assert.equal(bankAutoImportSchema.safeParse({ walletId: 7, fromDate: "2026-13-45" }).success, false);
   assert.equal(bankAutoImportSchema.safeParse({}).success, false);
 });
+
+// ---------------------------------------------------------------------------
+// Trasferimenti (type T, migrazione 011)
+// ---------------------------------------------------------------------------
+
+const transferBody = (overrides = {}) => ({
+  description: "Accantonamento",
+  amount: 100,
+  date: "2026-11-01",
+  type: "T",
+  wallet_id: 1,
+  to_wallet_id: 11,
+  category_id: 9,
+  ...overrides,
+});
+
+test("un trasferimento con origine e destinazione è valido", () => {
+  const parsed = transactionCreateSchema.parse(transferBody());
+  assert.equal(parsed.wallet_id, 1);
+  assert.equal(parsed.to_wallet_id, 11);
+});
+
+test("un trasferimento con un solo lato è valido (lato da assegnare)", () => {
+  assert.equal(transactionCreateSchema.safeParse(transferBody({ to_wallet_id: null })).success, true);
+  assert.equal(transactionCreateSchema.safeParse(transferBody({ wallet_id: null })).success, true);
+  const { to_wallet_id, ...withoutDestination } = transferBody();
+  void to_wallet_id;
+  assert.equal(transactionCreateSchema.safeParse(withoutDestination).success, true);
+});
+
+test("un trasferimento senza lati o con lo stesso wallet è rifiutato", async () => {
+  await withServer(async (base) => {
+    const noSides = await post(base, "/transaction", transferBody({ wallet_id: null, to_wallet_id: null }));
+    const noSidesBody = await noSides.json();
+    assert.equal(noSides.status, 400);
+    assert.match(detailsFor(noSidesBody, "wallet_id").message, /at least one side/);
+
+    const sameWallet = await post(base, "/transaction", transferBody({ to_wallet_id: 1 }));
+    const sameWalletBody = await sameWallet.json();
+    assert.equal(sameWallet.status, 400);
+    assert.match(detailsFor(sameWalletBody, "to_wallet_id").message, /two different wallets/);
+  });
+});
+
+test("entrate e spese non accettano una destinazione né un wallet mancante", async () => {
+  await withServer(async (base) => {
+    const withDestination = await post(base, "/transaction", { ...validBody(), to_wallet_id: 11 });
+    const withDestinationBody = await withDestination.json();
+    assert.equal(withDestination.status, 400);
+    assert.match(detailsFor(withDestinationBody, "to_wallet_id").message, /only allowed for transfers/);
+
+    const { wallet_id, ...withoutWallet } = validBody();
+    void wallet_id;
+    const missingWallet = await post(base, "/transaction", withoutWallet);
+    assert.equal(missingWallet.status, 400);
+
+    // `to_wallet_id: null` su una spesa è innocuo: è il valore che il server scrive comunque.
+    const explicitNull = await post(base, "/transaction", { ...validBody(), to_wallet_id: null });
+    assert.equal(explicitNull.status, 201);
+  });
+});

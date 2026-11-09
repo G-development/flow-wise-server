@@ -202,6 +202,15 @@ rimozione della colonna fantasma `Wallet.balance`:
   struttura è in `005_drop_wallet_balance.down.sql` (ricrea la colonna col suo
   default, **non** i valori). Va eseguita **dopo** `003`: `003` legge
   `Wallet.balance` per il backfill e dopo il drop non è più rieseguibile.
+- `011_transfer_type.sql` — trasferimenti tra wallet (`type = 'T'`, già ammesso
+  dall'enum): aggiunge `Transaction.to_wallet_id` (destinazione; `wallet_id` è
+  l'origine), i vincoli di coerenza (entrate e spese sempre con un wallet e senza
+  destinazione; una T con almeno un lato, lati diversi), una sola categoria di tipo
+  `T` per utente e la categoria "Trasferimento" per gli utenti esistenti. Un lato
+  vuoto è un trasferimento "da assegnare". Pre-check, idempotente, rollback in
+  `011_transfer_type.down.sql` (bloccato se esistono righe T). Va applicata
+  **prima** di pubblicare il server che la usa: saldo e route leggono e scrivono
+  `to_wallet_id`. Progetto in `TODO_SALVADANAI.md`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare

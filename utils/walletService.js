@@ -1,5 +1,5 @@
 import { supabase } from "../config/supabaseClient.js";
-import { signedAmountCents } from "./amount.js";
+import { walletDeltasCents } from "./amount.js";
 
 /**
  * Il saldo di un wallet non è memorizzato: è derivato dalle transazioni.
@@ -118,7 +118,7 @@ export const sumBalancesInCents = async (
     const from = page * PAGE_SIZE;
     const { data, error } = await client
       .from("Transaction")
-      .select("wallet_id, amount, type")
+      .select("wallet_id, to_wallet_id, amount, type")
       .eq("userid", userId)
       .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
@@ -129,9 +129,9 @@ export const sumBalancesInCents = async (
 
     const rows = data ?? [];
     for (const transaction of rows) {
-      const key = String(transaction.wallet_id);
-      const delta = signedAmountCents(transaction.amount, transaction.type);
-      balances.set(key, (balances.get(key) ?? 0) + delta);
+      for (const [key, delta] of walletDeltasCents(transaction)) {
+        balances.set(key, (balances.get(key) ?? 0) + delta);
+      }
     }
 
     if (rows.length < PAGE_SIZE) {

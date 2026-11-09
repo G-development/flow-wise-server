@@ -398,7 +398,7 @@
               <code class="endpoint-path">/transaction</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Create a new transaction</div>
+            <div class="endpoint-description">Create a new transaction (<code>type</code> <code>"I"</code>/<code>"E"</code> with <code>wallet_id</code>, or <code>"T"</code> transfer from <code>wallet_id</code> to <code>to_wallet_id</code> with the transfer category)</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
@@ -494,7 +494,7 @@
               <code class="endpoint-path">/category/:id</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Update a category (<code>name</code>, <code>type</code>, <code>active</code>)</div>
+            <div class="endpoint-description">Update a category (<code>name</code>, <code>type</code>, <code>active</code>; the transfer category can only be renamed)</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">

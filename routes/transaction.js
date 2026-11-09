@@ -9,6 +9,54 @@ import { learnRuleFromCorrection } from "../utils/categoryRules.js";
 
 const router = express.Router();
 
+/**
+ * Controlli sui riferimenti di una transazione che lo schema Zod non può fare.
+ *
+ * - Trasferimento (`T`): i wallet indicati sono dell'utente e la categoria è la sua
+ *   categoria di sistema di tipo `T` ("Trasferimento", migrazione 011).
+ * - Entrata o spesa: la categoria non è quella di tipo `T`.
+ *
+ * Per entrate e spese non si verifica altro di proposito: nel database live 24
+ * transazioni hanno una categoria di tipo diverso dal loro e una ha la categoria di
+ * un altro utente (9/11/2026). Un controllo più severo impedirebbe di modificarle;
+ * vanno sistemate a parte (TODO_SALVADANAI.md).
+ *
+ * @returns {Promise<string|null>} messaggio d'errore, o null se va tutto bene
+ */
+const checkTransactionReferences = async (userId, body) => {
+  const { data: category, error: categoryError } = await supabase
+    .from("Category")
+    .select("id, type")
+    .eq("id", body.category_id)
+    .eq("userid", userId)
+    .maybeSingle();
+  if (categoryError) throw new Error(categoryError.message);
+
+  if (body.type !== "T") {
+    return category?.type === "T"
+      ? "the transfer category can only be used by transfers (type T)"
+      : null;
+  }
+
+  if (category?.type !== "T") {
+    return "a transfer must use the transfer category (type T)";
+  }
+
+  for (const walletId of [body.wallet_id, body.to_wallet_id]) {
+    if (walletId == null) continue;
+    const { data: wallet, error: walletError } = await supabase
+      .from("Wallet")
+      .select("id")
+      .eq("id", walletId)
+      .eq("userid", userId)
+      .maybeSingle();
+    if (walletError) throw new Error(walletError.message);
+    if (!wallet) return `wallet ${walletId} not found`;
+  }
+
+  return null;
+};
+
 // GET all transactions
 router.get(
   "/all",
@@ -58,8 +106,11 @@ router.post(
   requireAuth,
   validate(transactionCreateSchema),
   asyncHandler(async (req, res) => {
-    const { description, note, amount, date, type, wallet_id, category_id } =
+    const { description, note, amount, date, type, wallet_id, to_wallet_id, category_id } =
       req.body;
+
+    const referenceError = await checkTransactionReferences(req.user.id, req.body);
+    if (referenceError) return res.status(400).json({ error: referenceError });
 
     const { data, error } = await supabase
       .from("Transaction")
@@ -70,7 +121,8 @@ router.post(
         amount,
         date,
         type,
-        wallet_id,
+        wallet_id: wallet_id ?? null,
+        to_wallet_id: to_wallet_id ?? null,
         category_id,
       })
       .select()
@@ -88,8 +140,11 @@ router.put(
   validate(transactionUpdateSchema),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { description, note, amount, date, type, wallet_id, category_id } =
+    const { description, note, amount, date, type, wallet_id, to_wallet_id, category_id } =
       req.body;
+
+    const referenceError = await checkTransactionReferences(req.user.id, req.body);
+    if (referenceError) return res.status(400).json({ error: referenceError });
 
     // Categoria prima della modifica: serve a capire se l'utente l'ha corretta.
     const { data: previous } = await supabase
@@ -107,7 +162,8 @@ router.put(
         amount,
         date,
         type,
-        wallet_id,
+        wallet_id: wallet_id ?? null,
+        to_wallet_id: to_wallet_id ?? null,
         category_id,
       })
       .eq("id", id)

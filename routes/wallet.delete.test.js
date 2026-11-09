@@ -225,7 +225,7 @@ test("un wallet referenziato da transazioni e' rifiutato con un 409 esplicito", 
   // Postgres message can reach the client because the delete was never attempted.
   assert.ok(walletRow(activeFake), "il wallet sopravvive al rifiuto");
   assert.equal(activeFake.store.Transaction.length, 3);
-  assert.deepEqual(guardOps(activeFake), ["Budget", "Transaction"]);
+  assert.deepEqual(guardOps(activeFake), ["Budget", "Transaction", "Transaction"]);
   assert.equal(deleteCalls(activeFake).length, 0);
   assert.doesNotMatch(body.error, /foreign key|violates|constraint/i);
 
@@ -234,6 +234,14 @@ test("un wallet referenziato da transazioni e' rifiutato con un 409 esplicito", 
     { column: "userid", value: USER_ID },
     { column: "wallet_id", value: String(WALLET_ID) },
   ]);
+  // Since migration 011 the destination of a transfer is counted too.
+  assert.deepEqual(
+    activeFake.calls.filter((call) => call.table === "Transaction")[1].filters,
+    [
+      { column: "userid", value: USER_ID },
+      { column: "to_wallet_id", value: String(WALLET_ID) },
+    ]
+  );
   assert.deepEqual(callFor(activeFake, "Budget").filters, [
     { column: "userid", value: USER_ID },
     { column: "walletid", value: String(WALLET_ID) },
@@ -341,7 +349,7 @@ test("un wallet non in uso si cancella normalmente", async () => {
   assert.equal(activeFake.store.Transaction.length, 1, "i movimenti non si toccano");
 
   // Guard first, delete second — and the delete is filtered by owner.
-  assert.deepEqual(guardOps(activeFake), ["Budget", "Transaction"]);
+  assert.deepEqual(guardOps(activeFake), ["Budget", "Transaction", "Transaction"]);
   const [deleted] = deleteCalls(activeFake);
   assert.ok(deleted, "la delete e' stata tentata");
   assert.deepEqual(deleted.filters, [

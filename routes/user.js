@@ -79,11 +79,15 @@ router.post("/register", createAccountLimiter, validate(userRegisterSchema), asy
     const expBaseCategories = ["Food", "Transport", "Entertainment"];
     const baseCategories = [...incBaseCategories, ...expBaseCategories];
 
-    const categoryInserts = baseCategories.map((name) => ({
-      name,
-      userid: userId,
-      type: incBaseCategories.includes(name) ? "I" : "E",
-    }));
+    const categoryInserts = [
+      ...baseCategories.map((name) => ({
+        name,
+        userid: userId,
+        type: incBaseCategories.includes(name) ? "I" : "E",
+      })),
+      // Categoria di sistema dei trasferimenti: una sola per utente (migrazione 011).
+      { name: "Trasferimento", userid: userId, type: "T" },
+    ];
 
     const { error: catError } = await supabase
       .from("Category")

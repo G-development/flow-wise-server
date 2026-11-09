@@ -17,6 +17,28 @@ export const createCategoryRouter = ({
 } = {}) => {
   const router = express.Router();
 
+  /**
+   * La categoria di tipo `T` è quella di sistema "Trasferimento" (migrazione 011): ogni
+   * trasferimento la usa, quindi non si elimina, non si disattiva e non cambia tipo.
+   * Si può solo rinominare. `isTransfer` dice se la categoria è quella di sistema; un
+   * `error` di lettura va rifiutato come gli errori dei conteggi di guardia: senza sapere
+   * che categoria è, non si modifica né si elimina niente.
+   */
+  const findTransferCategory = async (userId, id) => {
+    const { data, error } = await supabase
+      .from("Category")
+      .select("id, type")
+      .eq("id", id)
+      .eq("userid", userId)
+      .maybeSingle();
+    return { isTransfer: data?.type === "T", error };
+  };
+
+  const SYSTEM_CATEGORY_ERROR = {
+    error: "the transfer category is managed by the app: it can be renamed, not deleted, deactivated or retyped",
+    code: "SYSTEM_CATEGORY",
+  };
+
   // GET all categories for logged user
   router.get(
     "/",
@@ -116,6 +138,12 @@ export const createCategoryRouter = ({
     asyncHandler(async (req, res) => {
       const { name, type, active } = req.body;
 
+      if (type !== undefined || active === false) {
+        const lookup = await findTransferCategory(req.user.id, req.params.id);
+        if (lookup.error) return res.status(400).json({ error: lookup.error.message });
+        if (lookup.isTransfer) return res.status(409).json(SYSTEM_CATEGORY_ERROR);
+      }
+
       const { data, error } = await supabase
         .from("Category")
         .update({ name, type, active })
@@ -143,6 +171,10 @@ export const createCategoryRouter = ({
       // rejection the user can act on beats a leaked constraint or a silent cascade.
       // Migration 006 moves the Budget side to RESTRICT as a backstop at the DB level; the
       // 23503 branch after the delete stays as the net under this guard.
+      const lookup = await findTransferCategory(req.user.id, req.params.id);
+      if (lookup.error) return res.status(400).json({ error: lookup.error.message });
+      if (lookup.isTransfer) return res.status(409).json(SYSTEM_CATEGORY_ERROR);
+
       const [transactions, budgets] = await Promise.all([
         supabase
           .from("Transaction")
