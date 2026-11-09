@@ -147,7 +147,21 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
 3. client: tipi, saldo, creazione e modifica di una `T`, badge nella lista, elenco "da assegnare"
 4. banca: regole verso la categoria Trasferimento producono `T`; endpoint per assegnare il lato mancante
 5. dati: conversione dei movimenti oggi in "Giroconto" (elenco mostrato a Gio prima)
-- [ ] Migrazione `011` + `.down.sql`, provata su una copia
+- [x] Migrazione `011_transfer_type.sql` + `.down.sql` scritte e provate su una copia — 9/11.
+  Copia: Postgres 18.3 locale con lo schema ricostruito da quello live e i dati veri di `Wallet` (5),
+  `Category` (47), `Transaction` (1.611), 4 utenti. Esito:
+  - up applicata due volte di fila (idempotente); 4 categorie "Trasferimento", una per utente
+  - rifiutate: `E` senza wallet, `I` con destinazione, `T` senza lati, `T` con lo stesso wallet sui
+    due lati, `T` verso un wallet inesistente, seconda categoria `T` per lo stesso utente,
+    eliminazione di un wallet usato come destinazione
+  - accettate: `T` completa, `T` senza destinazione, `T` senza origine
+  - down bloccata con una `T` presente; senza `T` riporta lo schema com'era (1.611 transazioni
+    intatte); up di nuovo dopo down: ok
+  - Limite della prova: lo schema locale è ricostruito, non un dump. Non contiene trigger, policy
+    RLS e vincoli del live che PostgREST non espone
+- [ ] Applicare `011` sul database live (SQL editor di Supabase, lo fa Gio). **Quando:** insieme al
+  codice dei passi server e client, non prima. La migrazione è innocua per i dati, ma la categoria
+  "Trasferimento" comparirebbe subito nella pagina Categorie dell'app attuale come se fosse una spesa
 - [ ] Server: saldo dei wallet, Zod, route, import CSV e bancario gestiscono `T`; test
 - [ ] Client: inserimento e modifica di una `T`; i widget la ignorano; test
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
