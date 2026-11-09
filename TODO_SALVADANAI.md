@@ -227,11 +227,21 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
 
 **Decisioni di Gio**
 
-- [ ] D-R1. Revolut: diventa un wallet "conto" (con Intesa e Trade Republic fa 3, il limite) e i
-  movimenti Intesa ↔ Revolut diventano `T`? Oppure le ricariche Revolut restano spese/entrate?
-- [ ] D-R2. Confermi che **tutte** le uscite "a favore di Giovanni Cuozzo" vanno a Trade Republic,
-  compresi i 2,36 del 26/09 rientrati lo stesso giorno?
-- [ ] D-R3. Import automatico di Revolut: fuori da questo passo (proposta), da valutare dopo D-R1
+- [x] D-R1. Revolut diventa un **wallet "conto"** (con Intesa e Trade Republic fa 3, il limite) e i
+  movimenti Intesa ↔ Revolut diventano `T` — deciso da Gio il 9/11. Conseguenza: senza import dei
+  movimenti Revolut (D-R3) il saldo del wallet Revolut conterebbe solo le ricariche e i rientri, non
+  le spese fatte con Revolut, e si allontanerebbe da quello reale
+- [x] D-R2. Le uscite "a favore di Giovanni Cuozzo" entrano **da assegnare**: la destinazione la
+  sceglie Gio ogni volta — deciso il 9/11
+- [x] D-R3. L'import dei movimenti Revolut è un **passo a parte**, da progettare subito dopo il passo 4 — deciso il 9/11
+
+**Conseguenza di D-R2 sulla proposta (punto 2):** con `verso giovanni cuozzo` da assegnare, l'unica
+regola con un wallet certo sarebbe `revolut dublin` (le ricariche "PRESSO Revolut Dublin" vanno solo a
+Revolut). Una colonna e una migrazione per una regola sola non valgono la complessità adesso: proposta
+rivista, **niente `counterpart_wallet_id` per ora**, tutte le `T` dalla banca entrano da assegnare.
+Si aggiunge dopo, se l'assegnazione a mano delle ricariche Revolut diventa una seccatura.
+Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`,
+`revolut dublin` → Trasferimento.
 - [ ] Anomalie trovate nei dati live (9/11), da sistemare a parte: 24 transazioni con una categoria di tipo diverso dal loro, 1 con la categoria di un altro utente. Per non bloccarne la modifica, i controlli nuovi valgono solo per le T
 - [x] Client (passo 3) — 9/11, branch `plan/salvadanai-annuali` di `flow-wise-client`, non pubblicato:
   - "Add transaction" ha una terza scelta **Transfer**: wallet "From" e "To", categoria di sistema scelta da sola
