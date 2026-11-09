@@ -3,6 +3,46 @@
 Contesto e motivazioni in `PLAN_SALVADANAI.md`. Si spunta una voce solo quando è fatta **e verificata**.
 Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 
+## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
+
+Fatti verificati il 9/11 (sola lettura): la connessione Revolut (`REVOLUT_REVOLT21`) è sull'account
+`test@test.it`, non su quello di Gio, ma i movimenti sono suoi; prima del 01/06/2026 ci sono 1.282
+transazioni su 1.611 (Gio: 1.276 su GC Default wallet dal 2000 ad aprile 2026, 5 di prova su Trade
+Republic; account di test: 1); nessuna ha `bank_transaction_id`.
+
+**1. Controllo del primo import automatico** (10/11 mattina)
+- [ ] Movimenti del job delle 06:00: gli accantonamenti / riunioni somme e le uscite verso Giovanni Cuozzo entrano come `T` da assegnare; nessun errore nel workflow
+
+**2. Pulizia delle transazioni prima del 01/06/2026** (decisa da Gio il 9/11)
+- [ ] Eliminare le 1.282 transazioni con `date < 2026-06-01` di **tutti gli account**. Gio ha scelto **niente backup**: prima di eseguire, conferma finale in chat con numeri esatti (operazione non reversibile)
+- [ ] Eliminare la categoria "Annuali" (id 11), che dopo la pulizia resta senza transazioni (D8)
+- [ ] Saldo di GC Default wallet **allineato al saldo reale**: apertura = saldo letto da GoCardless − somma delle transazioni rimaste. Prima mostrare i numeri a Gio, compresa la differenza con il saldo attuale dell'app; una differenza grande può voler dire movimenti mancanti o doppi tra giugno e agosto (94 transazioni inserite a mano prima dell'import automatico)
+- [ ] Trade Republic: senza le 5 transazioni di prova il saldo diventa l'apertura (2.150 €). Valore giusto da chiedere a Gio (versato totale, D3)
+
+**3. Passo 5 — conversione dei Giroconti già importati** (elenco approvato da Gio prima di scrivere)
+- [ ] Salvadanai, uscite verso Giovanni Cuozzo, ricariche Revolut e rientri da Revolut → `T` da assegnare (lato conto noto)
+- [ ] Movimenti con le persone → categoria provvisoria "Persone — da classificare"
+- [ ] Decidere cosa resta di "Giroconto"; controllo dei totali agosto–ottobre con l'Excel
+
+**4. Revolut**
+- [ ] Gio ricollega Revolut sul **suo** account (la connessione attuale è su `test@test.it`); poi passo Revolut: wallet "Revolut" (conto), saldo di apertura, import dei movimenti (D-R3)
+
+**5. Pagina "Movements"** (sostituisce Incomes, Expenses, Transfers e Wallets) — decisioni di Gio del 9/11
+- In alto le **card dei wallet**: logo e nome della banca (logo GoCardless per i conti collegati, icona generica per gli altri), saldo attuale, entrate e spese del periodo, azioni di modifica (nome, saldo di apertura, default, elimina) e "aggiungi wallet". Cliccare una card filtra solo quel wallet
+- Sotto la **tabella di tutti i movimenti**, con filtri: checkbox **Income / Expense / Transfer** combinabili, checkbox per **ogni wallet**, intervallo di date
+- **Totali della selezione**: entrate, spese, netto (i trasferimenti non entrano nel netto; con un solo wallet anche trasferimenti in entrata / uscita)
+- In cima i **trasferimenti da assegnare**, come oggi in /transfers
+- Lingua: **inglese**
+- Da progettare in dettaglio prima del codice:
+  - [ ] server: `/transaction/all` con `startDate` / `endDate` (come `/income/all`), con test
+  - [ ] da dove prendere il logo della banca (verificare cosa espongono `/bank/institutions` e `/bank/connections`)
+  - [ ] modifica completa di una `T` nel dialogo di modifica (oggi solo `I`/`E`)
+  - [ ] vecchi indirizzi `/incomes`, `/expenses`, `/transfers`, `/wallets` → rimando a `/movements` con il filtro giusto; menu ridotto
+  - [ ] vista iniziale: tutti i tipi e tutti i wallet selezionati, periodo come oggi (proposta)
+  - [ ] verifica nell'app vera su telefono e desktop
+
+**6. 1° dicembre**: Gio legge i saldi dei salvadanai dall'app Intesa (V2) → fase 2
+
 ## Fase 0 — Decisioni e verifiche
 
 Decisioni (di Gio):
