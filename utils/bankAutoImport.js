@@ -17,7 +17,8 @@ import {
  *   - con data >= `auto_import_from`, se impostata;
  * e decide la categoria con le regole locali dell'utente (`category_rules`, vedi
  * utils/categoryRules.js): nessun dato esce da Flow-Wise. Senza una regola che combacia il
- * movimento va in 'Altro' del tipo giusto. Lavora a lotti (`limit`): il workflow richiama
+ * movimento va in 'Altro' del tipo giusto; una regola verso "Trasferimento" lo fa entrare
+ * come trasferimento da assegnare. Lavora a lotti (`limit`): il workflow richiama
  * l'endpoint finche' `remaining` e' 0.
  *
  * Il risultato contiene solo conteggi: finisce nei log pubblici di GitHub Actions.
@@ -140,6 +141,9 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
   outcome.byRule = toImport.filter((item) => item.source === "rule").length;
   outcome.byFallback = toImport.filter((item) => item.source === "fallback").length;
 
+  // Una regola verso la categoria "Trasferimento" (tipo T) fa entrare il movimento come
+  // trasferimento da assegnare: serve il tipo della categoria, non solo il suo id.
+  const categoryTypeById = new Map((categories ?? []).map((category) => [Number(category.id), category.type]));
   const inserted = await insertImportedTransactions(
     client,
     toImport.map(({ row, categoryId }) =>
@@ -147,6 +151,7 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
         userId: connection.user_id,
         walletId: connection.import_wallet_id,
         categoryId,
+        categoryType: categoryTypeById.get(Number(categoryId)),
       })
     )
   );

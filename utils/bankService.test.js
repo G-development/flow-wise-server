@@ -244,3 +244,33 @@ test("buildAppTransactionFromBank: importo assoluto, tipo dal segno, collegament
     "I"
   );
 });
+
+test("buildAppTransactionFromBank: con la categoria T il movimento diventa un trasferimento da assegnare", () => {
+  const base = { id: "bank-uuid-2", bank_id: "BANK", date: "2026-11-30", counterparty: "" };
+
+  // Accantonamento: esce dal conto (wallet dell'import), il salvadanaio e' da scegliere.
+  const out = buildAppTransactionFromBank(
+    { ...base, amount: -100, description: "MOVIM. SALVADANAIO Accantonamento somma sul Salvadanaio" },
+    { userId: "u1", walletId: "7", categoryId: 54, categoryType: "T" }
+  );
+  assert.equal(out.type, "T");
+  assert.equal(out.amount, 100);
+  assert.equal(out.wallet_id, 7);
+  assert.equal(out.to_wallet_id, null);
+  assert.equal(out.category_id, 54);
+
+  // Riunione somme: rientra nel conto, l'origine e' da scegliere.
+  const back = buildAppTransactionFromBank(
+    { ...base, amount: 60, description: "MOVIM. SALVADANAIO Riunione somme dal salvadanaio" },
+    { userId: "u1", walletId: 7, categoryId: 54, categoryType: "T", defaultType: "I" }
+  );
+  assert.equal(back.type, "T", "defaultType non trasforma una T in entrata");
+  assert.equal(back.wallet_id, null);
+  assert.equal(back.to_wallet_id, 7);
+
+  // Entrate e spese restano come prima, con la destinazione esplicitamente vuota.
+  const expense = buildAppTransactionFromBank({ ...base, amount: -5 }, { userId: "u1", walletId: 7, categoryId: 3, categoryType: "E" });
+  assert.equal(expense.type, "E");
+  assert.equal(expense.wallet_id, 7);
+  assert.equal(expense.to_wallet_id, null);
+});

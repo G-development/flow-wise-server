@@ -1157,7 +1157,13 @@ export const importBankTransactionsToApp = async (
   }
 
   const appTransactions = bankTxns.map((bankTxn) =>
-    buildAppTransactionFromBank(bankTxn, { userId, walletId, categoryId, defaultType })
+    buildAppTransactionFromBank(bankTxn, {
+      userId,
+      walletId,
+      categoryId,
+      defaultType,
+      categoryType: category.type,
+    })
   );
 
   const inserted = await insertImportedTransactions(supabase, appTransactions);
@@ -1181,22 +1187,42 @@ export const importBankTransactionsToApp = async (
  * (`POST /bank/import`) e da quello automatico (`utils/bankAutoImport.js`).
  * `amount` e' sempre il valore assoluto; il segno del movimento decide `type`, salvo un
  * `defaultType` esplicito. `bank_transaction_id` collega la riga al movimento di origine.
+ *
+ * Con `categoryType: "T"` (la categoria "Trasferimento", migrazione 011) il movimento
+ * diventa un trasferimento "da assegnare": il wallet dell'import e' il conto, cioe'
+ * l'origine se il movimento e' un'uscita e la destinazione se e' un'entrata; l'altro lato
+ * resta vuoto e lo sceglie l'utente (pagina /transfers). `defaultType` non vale per una T.
  */
 export const buildAppTransactionFromBank = (
   bankTxn,
-  { userId, walletId, categoryId, defaultType }
+  { userId, walletId, categoryId, defaultType, categoryType }
 ) => {
   const rawAmount = Number(bankTxn.amount);
-  return {
+  const base = {
     userid: userId,
     description: bankTxn.description || bankTxn.counterparty || "Movimento Bancario",
     note: `Importato da banca (${bankTxn.bank_id})`,
     amount: Math.abs(rawAmount),
     date: new Date(bankTxn.date).toISOString(),
-    type: defaultType || (rawAmount >= 0 ? "I" : "E"),
-    wallet_id: Number(walletId),
     category_id: Number(categoryId),
     bank_transaction_id: bankTxn.id,
+  };
+
+  if (categoryType === "T") {
+    const outgoing = rawAmount < 0;
+    return {
+      ...base,
+      type: "T",
+      wallet_id: outgoing ? Number(walletId) : null,
+      to_wallet_id: outgoing ? null : Number(walletId),
+    };
+  }
+
+  return {
+    ...base,
+    type: defaultType || (rawAmount >= 0 ? "I" : "E"),
+    wallet_id: Number(walletId),
+    to_wallet_id: null,
   };
 };
 

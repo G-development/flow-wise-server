@@ -178,3 +178,36 @@ test("runAutoImport non importa su un wallet di un altro utente", async () => {
   assert.equal(requests.some((r) => r.table === "Transaction"), false);
   assert.equal(summary.errors[0].step, "import");
 });
+
+test("runAutoImport: una regola verso Trasferimento importa una T da assegnare dal conto", async () => {
+  const transferCategories = [...categories, { id: 54, name: "Trasferimento", type: "T", active: true }];
+  const salvadanaioRows = [
+    { id: "s1", bank_id: "BANK", amount: -100, date: "2026-11-30", description: "MOVIM. SALVADANAIO Accantonamento somma sul Salvadanaio", counterparty: "" },
+    { id: "s2", bank_id: "BANK", amount: 60, date: "2026-12-02", description: "MOVIM. SALVADANAIO Riunione somme dal salvadanaio", counterparty: "" },
+  ];
+  const rules = [
+    { keyword: "salvadanaio", type: "E", category_id: 54, updated_at: "2026-11-09" },
+    { keyword: "salvadanaio", type: "I", category_id: 54, updated_at: "2026-11-09" },
+  ];
+  const responder = standardResponder({ rules, insertedIds: ["t1", "t2"] });
+  const { client, requests } = fakeClient((request) => {
+    if (request.table === "Category") return { data: transferCategories, error: null };
+    if (request.table === "bank_transactions" && request.op === "select" && !request.selectOptions?.head) {
+      return { data: salvadanaioRows, error: null };
+    }
+    return responder(request);
+  });
+
+  const summary = await runAutoImport({ client });
+
+  const upsert = requests.find((r) => r.table === "Transaction");
+  assert.deepEqual(
+    upsert.payload.map((t) => [t.bank_transaction_id, t.type, t.amount, t.wallet_id, t.to_wallet_id, t.category_id]),
+    [
+      ["s1", "T", 100, 7, null, 54],
+      ["s2", "T", 60, null, 7, 54],
+    ]
+  );
+  assert.equal(summary.byRule, 2);
+  assert.deepEqual(summary.errors, []);
+});

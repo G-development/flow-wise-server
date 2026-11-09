@@ -151,3 +151,36 @@ test("categorizeWithRules: le chiavi con prefisso combaciano anche con i bonific
   assert.equal(result.get("0"), 40);
   assert.equal(result.get("1"), 41);
 });
+
+test("categorizeWithRules: una regola verso la categoria T vale per entrambi i segni", () => {
+  const transferRules = [
+    { keyword: "salvadanaio", type: "E", category_id: 54 },
+    { keyword: "salvadanaio", type: "I", category_id: 54 },
+  ];
+  const categories = [{ id: 54, type: "T", active: true }];
+  const result = categorizeWithRules(
+    [
+      { ref: "0", type: "E", description: "MOVIM. SALVADANAIO Accantonamento somma sul Salvadanaio", counterparty: "" },
+      { ref: "1", type: "I", description: "MOVIM. SALVADANAIO Riunione somme dal salvadanaio", counterparty: "" },
+    ],
+    { rules: transferRules, categories }
+  );
+  assert.equal(result.get("0"), 54);
+  assert.equal(result.get("1"), 54);
+});
+
+test("learnRuleFromCorrection: una correzione verso Trasferimento impara la categoria col tipo del segno", async () => {
+  const salvadanaio = { description: "MOVIM. SALVADANAIO Accantonamento somma sul Salvadanaio", counterparty: "", amount: -100 };
+  const { client, upserts } = fakeClient({ category: { id: 54, name: "Trasferimento", type: "T" }, bankTxn: salvadanaio });
+  const rule = await learnRuleFromCorrection(client, {
+    userId: "u1",
+    previousCategoryId: 51,
+    transaction: { bank_transaction_id: "b9", category_id: 54, type: "T", wallet_id: 1, to_wallet_id: 20 },
+  });
+
+  assert.equal(rule.keyword, "salvadanaio");
+  assert.equal(upserts[0].payload.type, "E", "uscita dal conto: la regola combacia con i movimenti negativi");
+  assert.equal(upserts[0].payload.category_id, 54);
+  // Il salvadanaio scelto (to_wallet_id 20) non entra nella regola.
+  assert.deepEqual(Object.keys(upserts[0].payload).sort(), ["category_id", "keyword", "source", "type", "updated_at", "user_id"]);
+});

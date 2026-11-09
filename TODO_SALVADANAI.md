@@ -176,7 +176,14 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - test: 230/230 (24 nuovi in `routes/transfer.test.js`, `utils/amount.test.js`, `utils/walletService.test.js`, `utils/schemas.test.js`); due test esistenti aggiornati perché ora la guardia fa una query in più
   - **Ordine di rilascio:** questo server legge e scrive `to_wallet_id`, quindi va pubblicato **dopo** aver applicato la `011`
 - [ ] Import CSV: resta `I`/`E` (deciso)
-- [ ] Import bancario → `T` (passo 4): progetto sotto, **da approvare da Gio prima di implementare**
+- [x] Import bancario → `T` (passo 4) — progetto approvato e implementato il 9/11, branch `plan/salvadanai-annuali`, non pubblicato:
+  - `categorizeWithRules` accetta la categoria `T` per entrambi i segni; `learnRuleFromCorrection` impara "Trasferimento" col tipo del segno e senza wallet
+  - `buildAppTransactionFromBank` con `categoryType: "T"` produce una `T` da assegnare (conto = origine se uscita, destinazione se entrata); usato da import automatico e manuale
+  - client: nella finestra di import manuale si può scegliere "Trasferimento" per qualsiasi movimento
+  - test: server 234/234 (4 nuovi), client `tsc` + lint
+  - **Effetto solo dopo l'aggiornamento delle 4 regole** (sotto) e la pubblicazione del server
+- [ ] Aggiornare le regole `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`, `revolut dublin` → categoria "Trasferimento" (54). Scrittura sul database: **solo dopo l'ok di Gio sull'elenco**
+- [ ] Creare il wallet "Revolut" (conto) — D-R1
 
 ### Progetto del passo 4: import bancario dei trasferimenti (proposta, 9/11)
 

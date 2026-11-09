@@ -120,6 +120,8 @@ export const ruleTextFor = (description, counterparty = "") =>
 /**
  * Categoria per ogni movimento: Map ref -> categoryId, oppure null se nessuna regola
  * combacia o la regola punta a una categoria non attiva o di un altro tipo.
+ * La categoria di sistema "Trasferimento" (tipo `T`, migrazione 011) va bene per
+ * qualsiasi segno: il movimento diventa un trasferimento (`buildAppTransactionFromBank`).
  * @param {Array<{ref, type, description, counterparty}>} items
  */
 export const categorizeWithRules = (items, { rules, categories }) => {
@@ -132,7 +134,10 @@ export const categorizeWithRules = (items, { rules, categories }) => {
     const categoryId = rule ? Number(rule.category_id) : null;
     result.set(
       item.ref,
-      categoryId != null && activeTypeById.get(categoryId) === item.type ? categoryId : null
+      categoryId != null &&
+        (activeTypeById.get(categoryId) === item.type || activeTypeById.get(categoryId) === "T")
+        ? categoryId
+        : null
     );
   }
   return result;
@@ -177,12 +182,15 @@ const isFallbackCategoryName = (name) => normalizeForRules(name) === "altro";
  * - la categoria non e' cambiata;
  * - la nuova categoria e' 'Altro' (un ripiego non deve diventare una regola);
  * - dal movimento non si ricava un nome di negozio o controparte.
+ * Una correzione verso la categoria "Trasferimento" (`T`) impara la categoria con il
+ * tipo del segno del movimento (`category_rules.type` resta `I`/`E`), mai il wallet:
+ * assegnare un accantonamento a un salvadanaio non deve decidere per i successivi.
  * Restituisce la regola salvata, o null.
  */
 export const learnRuleFromCorrection = async (client, { userId, previousCategoryId, transaction }) => {
   if (!transaction?.bank_transaction_id) return null;
   if (Number(previousCategoryId) === Number(transaction.category_id)) return null;
-  if (transaction.type !== "I" && transaction.type !== "E") return null;
+  if (!["I", "E", "T"].includes(transaction.type)) return null;
 
   const { data: category, error: categoryError } = await client
     .from("Category")
@@ -195,7 +203,7 @@ export const learnRuleFromCorrection = async (client, { userId, previousCategory
 
   const { data: bankTxn, error: bankError } = await client
     .from("bank_transactions")
-    .select("description, counterparty")
+    .select("description, counterparty, amount")
     .eq("id", transaction.bank_transaction_id)
     .eq("user_id", userId)
     .maybeSingle();
@@ -208,7 +216,8 @@ export const learnRuleFromCorrection = async (client, { userId, previousCategory
   return upsertRule(client, {
     userId,
     keyword,
-    type: transaction.type,
+    // Le regole combaciano sul segno del movimento: per una `T` lo dice l'importo bancario.
+    type: transaction.type === "T" ? (Number(bankTxn.amount) >= 0 ? "I" : "E") : transaction.type,
     categoryId: category.id,
     source: "learned",
   });
