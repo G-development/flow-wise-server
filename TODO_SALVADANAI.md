@@ -17,7 +17,8 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 - [x] Eliminate le 1.282 transazioni con `date < 2026-06-01` di tutti gli account — 9/11, dopo la conferma finale di Gio, senza backup per sua scelta. Restano 329 transazioni, nessuna prima del 01/06
 - [x] Eliminata la categoria "Annuali" (id 11), rimasta senza transazioni né budget (D8)
 - [x] Saldo di GC Default wallet allineato al reale: saldo GoCardless 122,37 € (`interimBooked`, 9/11), movimenti rimasti −1.018,15 € → apertura da 13.264,23 € a **1.140,52 €**; saldo nell'app verificato: **122,37 €**. Nota: l'allineamento forza la coincidenza di oggi; eventuali movimenti doppi o mancanti tra giugno e agosto sono assorbiti nell'apertura
-- [ ] Trade Republic: senza le 5 transazioni di prova il saldo diventa l'apertura (2.150 €). Valore giusto da chiedere a Gio (versato totale, D3)
+- [x] Trade Republic: apertura impostata al **versato totale indicato da Gio, 6.347,15 €** (9/11); saldo nell'app verificato 6.347,15 €.
+  **Attenzione al passo 5:** la cifra comprende già i versamenti passati. Se le uscite "a favore di Giovanni Cuozzo" da giugno (oggi in Giroconto) diventano `T` assegnate a Trade Republic, verrebbero contate due volte: in quel caso l'apertura va ridotta della loro somma, oppure quelle `T` vanno assegnate tenendone conto. Da decidere con Gio quando si converte
 
 **3. Passo 5 — conversione dei Giroconti già importati** (elenco approvato da Gio prima di scrivere)
 - [ ] Salvadanai, uscite verso Giovanni Cuozzo, ricariche Revolut e rientri da Revolut → `T` da assegnare (lato conto noto)
