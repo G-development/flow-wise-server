@@ -182,7 +182,7 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - client: nella finestra di import manuale si può scegliere "Trasferimento" per qualsiasi movimento
   - test: server 234/234 (4 nuovi), client `tsc` + lint
   - **Effetto solo dopo l'aggiornamento delle 4 regole** (sotto) e la pubblicazione del server
-- [ ] Aggiornare le regole `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`, `revolut dublin` → categoria "Trasferimento" (54). Scrittura sul database: **solo dopo l'ok di Gio sull'elenco**
+- [ ] Aggiornare le regole `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`, `revolut dublin` → categoria "Trasferimento" (54), tutte senza wallet. Elenco **approvato da Gio il 9/11**. **Quando:** subito dopo la pubblicazione del server nuovo, non prima: il server pubblicato oggi scarta le regole verso una categoria `T` e manderebbe quei movimenti in "Altro"
 - [ ] Creare il wallet "Revolut" (conto) — D-R1
 
 ### Progetto del passo 4: import bancario dei trasferimenti (proposta, 9/11)
