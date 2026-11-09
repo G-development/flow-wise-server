@@ -192,7 +192,10 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - eliminata da /transfers: lista vuota, saldi di nuovo 4.000,00 / −1.248,92
   - pagina Categorie: "Trasferimento" con badge "Transfer", interruttore bloccato, "Gestita dall'app"
   - **non provato nell'app vera:** l'assegnazione di un trasferimento "da assegnare" (dall'app non se ne crea uno; arriverà dall'import bancario al passo 4). È coperta dai test end-to-end del server
-- [ ] Difetti di layout visti nella prova (finestra stretta): la barra di navigazione in basso va a capo con 5 voci ("Wallet" finisce su una seconda riga); nel pannello "Add transaction" il pulsante "Transfer" esce dal riquadro
+- [x] Difetti di layout visti nella prova, corretti il 9/11 e verificati nel browser a 375 px, ~800 px e 1280 px:
+  barra di navigazione in basso a 5 colonne (prima era fissa a 4 e "Wallet" andava a capo); selettore
+  Income/Expense/Transfer su una riga sua, griglia a 3 colonne, icone nascoste sotto i 640 px (prima
+  "Transfer" usciva dal riquadro, poi le etichette venivano tagliate)
 - [ ] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto
 - [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
 - [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
