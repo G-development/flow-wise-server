@@ -21,9 +21,12 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
   **Attenzione al passo 5:** la cifra comprende già i versamenti passati. Se le uscite "a favore di Giovanni Cuozzo" da giugno (oggi in Giroconto) diventano `T` assegnate a Trade Republic, verrebbero contate due volte: in quel caso l'apertura va ridotta della loro somma, oppure quelle `T` vanno assegnate tenendone conto. Da decidere con Gio quando si converte
 
 **3. Passo 5 — conversione dei Giroconti già importati** (elenco approvato da Gio prima di scrivere)
-- [ ] Salvadanai, uscite verso Giovanni Cuozzo, ricariche Revolut e rientri da Revolut → `T` da assegnare (lato conto noto)
-- [ ] Movimenti con le persone → categoria provvisoria "Persone — da classificare"
-- [ ] Decidere cosa resta di "Giroconto"; controllo dei totali agosto–ottobre con l'Excel
+- [x] 9/11, elenco approvato da Gio: 32 movimenti → `T` da assegnare (20 salvadanaio, 5 verso Giovanni Cuozzo, 4 ricariche Revolut, 3 da Giovanni Cuozzo); saldo GC Default wallet invariato (122,37 €)
+- [x] 39 movimenti con le persone → "Persone — da classificare" (entrata id 58: 25; spesa id 59: 14); le 7 regole sulle persone spostate lì
+- [x] Categorie "Giroconto" (51, 52) eliminate, verificate vuote
+- [x] Trade Republic: apertura ridotta dei 5 bonifici a se stesso (482,36 €) → 5.864,79 €; assegnandoli a Trade Republic in /transfers il saldo torna 6.347,15 €
+- [ ] Gio assegna i 32 trasferimenti in /transfers (i 20 dei salvadanai aspettano la fase 2; il 4,33 € del 29/10 forse è un rimborso abbonamenti, da riportare a entrata)
+- [ ] Controllo dei totali agosto–ottobre con l'Excel
 
 **4. Revolut**
 - [ ] Gio ricollega Revolut sul **suo** account (la connessione attuale è su `test@test.it`); poi passo Revolut: wallet "Revolut" (conto), saldo di apertura, import dei movimenti (D-R3)
