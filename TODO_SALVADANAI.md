@@ -175,7 +175,63 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - `routes/user.js`: la registrazione crea anche "Trasferimento"
   - test: 230/230 (24 nuovi in `routes/transfer.test.js`, `utils/amount.test.js`, `utils/walletService.test.js`, `utils/schemas.test.js`); due test esistenti aggiornati perché ora la guardia fa una query in più
   - **Ordine di rilascio:** questo server legge e scrive `to_wallet_id`, quindi va pubblicato **dopo** aver applicato la `011`
-- [ ] Import CSV e import bancario: restano `I`/`E` per ora (CSV deciso; banca al passo 4)
+- [ ] Import CSV: resta `I`/`E` (deciso)
+- [ ] Import bancario → `T` (passo 4): progetto sotto, **da approvare da Gio prima di implementare**
+
+### Progetto del passo 4: import bancario dei trasferimenti (proposta, 9/11)
+
+**Fatti verificati (database live, sola lettura, 9/11)**
+
+- 12 regole puntano oggi a "Giroconto" (51 `E`, 52 `I`), tutte `manual`:
+  `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`, `revolut dublin`,
+  `verso/da michele scaldarella`, `verso/da eduard echimov`, `da akissi sarah`,
+  `da antonio costanzo`, `da paypal`
+- **C'è anche Revolut**: connessione GoCardless `REVOLUT_REVOLT21`, senza import automatico
+  (`import_wallet_id` vuoto). I movimenti tra Intesa e Revolut finiscono in Giroconto:
+  - Intesa → Revolut: pagamenti POS "PRESSO Revolut**8371* Dublin" (100, 100, 30, 50 a settembre), regola `revolut dublin`
+  - Revolut → Intesa: "Inviato da Revolut … MITT.: Giovanni Cuozzo" (13,10 il 29/08, 8,80 il 24/09), regola `da giovanni cuozzo`
+- Uscite "a favore di: Giovanni Cuozzo" (regola `verso giovanni cuozzo`): 150 il 31/07, 30/09 e
+  30/10; 100 il 31/08; 2,36 il 26/09 (rientrati 2,36 lo stesso giorno); 80 il 25/10. Per V3 vanno a Trade Republic
+- Il nome "Giovanni Cuozzo" compare anche come beneficiario nei bonifici ricevuti dagli amici e
+  dentro descrizioni non correlate (es. assicurazione "Barba guido Giovanni Cuozzo"): le regole
+  attuali lavorano sul mittente/destinatario estratto (`extractMerchantKey`), non sul testo intero, quindi non li confondono
+- Codice: l'import automatico (`utils/bankAutoImport.js`) e quello manuale (`importBankTransactionsToApp`)
+  usano lo stesso `buildAppTransactionFromBank`, che produce solo `I`/`E`. `categorizeWithRules`
+  accetta una regola solo se la categoria ha lo stesso tipo del movimento, quindi oggi una regola
+  verso "Trasferimento" verrebbe scartata
+
+**Proposta**
+
+1. **Una regola verso la categoria "Trasferimento" produce una `T`.** Il segno dice qual è il conto:
+   uscita → `wallet_id` = wallet dell'import, `to_wallet_id` = altro lato; entrata → il contrario.
+   `categorizeWithRules` accetta la categoria `T` per qualsiasi segno. Nessun testo ("salvadanaio",
+   un nome) scritto nel codice: decide la regola, che è un dato modificabile
+2. **L'altro lato può essere indicato sulla regola** (nuova colonna facoltativa
+   `category_rules.counterpart_wallet_id`, migrazione `012`): es. `verso giovanni cuozzo` → Trade
+   Republic. Se manca, la `T` entra "da assegnare". Per `salvadanaio` resta vuoto, perché dal
+   movimento non si capisce quale salvadanaio
+3. **Le regole imparate dalle correzioni** imparano la categoria "Trasferimento" ma **mai il wallet**:
+   altrimenti assegnare un accantonamento a "Emergenze" farebbe finire lì anche tutti i successivi
+4. **Import manuale** (finestra "Import" della pagina banca): tra le categorie compare anche
+   "Trasferimento"; un movimento importato così entra come `T` da assegnare
+5. **Aggiornamento delle regole esistenti** (scrittura sul database, elenco approvato da Gio prima):
+   `salvadanaio` (E e I) → Trasferimento, senza wallet; `verso giovanni cuozzo` → Trasferimento verso
+   Trade Republic; `revolut dublin` e `da giovanni cuozzo` dipendono da D-R1. Le regole sulle persone
+   restano su Giroconto fino al passo 5
+6. **Dal giorno della pubblicazione** il job giornaliero importa accantonamenti e riunioni somme come
+   `T` da assegnare; finché i salvadanai (fase 2) non esistono restano in /transfers "da assegnare",
+   ma il saldo del conto è già giusto e non gonfiano più entrate e spese
+7. Test: `categorizeWithRules` con categoria `T`; `buildAppTransactionFromBank` per entrata/uscita
+   con e senza wallet sulla regola; import automatico end-to-end; apprendimento senza wallet;
+   import manuale con categoria `T`
+
+**Decisioni di Gio**
+
+- [ ] D-R1. Revolut: diventa un wallet "conto" (con Intesa e Trade Republic fa 3, il limite) e i
+  movimenti Intesa ↔ Revolut diventano `T`? Oppure le ricariche Revolut restano spese/entrate?
+- [ ] D-R2. Confermi che **tutte** le uscite "a favore di Giovanni Cuozzo" vanno a Trade Republic,
+  compresi i 2,36 del 26/09 rientrati lo stesso giorno?
+- [ ] D-R3. Import automatico di Revolut: fuori da questo passo (proposta), da valutare dopo D-R1
 - [ ] Anomalie trovate nei dati live (9/11), da sistemare a parte: 24 transazioni con una categoria di tipo diverso dal loro, 1 con la categoria di un altro utente. Per non bloccarne la modifica, i controlli nuovi valgono solo per le T
 - [x] Client (passo 3) — 9/11, branch `plan/salvadanai-annuali` di `flow-wise-client`, non pubblicato:
   - "Add transaction" ha una terza scelta **Transfer**: wallet "From" e "To", categoria di sistema scelta da sola
