@@ -88,14 +88,65 @@ quello di destinazione, senza errori. Quindi: **prima il codice, poi i dati**.
 - `lib/bankCategorySuggestion.ts:4,8,44,52,95` suggerimento categoria per tipo `I`/`E`
 - Widget (`income-vs-expenses`, `period-expenses`, `period-incomes`): leggono da `/income` e `/expense`, quindi ignorano `T` senza modifiche
 
-**Domande di progetto che il censimento apre** (da chiudere nel to-do successivo)
+**Domande di progetto aperte dal censimento — chiuse il 9/11**
 
-1. Una `T` ha una categoria? Il database la prevede (`Category.type` ammette `T`) e `category_id`
-   oggi è obbligatorio in Zod.
-2. Il movimento bancario "MOVIM. SALVADANAIO" arriva senza destinazione: si importa come `T` con
-   destinazione "da assegnare" o resta fuori finché non scegli il salvadanaio?
-3. Il CSV deve supportare `T`?
-- [ ] Progettare il tipo `T`: colonne (wallet di destinazione), vincoli, categoria sì/no, e scriverlo qui prima di implementare
+1. Una `T` ha **una sola categoria di sistema "Trasferimento"** (tipo `T`), creata dall'app e non eliminabile.
+2. Un movimento bancario riconosciuto come trasferimento entra come **`T` con il lato mancante "da assegnare"**; il salvadanaio lo sceglie Gio dopo.
+3. Il CSV **non** supporta `T`, per ora.
+
+Altri fatti dallo schema live: `Transaction` ha come colonne obbligatorie solo `id` e `date`, quindi
+`wallet_id` è già nullable nel database (l'obbligo oggi sta solo in Zod).
+
+- [x] Progettare il tipo `T` — proposta scritta il 9/11, sotto. **Da approvare da Gio prima di implementare**
+
+### Progetto del tipo `T` (proposta)
+
+**Significato.** Una `T` sposta `amount` (sempre ≥ 0) da `wallet_id` (origine) a `to_wallet_id`
+(destinazione). Non è né entrata né spesa.
+
+**"Da assegnare".** Dalla banca conosciamo sempre il lato del conto, ma non l'altro, e il lato
+mancante può essere l'origine o la destinazione:
+
+- "Accantonamento somma sul Salvadanaio" (−100 sul conto): origine = conto, destinazione = ?
+- "Riunione somme dal salvadanaio" (+100 sul conto): origine = ?, destinazione = conto
+
+Quindi una `T` può avere **uno solo dei due lati vuoto**, mai entrambi. "Da assegnare" = una `T`
+con un lato vuoto. Il saldo conta solo i lati presenti: il conto è giusto da subito, il salvadanaio
+si aggiorna quando assegni.
+
+**Database (migrazione `011`, solo aggiunte):**
+
+- `Transaction.to_wallet_id integer NULL REFERENCES "Wallet"(id)`, senza `ON DELETE`, come `wallet_id`
+- `CHECK`: se `type` è `I` o `E` → `wallet_id NOT NULL` e `to_wallet_id IS NULL`
+- `CHECK`: se `type = 'T'` → almeno uno dei due lati presente e, se ci sono tutti e due, diversi
+- indice su `to_wallet_id`
+- categoria "Trasferimento" di tipo `T` per ogni utente esistente (da creare anche alla registrazione,
+  in `routes/user.js`)
+- `.down.sql`: rimuove vincoli, indice e colonna; fallisce se esistono righe `T` (non le cancella in silenzio)
+
+La migrazione è innocua per il codice attuale: nessuna riga `T` esiste e il codice di oggi non legge
+la colonna nuova.
+
+**Saldo** (`utils/walletService.js`, `utils/amount.js`, `lib/amount.ts`): `I` +, `E` −,
+`T` − sull'origine e + sulla destinazione. `signedAmountCents` smette di trattare "tutto ciò che
+non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa silenziosa.
+
+**Regole e import bancario (resta valido il principio "le persone non hanno un significato fisso"):**
+
+- nessun "salvadanaio" scritto nel codice: una regola che punta alla categoria "Trasferimento"
+  trasforma il movimento in `T`; il segno dice quale lato è il conto
+- la regola `salvadanaio` di oggi (→ Giroconto) diventa `salvadanaio` → Trasferimento
+- estensione facoltativa, da decidere dopo: una regola può indicare anche il wallet dell'altro lato
+  (es. "verso giovanni cuozzo" → Trasferimento verso Trade Republic). Per i salvadanai no, perché
+  dal movimento non si capisce quale
+
+**Ordine di lavoro** (ogni passo con i suoi test, e nessun dato `T` prima dei passi 1–3):
+
+1. migrazione `011` provata su una copia, poi applicata
+2. server: saldo, Zod, route delle transazioni, guardia di eliminazione dei wallet, categoria di sistema protetta
+3. client: tipi, saldo, creazione e modifica di una `T`, badge nella lista, elenco "da assegnare"
+4. banca: regole verso la categoria Trasferimento producono `T`; endpoint per assegnare il lato mancante
+5. dati: conversione dei movimenti oggi in "Giroconto" (elenco mostrato a Gio prima)
 - [ ] Migrazione `011` + `.down.sql`, provata su una copia
 - [ ] Server: saldo dei wallet, Zod, route, import CSV e bancario gestiscono `T`; test
 - [ ] Client: inserimento e modifica di una `T`; i widget la ignorano; test
