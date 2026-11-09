@@ -32,7 +32,69 @@ Pulizia (dopo D8):
 
 ## Fase 1 — Trasferimenti fuori dalle statistiche
 
-- [ ] Censire ogni punto (server e client) che assume `type ∈ {I, E}`: elenco con file e riga, scritto qui
+- [x] Censire ogni punto (server e client) che assume `type ∈ {I, E}` — fatto il 9/11, elenco sotto
+
+### Censimento `type` (9/11, branch `main` di entrambi i repo)
+
+**Database (letto dallo schema live via PostgREST, sola lettura)**
+
+- `Transaction.type` e `Category.type` sono già un enum Postgres `"I / E / T"`: **il valore `T` è
+  ammesso dal database da sempre**. Righe di tipo `T` oggi: 0 transazioni, 0 categorie.
+- Manca la colonna del wallet di destinazione: `Transaction` ha solo `wallet_id`.
+- `category_rules.type` ha un `CHECK (type IN ('I','E'))` (migrazione 010).
+- `Transaction.amount` è `double precision` (non riguarda `T`, da tenere presente).
+
+**Rischio principale: oggi tutto ciò che non è `"I"` viene trattato come spesa.** Una riga `T`
+inserita prima di aggiornare il codice scalerebbe il saldo del wallet di origine e non toccherebbe
+quello di destinazione, senza errori. Quindi: **prima il codice, poi i dati**.
+
+**Server — calcolo del saldo e importi**
+
+- `utils/amount.js:45` `signedAmountCents`: `type === "I" ? + : −` → `T` diventa spesa
+- `utils/walletService.js:121-133` saldo dei wallet: legge solo `wallet_id`, usa `signedAmountCents`
+- `migrations/003_wallet_opening_balance.sql:43` stesso `CASE` (solo storico, già applicata)
+- `backfill-opening-balance.mjs:61` stesso schema (script una tantum)
+
+**Server — validazione e route**
+
+- `utils/schemas.js:17,26,31` Zod: `type: z.enum(["I","E"])` per transazioni e categorie
+- `routes/transaction.js:61,91` create/update: nessun campo per la destinazione
+- `routes/expense.js:24` e `routes/income.js:24` filtrano `E` / `I`: una `T` resta fuori **già oggi** (comportamento voluto)
+- `routes/agents.js:47` solo `E`: idem
+- `routes/wallet.js:205-211` guardia di eliminazione: conta solo `wallet_id`; con `T` va contata anche la destinazione
+- `routes/import.js:262` CSV: accetta solo `I`/`E` (da decidere se il CSV supporta `T`)
+- `routes/user.js:85` categorie base alla registrazione: solo `I`/`E` (va bene)
+
+**Server — banca e regole**
+
+- `utils/bankAutoImport.js:54` `bankTransactionType`: segno → `I`/`E`
+- `utils/bankAutoImport.js:47` categoria di ripiego per tipo `I`/`E`
+- `utils/bankService.js:1196` `buildAppTransactionFromBank`: stesso schema (import manuale)
+- `utils/categoryRules.js:97,135,185,194` le regole combaciano per `type` e richiedono categoria dello stesso tipo
+- `migrations/010_category_rules.sql:24` `CHECK` su `I`/`E`
+
+**Client**
+
+- `lib/amount.ts:33` `signedAmount`: `type === "I" ? + : −` → stesso rischio del server
+- `lib/amount.ts:47-52` `totalForType`: filtra per tipo (una `T` resta fuori)
+- `lib/hooks/useQueries.ts:54,122` tipi TypeScript `"I" | "E"`
+- `components/new-transaction.tsx:35,90,168-180` scelta Income/Expense, categorie filtrate per tipo
+- `components/edit-dialog.tsx:52,90,148` stesso schema, `|| "E"` di ripiego
+- `components/category-dialog.tsx:47,131,139-140` categorie solo Income/Expense
+- `components/movements-list.tsx:114-120` colore del badge dal tipo della categoria
+- `app/category/page.tsx:152` raggruppa per `I`
+- `app/settings/import/page.tsx:116` CSV solo `I`/`E`
+- `app/settings/yourbank/ImportTransactionDialog.tsx:163,184,299,400-403` import manuale per tipo
+- `lib/bankCategorySuggestion.ts:4,8,44,52,95` suggerimento categoria per tipo `I`/`E`
+- Widget (`income-vs-expenses`, `period-expenses`, `period-incomes`): leggono da `/income` e `/expense`, quindi ignorano `T` senza modifiche
+
+**Domande di progetto che il censimento apre** (da chiudere nel to-do successivo)
+
+1. Una `T` ha una categoria? Il database la prevede (`Category.type` ammette `T`) e `category_id`
+   oggi è obbligatorio in Zod.
+2. Il movimento bancario "MOVIM. SALVADANAIO" arriva senza destinazione: si importa come `T` con
+   destinazione "da assegnare" o resta fuori finché non scegli il salvadanaio?
+3. Il CSV deve supportare `T`?
 - [ ] Progettare il tipo `T`: colonne (wallet di destinazione), vincoli, categoria sì/no, e scriverlo qui prima di implementare
 - [ ] Migrazione `011` + `.down.sql`, provata su una copia
 - [ ] Server: saldo dei wallet, Zod, route, import CSV e bancario gestiscono `T`; test
