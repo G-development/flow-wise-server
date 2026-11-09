@@ -14,9 +14,9 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 - [ ] Movimenti del job delle 06:00: gli accantonamenti / riunioni somme e le uscite verso Giovanni Cuozzo entrano come `T` da assegnare; nessun errore nel workflow
 
 **2. Pulizia delle transazioni prima del 01/06/2026** (decisa da Gio il 9/11)
-- [ ] Eliminare le 1.282 transazioni con `date < 2026-06-01` di **tutti gli account**. Gio ha scelto **niente backup**: prima di eseguire, conferma finale in chat con numeri esatti (operazione non reversibile)
-- [ ] Eliminare la categoria "Annuali" (id 11), che dopo la pulizia resta senza transazioni (D8)
-- [ ] Saldo di GC Default wallet **allineato al saldo reale**: apertura = saldo letto da GoCardless − somma delle transazioni rimaste. Prima mostrare i numeri a Gio, compresa la differenza con il saldo attuale dell'app; una differenza grande può voler dire movimenti mancanti o doppi tra giugno e agosto (94 transazioni inserite a mano prima dell'import automatico)
+- [x] Eliminate le 1.282 transazioni con `date < 2026-06-01` di tutti gli account — 9/11, dopo la conferma finale di Gio, senza backup per sua scelta. Restano 329 transazioni, nessuna prima del 01/06
+- [x] Eliminata la categoria "Annuali" (id 11), rimasta senza transazioni né budget (D8)
+- [x] Saldo di GC Default wallet allineato al reale: saldo GoCardless 122,37 € (`interimBooked`, 9/11), movimenti rimasti −1.018,15 € → apertura da 13.264,23 € a **1.140,52 €**; saldo nell'app verificato: **122,37 €**. Nota: l'allineamento forza la coincidenza di oggi; eventuali movimenti doppi o mancanti tra giugno e agosto sono assorbiti nell'apertura
 - [ ] Trade Republic: senza le 5 transazioni di prova il saldo diventa l'apertura (2.150 €). Valore giusto da chiedere a Gio (versato totale, D3)
 
 **3. Passo 5 — conversione dei Giroconti già importati** (elenco approvato da Gio prima di scrivere)
