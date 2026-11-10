@@ -40,7 +40,7 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 - Lingua: **inglese**
 - Vista iniziale: tutti i tipi e tutti i wallet selezionati, periodo come oggi (confermato da Gio il 10/11)
 
-**Progetto di dettaglio (10/11, da approvare prima del codice)**
+**Progetto di dettaglio — approvato da Gio il 10/11**
 
 Fatti verificati: il logo della banca c'è già: `GET /bank/institutions` restituisce `logo` per ogni istituto
 GoCardless, e `GET /bank/connections` dice a quale wallet importa ogni banca (`autoImport.walletId`); la
@@ -55,9 +55,9 @@ Client — pagina `/movements` (inglese)
 - [ ] C3. **Totali della selezione**: Income, Expense, Net (I − E). Con un solo wallet selezionato anche Transfers in / out
 - [ ] C4. **Da assegnare**: il riquadro di oggi in /transfers, estratto in un componente e messo in cima
 - [ ] C5. **Tabella**: data, descrizione, categoria, wallet ("GC Default wallet" oppure "GC Default wallet → Trade Republic"), importo (+ verde, − rosso, trasferimento neutro con freccia), azioni modifica / elimina. Una `T` compare se il wallet filtrato è origine **o** destinazione
-- [ ] C6. **Modifica di una `T`**: il dialogo di modifica impara il tipo Transfer (From / To). Proposta: un solo modulo condiviso tra "Add transaction" e la modifica, invece di due copie quasi uguali
+- [ ] C6. **Un solo modulo** condiviso tra "Add transaction" e la modifica (deciso il 10/11), con il tipo Transfer (From / To): così una `T` si modifica come le altre
 - [ ] C7. **Vecchi indirizzi**: `/incomes` → `/movements?types=I`, `/expenses` → `?types=E`, `/transfers` → `?types=T`, `/wallets` → `/movements`
-- [ ] C8. **Menu** ridotto (vedi domande)
+- [ ] C8. **Menu**: barra in basso del telefono con Dashboard, Movements e "+ nuova" che apre "Add transaction" (deciso il 10/11); il resto nel menu ☰
 - [ ] C9. **Test**: funzioni pure per filtri e totali (`lib/movements.ts`), con i casi `T` (origine/destinazione, da assegnare)
 - [ ] C10. Documentazione (`API_STRUCTURE.md`, `AGENTS.md` del client, CODE_MAP) e verifica nell'app vera su telefono e desktop
 
