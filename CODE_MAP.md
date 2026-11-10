@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `c6a96cb`.
+Forma `express`, radice sorgente `.`, commit `d3c0907`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -23,6 +23,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 | Modulo | Mount |
 | --- | --- |
 | `routes/agents.js` | `/agents` |
+| `routes/annualPlan.js` | `/` |
 | `routes/auth.js` | `/auth` |
 | `routes/bank.js` | `/bank` |
 | `routes/category.js` | `/category` |
@@ -39,6 +40,18 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `routes/agents.js` — mount `/agents` — exports: const `AGENT_ROWS_LIMIT`, `applyExpenseFilters`, `buildCoverage`, `buildExpensesCountQuery`, `buildExpensesQuery`, `fetchExpenseSlice`, `runExpenseAnalysis`; default `router`
   - `POST /agents/analytics` — `requireAuth`
 - `routes/agents.test.js` — test
+- `routes/annualPlan.js` — mount `/` — exports: default `router`
+  - `GET //annual-plan` — `requireAuth`
+  - `GET //annual-items` — `requireAuth`
+  - `POST //annual-items` — `requireAuth`
+  - `PUT //annual-items/:id` — `requireAuth`
+  - `DELETE //annual-items/:id` — `requireAuth`
+  - `POST //annual-items/:id/installments` — `requireAuth`
+  - `POST //annual-items/:id/copy-next-year` — `requireAuth`
+  - `PUT //annual-installments/:id` — `requireAuth`
+  - `DELETE //annual-installments/:id` — `requireAuth`
+  - `PUT //annual-installments/:id/payment` — `requireAuth`
+- `routes/annualPlan.test.js` — test
 - `routes/auth.js` — mount `/auth` — exports: default `router`
   - `POST /auth/forgot-password` — pubblico
   - `POST /auth/verify-reset-token` — pubblico
@@ -109,6 +122,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 
 - `utils/amount.js` — exports: const `amountToCents`, `signedAmountCents`, `walletDeltasCents`
 - `utils/amount.test.js` — test
+- `utils/annualPlan.js` — exports: const `computeAnnualPlan`, `duesByMonth`, `monthIndex`, `PLAN_MONTHS`, `planCapCents`, `shiftOneYear`
+- `utils/annualPlan.test.js` — test
 - `utils/asyncHandler.js` — exports: const `asyncHandler`
 - `utils/bankAutoImport.js` — exports: const `AUTO_IMPORT_DEFAULT_LIMIT`, `AUTO_IMPORT_MAX_LIMIT`, `bankTransactionType`, `clampLimit`, `findFallbackCategories`, `resolveCategories`, `runAutoImport`
 - `utils/bankAutoImport.test.js` — test
@@ -123,7 +138,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`
 - `utils/passwordResetService.test.js` — test
-- `utils/schemas.js` — exports: const `bankAutoImportSchema`, `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
+- `utils/schemas.js` — exports: const `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
 - `utils/schemas.test.js` — test
 - `utils/validate.js` — exports: const `validate`
 - `utils/walletService.js` — exports: const `getWalletBalance`, `getWalletsWithBalances`, `sumBalancesInCents`
@@ -164,6 +179,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/011_transfer_type.sql` — 011_transfer_type.sql
 - `migrations/012_wallet_pots.down.sql` — 012_wallet_pots.down.sql
 - `migrations/012_wallet_pots.sql` — 012_wallet_pots.sql
+- `migrations/013_annual_plan.down.sql` — 013_annual_plan.down.sql
+- `migrations/013_annual_plan.sql` — 013_annual_plan.sql
 
 ## Script di radice
 

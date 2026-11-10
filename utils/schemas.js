@@ -99,6 +99,32 @@ export const walletUpdateSchema = z.object({
     .number({ invalid_type_error: "opening_balance_cents must be a number" })
     .int("opening_balance_cents must be an integer number of cents")
     .optional(),
+  // Tetto del salvadanaio (migrazione 013): fisso in centesimi, oppure calcolato dal piano.
+  cap_cents: z.number().int().positive().nullable().optional(),
+  cap_from_plan: z.boolean().optional(),
+});
+
+// Piano delle spese annuali (migrazione 013). Importi in centesimi interi, date YYYY-MM-DD.
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD");
+export const annualInstallmentSchema = z.object({
+  due_date: isoDate,
+  amount_cents: z.number().int().positive("amount_cents must be a positive integer number of cents"),
+});
+export const annualInstallmentUpdateSchema = annualInstallmentSchema.partial();
+export const annualItemCreateSchema = z.object({
+  name: z.string().trim().min(1, "name is required"),
+  pot_wallet_id: z.number().int(),
+  note: z.string().nullable().optional(),
+  installments: z.array(annualInstallmentSchema).optional(),
+});
+export const annualItemUpdateSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  note: z.string().nullable().optional(),
+  active: z.boolean().optional(),
+  pot_wallet_id: z.number().int().optional(),
+});
+export const annualPaymentSchema = z.object({
+  transaction_id: z.number().int().nullable(),
 });
 
 export const importCsvSchema = z.object({

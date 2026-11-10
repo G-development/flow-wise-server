@@ -459,6 +459,10 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
   (l'Excel ha "1500/3 circa"; Gio paga l'intero e i coinquilini gli rimborsano la loro parte)
 - Palestra: esclusa (nell'Excel è "NA")
 
+- [x] 10/11 server: migrazione `013` (+ `.down.sql`) provata su Postgres locale; calcolo in `utils/annualPlan.js` (10 test
+  scritti a mano); route in `routes/annualPlan.js` (8 test e2e); tetto su `PUT /wallet/:id`. "Copia sull'anno dopo"
+  ripete gli **ultimi 12 mesi** della voce, non l'anno solare (AdE e università stanno a cavallo di due anni).
+  Condominio fuori per ora (Gio: in futuro solo la sua quota). **Non applicata sul live, non pubblicato**
 - [ ] Progettare voci e **rate esplicite** (data, importo previsto, importo effettivo) invece di una regola di ricorrenza, perché il condominio cambia importo e numero di rate ogni anno; scriverlo qui
 - [ ] "Copia sull'anno successivo": le rate di una voce si duplicano sull'anno dopo e poi si correggono
 - [ ] Inserire le voci dall'Excel (assicurazione, bollo, università, TaRi, Spotify, AdE, condominio) e ricontrollarle con Gio

@@ -742,6 +742,98 @@
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">
+            <span class="section-icon">📅</span>
+            Annual Plan
+          </h2>
+          <p class="card-description">Yearly expenses paid from a savings pot (migration 013)</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/annual-plan?walletId=</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Plan of a savings pot: items, installments, suggested monthly deposit, cap and 12-month projection</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/annual-items</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">All annual items of the user, with their installments</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/annual-items</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Create an item paid by one of your savings pots (<code>{ name, pot_wallet_id, installments? }</code>)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/annual-items/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Update name, note, active or pot</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/annual-items/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Delete an item and its installments</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/annual-items/:id/installments</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Add an installment (<code>{ due_date, amount_cents }</code>)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/annual-items/:id/copy-next-year</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Repeat the last 12 months of installments one year ahead</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/annual-installments/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Change date or expected amount</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/annual-installments/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Delete an installment</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/annual-installments/:id/payment</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Link (or unlink with <code>null</code>) the transaction that paid it</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
             <span class="section-icon">🔧</span>
             Utilities
           </h2>

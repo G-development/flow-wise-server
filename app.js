@@ -18,6 +18,7 @@ import importRoutes from "./routes/import.js";
 import bankRoutes from "./routes/bank.js";
 import authRoutes from "./routes/auth.js";
 import agentRoutes from "./routes/agents.js";
+import annualPlanRoutes from "./routes/annualPlan.js";
 
 dotenv.config();
 
@@ -87,6 +88,8 @@ app.use("/import", importRoutes);
 app.use("/bank", bankRoutes);
 
 app.use("/agents", agentRoutes);
+
+app.use("/", annualPlanRoutes);
 
 // 404 route
 app.use((req, res) => {

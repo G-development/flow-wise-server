@@ -217,6 +217,11 @@ rimozione della colonna fantasma `Wallet.balance`:
   non valido `45005`). Riscrive le funzioni della `004`; pre-check, idempotente, rollback in
   `012_wallet_pots.down.sql` (bloccato se esistono salvadanai). Va applicata **prima** del server
   che crea salvadanai; un conto si crea come prima anche senza la `012`.
+- `013_annual_plan.sql` — piano delle spese annuali: `annual_items` (voce e salvadanaio che la paga) e
+  `annual_installments` (rate esplicite con data, importo in centesimi e pagamento collegato), RLS senza
+  policy come `category_rules`; `Wallet.cap_cents` / `Wallet.cap_from_plan` per il tetto dei salvadanai.
+  Calcolo in `utils/annualPlan.js`, route in `routes/annualPlan.js`. Va applicata **prima** del server
+  che la usa. Rollback in `013_annual_plan.down.sql` (elimina voci e rate).
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare

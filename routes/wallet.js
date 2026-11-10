@@ -141,7 +141,7 @@ router.put(
   requireAuth,
   validate(walletUpdateSchema),
   asyncHandler(async (req, res) => {
-    const { name, is_default, opening_balance_cents } = req.body;
+    const { name, is_default, opening_balance_cents, cap_cents, cap_from_plan } = req.body;
     const { id } = req.params;
 
     // Il cambio di default è la RPC `wallet_set_default` (migrazione 004): una sola
@@ -159,6 +159,9 @@ router.put(
       updates.is_default = is_default;
     if (opening_balance_cents !== undefined)
       updates.opening_balance_cents = opening_balance_cents;
+    // Tetto (migrazione 013): fisso o dal piano, non entrambi (vincolo `wallet_cap_chk`).
+    if (cap_cents !== undefined) updates.cap_cents = cap_cents;
+    if (cap_from_plan !== undefined) updates.cap_from_plan = cap_from_plan;
 
     if (switchingDefault) {
       const { data: moved, error } = await supabase.rpc("wallet_set_default", {
