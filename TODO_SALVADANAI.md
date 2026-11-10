@@ -498,6 +498,8 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
   - 10/11: U1–U3 fatti e verificati nel browser locale a 375 px (sezioni del menu, barra Dashboard / Movements / New /
     Annual plan, "Add Transaction" nascosto, nessun overflow) e a 1280 px (barra desktop invariata, pulsante presente).
     Corretto anche un errore introdotto col changelog: due voci "Novembre 2026" con la stessa chiave React
+- [x] U3b. **Dashboard**: anche qui "Add Transaction" in alto si nasconde solo su mobile (deciso da Gio il 10/11); verificato
+  in locale a 375 px (assente, "Edit" resta, nessun overflow) e a 1280 px (presente)
 - [ ] U4. **Your Bank su mobile**: eliminare gli overflow orizzontali (da misurare elemento per elemento a 375 px,
   prima di correggere)
 - [ ] U5. **Your Bank — wallet di una banca**: i salvadanai non si possono scegliere né nell'import automatico (card
