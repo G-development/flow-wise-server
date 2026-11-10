@@ -463,13 +463,18 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
   scritti a mano); route in `routes/annualPlan.js` (8 test e2e); tetto su `PUT /wallet/:id`. "Copia sull'anno dopo"
   ripete gli **ultimi 12 mesi** della voce, non l'anno solare (AdE e università stanno a cavallo di due anni).
   Condominio fuori per ora (Gio: in futuro solo la sua quota). **Non applicata sul live, non pubblicato**
-- [ ] Progettare voci e **rate esplicite** (data, importo previsto, importo effettivo) invece di una regola di ricorrenza, perché il condominio cambia importo e numero di rate ogni anno; scriverlo qui
-- [ ] "Copia sull'anno successivo": le rate di una voce si duplicano sull'anno dopo e poi si correggono
-- [ ] Inserire le voci dall'Excel (assicurazione, bollo, università, TaRi, Spotify, AdE, condominio) e ricontrollarle con Gio
-- [ ] Quota consigliata con l'algoritmo del piano (saldo reale, scadenze a 12 mesi); test con casi scritti a mano
-- [ ] Tetto del salvadanaio: il consiglio non supera il tetto; avviso se un versamento lo supera
-- [ ] Proiezione del fondo a 12 mesi, con avviso dove va sotto zero
-- [ ] Segnare una scadenza come pagata collegandola a una transazione (prima a mano)
+- [x] 10/11 client: pagina `/annual-plan` (selettore salvadanaio, riepilogo, avvisi scoperto/tetto, proiezione,
+  voci e rate con aggiungi/modifica/elimina/copia/pagamento); card dei salvadanai con saldo / tetto, quota
+  consigliata, "Set cap" e link al piano; avviso non bloccante di tetto superato assegnando o creando un
+  trasferimento (`lib/potCap.ts`, 2 test); voce "Annual plan" nella navbar. 44 test, tsc e build ok. Verificato
+  nel browser solo il rendering: senza la `013` sul live la pagina mostra "Error loading the plan" e Movements
+  regge. **Il funzionamento vero si verifica dopo aver applicato la 013**
+- [x] Rate esplicite (data, importo previsto, pagamento collegato) invece di una regola di ricorrenza
+- [x] "Copia sull'anno dopo" (ultimi 12 mesi della voce)
+- [x] Quota consigliata, tetto (fisso o dal piano), proiezione a 12 mesi, pagamento collegato a mano
+- [ ] Rilascio: Gio applica la `013` su Supabase → push server → push client → verifica sul live
+- [ ] Tetti: Emergenze 1.000 € fisso, Savings 1.000 € fisso, Annuali dal piano (da "Set cap", dopo il rilascio)
+- [ ] Inserire le voci dall'Excel (lista sopra, condominio escluso) dopo l'ok di Gio sulla lista
 
 ## Fase 4 — In parallelo con l'Excel
 
