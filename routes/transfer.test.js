@@ -258,3 +258,21 @@ test("una categoria normale si disattiva come prima", async () => {
 
   assert.equal(status, 200);
 });
+
+// ---------------------------------------------------------------------------
+// Elenco completo con le date (pagina Movements del client)
+// ---------------------------------------------------------------------------
+
+test("GET /transaction/all filtra per startDate / endDate e include le T", async () => {
+  await request("POST", "/transaction", transfer({ date: "2026-11-02" }));
+  await request("POST", "/transaction", transfer({ date: "2026-12-05", amount: 20 }));
+
+  const all = await request("GET", "/transaction/all");
+  const november = await request("GET", "/transaction/all?startDate=2026-11-01&endDate=2026-11-30");
+  const fromDecember = await request("GET", "/transaction/all?startDate=2026-12-01");
+
+  assert.equal(all.body.data.length, 3);
+  assert.deepEqual(november.body.data.map((row) => [row.date, row.type]).sort(), [["2026-11-01", "E"], ["2026-11-02", "T"]]);
+  assert.deepEqual(fromDecember.body.data.map((row) => row.amount), [20]);
+  assert.equal(november.body.truncated, false);
+});

@@ -47,7 +47,7 @@ GoCardless, e `GET /bank/connections` dice a quale wallet importa ogni banca (`a
 pagina Wallets oggi li usa per "Linked to Intesa Sanpaolo". `GET /transaction/all` non accetta date.
 
 Server
-- [ ] S1. `GET /transaction/all?startDate&endDate` (stessa forma di `/income/all`), test, `public/index.html`, README
+- [x] S1. `GET /transaction/all?startDate&endDate` — 10/11, test 235/235 (il fake di Supabase ora conosce `gte`/`lte`); `public/index.html` lo dichiarava già ("optional date filters")
 
 Client — pagina `/movements` (inglese)
 - [ ] C1. **Wallet cards**: logo dell'istituto per i wallet collegati, icona generica per gli altri; nome, badge "Default", saldo, entrate e spese del periodo; menu azioni (rinomina, saldo di apertura, imposta default, elimina) e card "Add wallet" (spenta al limite di 3). Clic sulla card = filtra solo quel wallet; clic di nuovo = tutti

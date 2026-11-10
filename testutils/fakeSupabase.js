@@ -89,17 +89,21 @@ const compare = (a, b) => {
   return String(a) < String(b) ? -1 : 1;
 };
 
-/** Filtri `col=eq.valore` / `col=is.valore` (gli unici operatori usati dalle route). */
+/**
+ * Filtri `col=eq.valore`, `col=is.valore`, `col=gte.valore`, `col=lte.valore` (gli operatori
+ * usati dalle route). `gte`/`lte` confrontano come stringhe: bastano per le date ISO
+ * (`2026-11-01`), che sono l'unico uso nelle route.
+ */
 const applyFilters = (rows, searchParams) => {
   let out = rows;
 
   for (const [column, raw] of searchParams.entries()) {
     if (RESERVED_PARAMS.has(column)) continue;
 
-    const match = /^(eq|is)\.(.*)$/.exec(raw);
+    const match = /^(eq|is|gte|lte)\.(.*)$/.exec(raw);
     if (!match) {
       throw new Error(
-        `fake supabase: operatore non supportato in "${column}=${raw}" (solo eq/is)`
+        `fake supabase: operatore non supportato in "${column}=${raw}" (solo eq/is/gte/lte)`
       );
     }
 
@@ -109,6 +113,8 @@ const applyFilters = (rows, searchParams) => {
       if (operator === "is" && expected === "null") {
         return value === null || value === undefined;
       }
+      if (operator === "gte") return value != null && String(value) >= expected;
+      if (operator === "lte") return value != null && String(value) <= expected;
       return String(value) === expected;
     });
   }

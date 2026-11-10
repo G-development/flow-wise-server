@@ -57,22 +57,27 @@ const checkTransactionReferences = async (userId, body) => {
   return null;
 };
 
-// GET all transactions
+// GET all transactions (entrate, spese e trasferimenti), con `startDate` / `endDate`
+// facoltativi come `/income/all` e `/expense/all`: li usa la pagina Movements del client.
 router.get(
   "/all",
   requireAuth,
   asyncHandler(async (req, res) => {
+    const { startDate, endDate } = req.query;
     let result;
     try {
-      result = await fetchAllRows(() =>
-        supabase
+      result = await fetchAllRows(() => {
+        let query = supabase
           .from("Transaction")
           .select("*", { count: "exact" })
           .eq("userid", req.user.id)
           .order("date", { ascending: false })
           // Tiebreaker univoco: senza di esso le pagine possono ripetersi o saltare righe.
-          .order("id", { ascending: false })
-      );
+          .order("id", { ascending: false });
+        if (startDate) query = query.gte("date", startDate);
+        if (endDate) query = query.lte("date", endDate);
+        return query;
+      });
     } catch (err) {
       // Stesso esito di prima dell'helper (che lancia sul primo errore PostgREST).
       return res.status(400).json({ error: err.message });
