@@ -415,6 +415,50 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 
 ## Fase 3 — Piano Annuali
 
+**Decisioni di Gio (10/11):** pagina propria "Annual plan"; tetto di Annuali = somma delle rate dei **prossimi
+12 mesi**; regola dei tempi valida per qualsiasi utente: **i versamenti di un mese coprono le rate dei mesi
+successivi** (le rate del mese corrente le copre il saldo attuale); le voci partono dall'Excel e Gio le ricontrolla.
+
+**Progetto (da approvare prima del codice)**
+
+*Dati — migrazione `013`*
+- `annual_items`: `id`, `user_id`, `name`, `pot_wallet_id` (il salvadanaio che paga, es. Annuali), `active`, `note`
+- `annual_installments`: `id`, `item_id`, `user_id`, `due_date`, `amount_cents` (previsto),
+  `transaction_id` (facoltativo: il pagamento vero, collegato a mano), `created_at`
+- `Wallet.cap_cents` (facoltativo, tetto fisso: Emergenze e Savings 100.000) e `Wallet.cap_from_plan` (booleano:
+  per Annuali il tetto è calcolato dal piano). RLS come `category_rules`: solo il server, con filtro per utente
+
+*Calcolo (funzioni pure nel server, con test scritti a mano)*
+- Mesi: 0 = mese corrente, 1…12 = i successivi. `C_k` = somma delle rate **non pagate** dal mese 0 al mese k
+- Mese 0: se `C_0` > saldo del salvadanaio → **scoperto adesso** (avviso, nessuna quota lo risolve)
+- Quota consigliata = max su k = 1…12 di `(C_k − saldo) / k` (k versamenti fatti entro il mese k−1), mai sotto 0
+  e mai oltre ciò che porterebbe il salvadanaio sopra il tetto
+- Proiezione a 12 mesi: saldo + k × quota − `C_k`, mese per mese, con avviso se va sotto zero
+- Tetto di Annuali = somma delle rate dei mesi 1…12
+
+*Server*
+- `GET/POST/PUT/DELETE /annual-items` e rate (`/annual-items/:id/installments`), Zod, filtro per utente
+- `POST /annual-items/:id/copy-next-year`: duplica le rate di un anno sull'anno dopo, da correggere
+- `PUT /annual-installments/:id/payment`: collega o scollega la transazione che l'ha pagata
+- `GET /annual-plan?walletId=`: saldo, rate dei prossimi 12 mesi, quota consigliata, proiezione, tetto
+
+*Client*
+- Pagina `/annual-plan`: voci con le loro rate (aggiungi, modifica, copia sull'anno dopo), tabella mese per mese
+  con la proiezione, stato pagata / da pagare, collegamento manuale al pagamento
+- In Movements la card del salvadanaio mostra "suggested X €/month" e il tetto (`100 / 1.000 €`), con link al piano
+- Avviso quando un'assegnazione o un trasferimento porterebbe un salvadanaio oltre il tetto (non blocca)
+
+*Voci proposte dall'Excel (solo rate da oggi in avanti; da ricontrollare con Gio prima di scriverle)*
+- Assicurazione auto: 477 € ad aprile e ottobre 2027
+- Bollo auto: 192 € a maggio 2027
+- TaRi: 140 € ad aprile 2027
+- Spotify: 36 € a maggio 2027
+- AdE (rateizzazione): 127,50 € a gennaio, marzo, maggio, luglio, settembre, novembre 2027 (giorno da confermare)
+- Università: 300 € il 3/12/2026, 200 € il 16/12/2026, 300 € il 3/1/2027, 300 € il 3/2/2027 ("Specchietto per uni")
+- Condominio: rate a giugno, agosto, ottobre, dicembre, febbraio, aprile; **importi e quota da chiedere a Gio**
+  (l'Excel ha "1500/3 circa"; Gio paga l'intero e i coinquilini gli rimborsano la loro parte)
+- Palestra: esclusa (nell'Excel è "NA")
+
 - [ ] Progettare voci e **rate esplicite** (data, importo previsto, importo effettivo) invece di una regola di ricorrenza, perché il condominio cambia importo e numero di rate ogni anno; scriverlo qui
 - [ ] "Copia sull'anno successivo": le rate di una voce si duplicano sull'anno dopo e poi si correggono
 - [ ] Inserire le voci dall'Excel (assicurazione, bollo, università, TaRi, Spotify, AdE, condominio) e ricontrollarle con Gio
