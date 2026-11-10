@@ -486,6 +486,26 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
   ottobre (saldo prec. 157,67 € l'1/10, rata 3 241,10 € il 5/10) sono passate e non sono nel piano. Dopo: tetto
   3.428,10 €, quota consigliata 520,37 €/mese
 
+## Ritocchi dell'interfaccia (richiesti da Gio il 10/11, decisioni prese con lui)
+
+Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno alla volta, con verifica a 375 px.
+
+- [ ] U1. **Menu laterale mobile**: Main = Dashboard, Movements, Annual plan, **AI Beta**; Management = Categories,
+  **Your Bank**; Settings = Import, **Account** (ultima voce). Solo il menu mobile: la barra desktop non cambia
+- [ ] U2. **Barra in basso mobile**: ordine Dashboard, Movements, **+ New**, Annual plan
+- [ ] U3. **Movements**: il pulsante "Add transaction" in alto si nasconde **solo su mobile** (c'è il + della barra);
+  su desktop resta, perché è l'unico modo per aggiungere un movimento
+- [ ] U4. **Your Bank su mobile**: eliminare gli overflow orizzontali (da misurare elemento per elemento a 375 px,
+  prima di correggere)
+- [ ] U5. **Your Bank — wallet di una banca**: i salvadanai non si possono scegliere né nell'import automatico (card
+  della banca, `AutoImportSettings.tsx`) né nella finestra Import manuale (`ImportTransactionDialog.tsx`): una banca
+  importa sempre in un conto, i movimenti dei salvadanai arrivano come trasferimenti da assegnare. Valutare se
+  rifiutarlo anche sul server (`PUT /bank/connections/:bank/auto-import`, `POST /bank/import`)
+- [ ] U6. **Dashboard, spese per categoria su mobile**: barre orizzontali (nome, barra proporzionale, importo,
+  ordinate dalla più alta) al posto della torta; su desktop resta la torta
+- [ ] U7. **Widget Total Balance**: al posto di "5 wallets" una riga piccola tipo "6.427 € in 2 conti · 310 € in 3
+  salvadanai"; al tocco un modale con ogni wallet, saldo e percentuale, i salvadanai sotto il loro conto
+
 ## Fase 4 — In parallelo con l'Excel
 
 - [ ] Novembre e dicembre 2026 tenuti sia nell'Excel sia nell'app

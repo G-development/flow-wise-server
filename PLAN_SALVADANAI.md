@@ -131,6 +131,9 @@ il codice: cambia solo come classifichi i movimenti nuovi.
 | 4 | Verifica in parallelo con l'Excel per uno o due mesi | 2, 3 | da iniziare |
 | 5 | Rimborsi e spese condivise (fuori da questo piano, da progettare dopo V4) | 1 | da progettare |
 
+Ritocchi dell'interfaccia chiesti da Gio il 10/11 (menu mobile, Your Bank, dashboard, Total Balance): voci U1–U7
+in `TODO_SALVADANAI.md`, da fare prima della fase 4 o in parallelo.
+
 Revolut è **rinviato** per scelta di Gio (10/11): non si collega e non ha un wallet; i passaggi verso
 Revolut si registrano come spese con "Not a transfer". Dettagli in `TODO_SALVADANAI.md`, passo 4.
 
