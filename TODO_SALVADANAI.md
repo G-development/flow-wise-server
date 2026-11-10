@@ -506,8 +506,10 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
   rifiutarlo anche sul server (`PUT /bank/connections/:bank/auto-import`, `POST /bank/import`)
 - [ ] U6. **Dashboard, spese per categoria su mobile**: barre orizzontali (nome, barra proporzionale, importo,
   ordinate dalla più alta) al posto della torta; su desktop resta la torta
-- [ ] U7. **Widget Total Balance**: al posto di "5 wallets" una riga piccola tipo "6.427 € in 2 conti · 310 € in 3
+- [x] U7. **Widget Total Balance**: al posto di "5 wallets" una riga piccola tipo "6.427 € in 2 conti · 310 € in 3
   salvadanai"; al tocco un modale con ogni wallet, saldo e percentuale, i salvadanai sotto il loro conto
+  - 10/11: fatto (`lib/balanceBreakdown.ts`, 4 test). Testo in inglese come il resto dell'app: "6427,47 € in 2 accounts ·
+    310,00 € in 3 pots". Verificato in locale a 375 px (riga e modale, nessun overflow) e a 1280 px (una riga, non tagliata)
 
 ## Fase 4 — In parallelo con l'Excel
 
