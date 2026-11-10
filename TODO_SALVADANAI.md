@@ -478,7 +478,10 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
 - [x] 10/11 voci inserite in Annuali dopo l'ok di Gio (giorni: assicurazione il 3, le altre il primo del mese,
   universita' con le date dell'Excel; AdE da gennaio 2027). Sul live: tetto 3.187 €, quota consigliata 440 €/mese
   (vincolo: 500 € di universita' a dicembre con 60 € di saldo e un solo versamento utile)
-- [ ] Condominio: solo la quota di Gio, quando la decide
+- [x] 10/11 condominio dal bollettino es. 2026/2027 (ui D/12): rate intere 241,10 € l'1/12/2026, 241,10 € l'1/2/2027,
+  241,09 € l'1/4/2027; nel piano **solo la quota di Gio, 1/3** (80,37 / 80,37 / 80,36 €), scelta di Gio. Le rate di
+  ottobre (saldo prec. 157,67 € l'1/10, rata 3 241,10 € il 5/10) sono passate e non sono nel piano. Dopo: tetto
+  3.428,10 €, quota consigliata 520,37 €/mese
 
 ## Fase 4 — In parallelo con l'Excel
 
