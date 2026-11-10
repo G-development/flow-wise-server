@@ -377,7 +377,9 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 - [x] Creati Emergenze (18), Savings (19), Annuali (20) come `pot` sotto ISP, apertura 0
 - [x] Pubblicato il 10/11: server `61524d7..f190360` e client `6204ee8..102a1ed`, deploy Production riusciti
 - [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
-- [ ] Gio assegna i 19 movimenti salvadanaio
+- [x] Saldi reali dei salvadanai dati da Gio il **10/11** (V2): Emergenze **100 €**, Savings **150 €**, Annuali **60 €**
+  (coincidono con gli accantonamenti del 30/10: 100, 150, 60, come le assegnazioni di novembre nell'Excel)
+- [ ] Gio assegna i 20 movimenti salvadanaio (19 + quello del 30/10 riportato da assegnare); al 10/11 nessuno assegnato
 - [ ] **Saldi di apertura**: Gio legge oggi dall'app Intesa i saldi dei tre salvadanai (data D); apertura
   di ogni salvadanaio = saldo reale a D − somma dei trasferimenti assegnati fino a D. Poi verifica:
   saldi nell'app = saldi Intesa
