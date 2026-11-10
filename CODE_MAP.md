@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `084befd`.
+Forma `express`, radice sorgente `.`, commit `c6a96cb`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -162,6 +162,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/010_category_rules.sql` — 010_category_rules.sql
 - `migrations/011_transfer_type.down.sql` — 011_transfer_type.down.sql
 - `migrations/011_transfer_type.sql` — 011_transfer_type.sql
+- `migrations/012_wallet_pots.down.sql` — 012_wallet_pots.down.sql
+- `migrations/012_wallet_pots.sql` — 012_wallet_pots.sql
 
 ## Script di radice
 

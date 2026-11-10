@@ -31,6 +31,8 @@ const router = express.Router();
  *   45001  wallet_limit_exceeded   quarto wallet per l'utente            -> 409
  *   45002  wallet_default_missing  commit senza default per l'utente      -> 409
  *   45003  wallet_not_found        RPC su wallet inesistente o altrui     -> 404
+ *   45004  wallet_not_account      default richiesto su un salvadanaio   -> 409 (migrazione 012)
+ *   45005  wallet_bad_parent       salvadanaio sotto un non-conto/altrui -> 400 (migrazione 012)
  */
 const WALLET_DB_ERRORS = {
   45001: { status: 409, error: "Max 3 wallets allowed per user" },
@@ -39,6 +41,8 @@ const WALLET_DB_ERRORS = {
     error: "A wallet-owning user must always keep exactly one default wallet",
   },
   45003: { status: 404, error: "Wallet not found" },
+  45004: { status: 409, error: "A savings pot cannot be the default wallet" },
+  45005: { status: 400, error: "A savings pot must belong to one of your accounts" },
 };
 
 /**
@@ -51,6 +55,8 @@ const WALLET_DB_ERROR_NAMES = {
   wallet_limit_exceeded: 45001,
   wallet_default_missing: 45002,
   wallet_not_found: 45003,
+  wallet_not_account: 45004,
+  wallet_bad_parent: 45005,
 };
 
 /**
@@ -92,7 +98,7 @@ router.post(
   requireAuth,
   validate(walletCreateSchema),
   asyncHandler(async (req, res) => {
-    const { name } = req.body;
+    const { name, kind, parent_wallet_id } = req.body;
     if (!name) return res.status(400).json({ error: "Missing wallet name" });
 
     // Nessun conteggio preventivo: il limite di 3 wallet è un invariante del DB
@@ -107,7 +113,14 @@ router.post(
     // non nullo (prima l'insert senza select restituiva `data: null`).
     const { data, error } = await supabase
       .from("Wallet")
-      .insert([{ name, userid: req.user.id }])
+      // Un salvadanaio (migrazione 012) porta tipo e conto padre; un conto resta com'era,
+      // cosi' l'insert di un conto non dipende dalle colonne nuove. Che il salvadanaio
+      // non conti nel limite e non sia mai default lo decide il database.
+      .insert([
+        kind === "pot"
+          ? { name, userid: req.user.id, kind, parent_wallet_id }
+          : { name, userid: req.user.id },
+      ])
       .select("id")
       .single();
 

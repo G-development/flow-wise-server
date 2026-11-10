@@ -70,9 +70,24 @@ export const categoryUpdateSchema = z.object({
   active: z.boolean().optional(),
 });
 
-export const walletCreateSchema = z.object({
-  name: z.string().min(1, "name is required"),
-});
+// Un wallet è un conto (default) o un salvadanaio di un conto (migrazione 012): il
+// salvadanaio vuole il conto padre, un conto non ne ha. Che il padre sia un conto
+// dell'utente lo controlla il database (45005).
+export const walletCreateSchema = z
+  .object({
+    name: z.string().min(1, "name is required"),
+    kind: z.enum(["account", "pot"]).optional(),
+    parent_wallet_id: z.number().int().nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const isPot = value.kind === "pot";
+    if (isPot && value.parent_wallet_id == null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["parent_wallet_id"], message: "a savings pot needs its account (parent_wallet_id)" });
+    }
+    if (!isPot && value.parent_wallet_id != null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["parent_wallet_id"], message: "only a savings pot (kind pot) has a parent account" });
+    }
+  });
 
 export const walletUpdateSchema = z.object({
   name: z.string().min(1).optional(),

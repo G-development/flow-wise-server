@@ -565,3 +565,56 @@ test("contratto: default e nome insieme restano coerenti", async () => {
   assert.equal(body.is_default, true);
   assert.deepEqual(defaultIds(U1), [2]);
 });
+
+// ---------------------------------------------------------------------------
+// Salvadanai (migrazione 012)
+// ---------------------------------------------------------------------------
+
+test("salvadanai: un pot si crea oltre il limite di 3 conti, non e' mai default e porta il conto padre", async () => {
+  reset({
+    wallets: [
+      wallet(1, U1, "Conto", { isDefault: true }),
+      wallet(2, U1, "Trade Republic"),
+      wallet(3, U1, "Revolut"),
+    ],
+  });
+  const seen = watch();
+
+  const { status, body } = await request("POST", "/wallet", {
+    body: { name: "Emergenze", kind: "pot", parent_wallet_id: 1 },
+  });
+
+  assert.equal(status, 201);
+  assert.equal(body.name, "Emergenze");
+  const stored = fake.state.store.Wallet.find((row) => row.name === "Emergenze");
+  assert.deepEqual(
+    { kind: stored.kind, parent: stored.parent_wallet_id, isDefault: stored.is_default },
+    { kind: "pot", parent: 1, isDefault: false }
+  );
+  const insert = seen().find((r) => r.path === "/rest/v1/Wallet" && r.method === "POST");
+  assert.deepEqual(Object.keys([insert.body].flat()[0]).sort(), ["kind", "name", "parent_wallet_id", "userid"]);
+});
+
+test("salvadanai: un conto si crea come prima, senza le colonne nuove nell'insert", async () => {
+  reset({ wallets: [wallet(1, U1, "Conto", { isDefault: true })] });
+  const seen = watch();
+
+  const { status } = await request("POST", "/wallet", { body: { name: "Trade Republic" } });
+
+  assert.equal(status, 201);
+  const insert = seen().find((r) => r.path === "/rest/v1/Wallet" && r.method === "POST");
+  assert.deepEqual(Object.keys([insert.body].flat()[0]).sort(), ["name", "userid"]);
+});
+
+test("salvadanai: senza conto padre, o un conto con padre, e' un 400 di validazione", async () => {
+  reset({ wallets: [wallet(1, U1, "Conto", { isDefault: true })] });
+
+  const noParent = await request("POST", "/wallet", { body: { name: "X", kind: "pot" } });
+  const accountWithParent = await request("POST", "/wallet", { body: { name: "Y", parent_wallet_id: 1 } });
+
+  assert.equal(noParent.status, 400);
+  assert.match(JSON.stringify(noParent.body), /needs its account/);
+  assert.equal(accountWithParent.status, 400);
+  assert.match(JSON.stringify(accountWithParent.body), /only a savings pot/);
+  assert.equal(fake.state.store.Wallet.length, 1, "nessuna riga scritta");
+});

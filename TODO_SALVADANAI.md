@@ -360,11 +360,16 @@ Revolut e il bonifico di 100 € del 31/08). Trade Republic ora 6.242,82 €: se
 vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro di 4,33 €.
 
 **Progetto (da approvare prima del codice)**
-- [ ] Migrazione `012`: `Wallet.kind` (`account` | `pot`, default `account`) e `Wallet.parent_wallet_id`
+- [x] Migrazione `012`: `Wallet.kind` (`account` | `pot`, default `account`) e `Wallet.parent_wallet_id`
   (il conto a cui appartiene il salvadanaio); vincoli: un `pot` ha sempre un conto padre di tipo `account`
   dello stesso utente e non è mai default. Il trigger della `004` conta nel limite di 3 **solo** i conti
-- [ ] Server: creazione di un salvadanaio (`POST /wallet` con `kind: "pot"` e conto padre), `GET /wallet`
+- [x] Server: creazione di un salvadanaio (`POST /wallet` con `kind: "pot"` e conto padre), `GET /wallet`
   espone `kind` e `parent_wallet_id`; test degli invarianti nuovi
+  - 10/11: `012` + `.down.sql` provate su Postgres 18 locale con i dati veri (applicata due volte, 3 salvadanai
+    sotto ISP oltre il limite, quarto conto rifiutato, padre non valido rifiutato, default su salvadanaio rifiutato,
+    conto con salvadanai non eliminabile, promozione del default su un conto, rollback bloccato con salvadanai e
+    pulito senza). Server: `POST /wallet` con `kind`/`parent_wallet_id`, errori 45004/45005, fake e 3 test nuovi:
+    238/238. **Non applicata sul live**
 - [ ] Client: i salvadanai compaiono come card più piccole sotto la card del loro conto; "Add savings pot"
   nel menu della card del conto; il riquadro "da assegnare" li propone come destinazione/origine
 - [ ] Creazione di Emergenze, Savings, Annuali sotto ISP con apertura 0

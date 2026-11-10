@@ -518,7 +518,7 @@
               <code class="endpoint-path">/wallet</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Create a wallet; <code>409</code> past the three-wallet limit (database invariant)</div>
+            <div class="endpoint-description">Create a wallet; <code>409</code> past the three-account limit (database invariant). A savings pot (<code>kind: "pot"</code> with <code>parent_wallet_id</code>) belongs to an account and does not count toward the limit</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">

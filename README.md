@@ -211,6 +211,12 @@ rimozione della colonna fantasma `Wallet.balance`:
   `011_transfer_type.down.sql` (bloccato se esistono righe T). Va applicata
   **prima** di pubblicare il server che la usa: saldo e route leggono e scrivono
   `to_wallet_id`. Progetto in `TODO_SALVADANAI.md`.
+- `012_wallet_pots.sql` — salvadanai: `Wallet.kind` (`account` | `pot`) e
+  `Wallet.parent_wallet_id` (il conto del salvadanaio). Il limite di 3 della `004` conta solo i
+  conti; un salvadanaio non è mai default (`wallet_set_default` lo rifiuta con `45004`, padre
+  non valido `45005`). Riscrive le funzioni della `004`; pre-check, idempotente, rollback in
+  `012_wallet_pots.down.sql` (bloccato se esistono salvadanai). Va applicata **prima** del server
+  che crea salvadanai; un conto si crea come prima anche senza la `012`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare

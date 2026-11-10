@@ -228,8 +228,10 @@ export const startFakeSupabase = async ({
   // `wallet_set_default`. Non emulano il caso (che la route non fa) dell'UPDATE
   // che sposta un wallet a un altro utente.
 
+  // Dalla migrazione 012 il limite conta solo i conti: un salvadanaio (`kind: "pot"`)
+  // non entra nel conteggio e non e' mai default.
   const countWallets = (userid) =>
-    (store[WALLET_TABLE] ?? []).filter((row) => row.userid === userid).length;
+    (store[WALLET_TABLE] ?? []).filter((row) => row.userid === userid && (row.kind ?? "account") === "account").length;
 
   /**
    * Trigger `BEFORE INSERT`: limite di 3 wallet per utente e primo wallet forzato
@@ -245,6 +247,10 @@ export const startFakeSupabase = async ({
     const pending = new Map();
 
     for (const row of incoming) {
+      if (row.kind === "pot") {
+        row.is_default = false;
+        continue;
+      }
       const taken = countWallets(row.userid) + (pending.get(row.userid) ?? 0);
 
       if (taken >= 3) return WALLET_ERRORS.LIMIT_EXCEEDED;
