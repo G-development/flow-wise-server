@@ -351,7 +351,30 @@ Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, 
 - [ ] Decidere cosa resta della categoria "Giroconto" quando è vuota
 - [ ] Controllo: i totali di agosto–ottobre nell'app, senza trasferimenti, confrontati con "Over year" dell'Excel. Le differenze vanno spiegate una per una
 
-## Fase 2 — Salvadanai
+## Fase 2 — Salvadanai (anticipata al 10/11, decisione di Gio)
+
+Stato al 10/11 (sola lettura): 32 `T`, 6 assegnate da Gio (4 bonifici a Trade Republic, 4,33 € da Trade
+Republic, e un accantonamento salvadanaio del 30/10 da 150 € assegnato a Trade Republic per errore,
+**riportato da assegnare** con il suo ok). Da assegnare: 19 salvadanaio + 7 altri (ricariche / rientri
+Revolut e il bonifico di 100 € del 31/08). Trade Republic ora 6.242,82 €: se anche i 100 € del 31/08
+vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro di 4,33 €.
+
+**Progetto (da approvare prima del codice)**
+- [ ] Migrazione `012`: `Wallet.kind` (`account` | `pot`, default `account`) e `Wallet.parent_wallet_id`
+  (il conto a cui appartiene il salvadanaio); vincoli: un `pot` ha sempre un conto padre di tipo `account`
+  dello stesso utente e non è mai default. Il trigger della `004` conta nel limite di 3 **solo** i conti
+- [ ] Server: creazione di un salvadanaio (`POST /wallet` con `kind: "pot"` e conto padre), `GET /wallet`
+  espone `kind` e `parent_wallet_id`; test degli invarianti nuovi
+- [ ] Client: i salvadanai compaiono come card più piccole sotto la card del loro conto; "Add savings pot"
+  nel menu della card del conto; il riquadro "da assegnare" li propone come destinazione/origine
+- [ ] Creazione di Emergenze, Savings, Annuali sotto ISP con apertura 0
+- [ ] Gio assegna i 19 movimenti salvadanaio
+- [ ] **Saldi di apertura**: Gio legge oggi dall'app Intesa i saldi dei tre salvadanai (data D); apertura
+  di ogni salvadanaio = saldo reale a D − somma dei trasferimenti assegnati fino a D. Poi verifica:
+  saldi nell'app = saldi Intesa
+- Tetti (D7: 1.000 / 1.000 / somma spese annuali) e piano Annuali restano alla fase 3
+
+### Fase 2 — voci originali
 
 - [ ] Progettare `Wallet.kind` (`account` | `pot`) e la modifica al trigger del limite (migrazione `004`)
 - [ ] Migrazione + `.down.sql` + test degli invarianti (limite sui soli conti, salvadanaio mai default)
