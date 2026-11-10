@@ -50,16 +50,22 @@ Server
 - [x] S1. `GET /transaction/all?startDate&endDate` — 10/11, test 235/235 (il fake di Supabase ora conosce `gte`/`lte`); `public/index.html` lo dichiarava già ("optional date filters")
 
 Client — pagina `/movements` (inglese)
-- [ ] C1. **Wallet cards**: logo dell'istituto per i wallet collegati, icona generica per gli altri; nome, badge "Default", saldo, entrate e spese del periodo; menu azioni (rinomina, saldo di apertura, imposta default, elimina) e card "Add wallet" (spenta al limite di 3). Clic sulla card = filtra solo quel wallet; clic di nuovo = tutti
-- [ ] C2. **Filtri**: checkbox Income / Expense / Transfer, checkbox per wallet, intervallo di date (quello condiviso di oggi). Lo stato dei filtri sta nell'indirizzo (`?types=I,E&wallets=1`), così i vecchi link portano al filtro giusto e un filtro si può salvare nei preferiti
-- [ ] C3. **Totali della selezione**: Income, Expense, Net (I − E). Con un solo wallet selezionato anche Transfers in / out
-- [ ] C4. **Da assegnare**: il riquadro di oggi in /transfers, estratto in un componente e messo in cima
-- [ ] C5. **Tabella**: data, descrizione, categoria, wallet ("GC Default wallet" oppure "GC Default wallet → Trade Republic"), importo (+ verde, − rosso, trasferimento neutro con freccia), azioni modifica / elimina. Una `T` compare se il wallet filtrato è origine **o** destinazione
-- [ ] C6. **Un solo modulo** condiviso tra "Add transaction" e la modifica (deciso il 10/11), con il tipo Transfer (From / To): così una `T` si modifica come le altre
-- [ ] C7. **Vecchi indirizzi**: `/incomes` → `/movements?types=I`, `/expenses` → `?types=E`, `/transfers` → `?types=T`, `/wallets` → `/movements`
-- [ ] C8. **Menu**: barra in basso del telefono con Dashboard, Movements e "+ nuova" che apre "Add transaction" (deciso il 10/11); il resto nel menu ☰
-- [ ] C9. **Test**: funzioni pure per filtri e totali (`lib/movements.ts`), con i casi `T` (origine/destinazione, da assegnare)
-- [ ] C10. Documentazione (`API_STRUCTURE.md`, `AGENTS.md` del client, CODE_MAP) e verifica nell'app vera su telefono e desktop
+- [x] C1–C10 implementati il 10/11 (client `plan/salvadanai-annuali`, non pubblicato): `app/movements/page.tsx`,
+  `components/movements/` (card wallet, trasferimenti da assegnare), `lib/movements.ts` (+9 test), un solo
+  pannello per creare e modificare (`new-transaction.tsx`), rimandi in `next.config.ts`, menu Dashboard /
+  Movements / New, pagine vecchie e `movements-list` / `edit-dialog` eliminati, documentazione aggiornata.
+  Client: 39/39 test, `tsc`, `next build`
+- [x] Verificato nell'app vera (locale sul database live, login di Gio) a 375 px, ~800 px e 1280 px: card con logo
+  Intesa e saldi giusti (GC 80,32 € dopo l'import del 10/11), filtri per tipo e wallet con indirizzo aggiornato e
+  totali coerenti, "Transfers in/out" con un solo wallet, modifica precompilata e passaggio a Transfer (annullata,
+  nessun dato scritto), `/incomes` → `/movements?types=I`. Corretti durante la prova: elenco da assegnare
+  ridotto a 3 con "Show all", descrizioni a due righe, badge Default sotto il nome
+- [ ] Non provato nell'app vera: salvataggio di una modifica, eliminazione, creazione / eliminazione di un wallet
+  (tutti scrivono dati veri)
+- [ ] Pubblicazione: server (`/transaction/all` con le date) prima del client. Il client funziona anche col server
+  vecchio, ma senza filtro per date la tabella mostrerebbe tutti i movimenti
+- [ ] Nota: il bonifico di 4,33 € del 29/10 ha "BIC. ORD.: TRBKITMMXXX" (Trade Republic Bank): è un rientro da
+  Trade Republic, non da Revolut
 
 **6. 1° dicembre**: Gio legge i saldi dei salvadanai dall'app Intesa (V2) → fase 2
 
