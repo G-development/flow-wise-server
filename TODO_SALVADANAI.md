@@ -376,6 +376,9 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
   applicato `004` e poi `012`. Verificato: `wallet_set_default` risponde, i 5 wallet sono `account`, saldi invariati
 - [x] Creati Emergenze (18), Savings (19), Annuali (20) come `pot` sotto ISP, apertura 0
 - [x] Pubblicato il 10/11: server `61524d7..f190360` e client `6204ee8..102a1ed`, deploy Production riusciti
+- [x] Trade Republic allineato il 10/11 al saldo indicato da Gio, **6.347,15 €**: bonifico di 100 € del 31/08 assegnato
+  a Trade Republic (con il suo ok) e apertura da 5.864,79 € a 5.869,12 € (+4,33 €, il rientro del 29/10). Restano da
+  assegnare solo i 6 movimenti Revolut
 - [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
 - [x] Saldi reali dei salvadanai dati da Gio il **10/11** (V2): Emergenze **100 €**, Savings **150 €**, Annuali **60 €**
   (coincidono con gli accantonamenti del 30/10: 100, 150, 60, come le assegnazioni di novembre nell'Excel)
