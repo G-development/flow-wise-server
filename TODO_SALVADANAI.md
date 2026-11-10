@@ -11,7 +11,8 @@ transazioni su 1.611 (Gio: 1.276 su GC Default wallet dal 2000 ad aprile 2026, 5
 Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 
 **1. Controllo del primo import automatico** (10/11 mattina)
-- [ ] Movimenti del job delle 06:00: gli accantonamenti / riunioni somme e le uscite verso Giovanni Cuozzo entrano come `T` da assegnare; nessun errore nel workflow
+- [x] 10/11: workflow "Bank auto-import" riuscito (partito alle 13:09 UTC, non alle 06:00: GitHub ritarda i cron), `imported: 4`, `byRule: 2`, `errors: []`. Le regole sulle persone mandano i movimenti in "Persone — da classificare"
+- [ ] Nessun movimento di salvadanaio o verso Giovanni Cuozzo era nel lotto: il percorso `T` dall'import automatico è coperto dai test ma non ancora visto dal vivo. Ricontrollare dopo il prossimo accantonamento (di solito a fine mese)
 
 **2. Pulizia delle transazioni prima del 01/06/2026** (decisa da Gio il 9/11)
 - [x] Eliminate le 1.282 transazioni con `date < 2026-06-01` di tutti gli account — 9/11, dopo la conferma finale di Gio, senza backup per sua scelta. Restano 329 transazioni, nessuna prima del 01/06
@@ -37,13 +38,28 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 - **Totali della selezione**: entrate, spese, netto (i trasferimenti non entrano nel netto; con un solo wallet anche trasferimenti in entrata / uscita)
 - In cima i **trasferimenti da assegnare**, come oggi in /transfers
 - Lingua: **inglese**
-- Da progettare in dettaglio prima del codice:
-  - [ ] server: `/transaction/all` con `startDate` / `endDate` (come `/income/all`), con test
-  - [ ] da dove prendere il logo della banca (verificare cosa espongono `/bank/institutions` e `/bank/connections`)
-  - [ ] modifica completa di una `T` nel dialogo di modifica (oggi solo `I`/`E`)
-  - [ ] vecchi indirizzi `/incomes`, `/expenses`, `/transfers`, `/wallets` → rimando a `/movements` con il filtro giusto; menu ridotto
-  - [ ] vista iniziale: tutti i tipi e tutti i wallet selezionati, periodo come oggi (proposta)
-  - [ ] verifica nell'app vera su telefono e desktop
+- Vista iniziale: tutti i tipi e tutti i wallet selezionati, periodo come oggi (confermato da Gio il 10/11)
+
+**Progetto di dettaglio (10/11, da approvare prima del codice)**
+
+Fatti verificati: il logo della banca c'è già: `GET /bank/institutions` restituisce `logo` per ogni istituto
+GoCardless, e `GET /bank/connections` dice a quale wallet importa ogni banca (`autoImport.walletId`); la
+pagina Wallets oggi li usa per "Linked to Intesa Sanpaolo". `GET /transaction/all` non accetta date.
+
+Server
+- [ ] S1. `GET /transaction/all?startDate&endDate` (stessa forma di `/income/all`), test, `public/index.html`, README
+
+Client — pagina `/movements` (inglese)
+- [ ] C1. **Wallet cards**: logo dell'istituto per i wallet collegati, icona generica per gli altri; nome, badge "Default", saldo, entrate e spese del periodo; menu azioni (rinomina, saldo di apertura, imposta default, elimina) e card "Add wallet" (spenta al limite di 3). Clic sulla card = filtra solo quel wallet; clic di nuovo = tutti
+- [ ] C2. **Filtri**: checkbox Income / Expense / Transfer, checkbox per wallet, intervallo di date (quello condiviso di oggi). Lo stato dei filtri sta nell'indirizzo (`?types=I,E&wallets=1`), così i vecchi link portano al filtro giusto e un filtro si può salvare nei preferiti
+- [ ] C3. **Totali della selezione**: Income, Expense, Net (I − E). Con un solo wallet selezionato anche Transfers in / out
+- [ ] C4. **Da assegnare**: il riquadro di oggi in /transfers, estratto in un componente e messo in cima
+- [ ] C5. **Tabella**: data, descrizione, categoria, wallet ("GC Default wallet" oppure "GC Default wallet → Trade Republic"), importo (+ verde, − rosso, trasferimento neutro con freccia), azioni modifica / elimina. Una `T` compare se il wallet filtrato è origine **o** destinazione
+- [ ] C6. **Modifica di una `T`**: il dialogo di modifica impara il tipo Transfer (From / To). Proposta: un solo modulo condiviso tra "Add transaction" e la modifica, invece di due copie quasi uguali
+- [ ] C7. **Vecchi indirizzi**: `/incomes` → `/movements?types=I`, `/expenses` → `?types=E`, `/transfers` → `?types=T`, `/wallets` → `/movements`
+- [ ] C8. **Menu** ridotto (vedi domande)
+- [ ] C9. **Test**: funzioni pure per filtri e totali (`lib/movements.ts`), con i casi `T` (origine/destinazione, da assegnare)
+- [ ] C10. Documentazione (`API_STRUCTURE.md`, `AGENTS.md` del client, CODE_MAP) e verifica nell'app vera su telefono e desktop
 
 **6. 1° dicembre**: Gio legge i saldi dei salvadanai dall'app Intesa (V2) → fase 2
 
