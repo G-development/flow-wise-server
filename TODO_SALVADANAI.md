@@ -375,6 +375,8 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 - [x] 10/11: sul live la `004` **non era applicata** (funzioni assenti, scoperto dal pre-check della `012`): Gio ha
   applicato `004` e poi `012`. Verificato: `wallet_set_default` risponde, i 5 wallet sono `account`, saldi invariati
 - [x] Creati Emergenze (18), Savings (19), Annuali (20) come `pot` sotto ISP, apertura 0
+- [x] Pubblicato il 10/11: server `61524d7..f190360` e client `6204ee8..102a1ed`, deploy Production riusciti
+- [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
 - [ ] Gio assegna i 19 movimenti salvadanaio
 - [ ] **Saldi di apertura**: Gio legge oggi dall'app Intesa i saldi dei tre salvadanai (data D); apertura
   di ogni salvadanaio = saldo reale a D − somma dei trasferimenti assegnati fino a D. Poi verifica:
