@@ -516,8 +516,10 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
     (`routes/bank.pots.test.js`, 4 test; server 261). Verificato in locale: import automatico propone Disattivato / ISP /
     Trade Republic, finestra Import ISP / Trade Republic; nessun dato scritto. Il caso positivo dell'import manuale non è
     testabile end-to-end: il Supabase finto non gestisce l'`upsert` con `onConflict`
-- [ ] U6. **Dashboard, spese per categoria su mobile**: barre orizzontali (nome, barra proporzionale, importo,
+- [x] U6. **Dashboard, spese per categoria su mobile**: barre orizzontali (nome, barra proporzionale, importo,
   ordinate dalla più alta) al posto della torta; su desktop resta la torta
+  - 10/11: fatto. Soglia 768 px come `dashboard-grid.tsx`; la categoria più alta riempie la riga, stessi colori della
+    torta. Verificato in locale a 375 px (8 barre, nessun overflow) e a 1280 px (torta, barre nascoste)
 - [x] U7. **Widget Total Balance**: al posto di "5 wallets" una riga piccola tipo "6.427 € in 2 conti · 310 € in 3
   salvadanai"; al tocco un modale con ogni wallet, saldo e percentuale, i salvadanai sotto il loro conto
   - 10/11: fatto (`lib/balanceBreakdown.ts`, 4 test). Testo in inglese come il resto dell'app: "6427,47 € in 2 accounts ·
