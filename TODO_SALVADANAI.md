@@ -318,7 +318,12 @@ rivista, **niente `counterpart_wallet_id` per ora**, tutte le `T` dalla banca en
 Si aggiunge dopo, se l'assegnazione a mano delle ricariche Revolut diventa una seccatura.
 Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, `da giovanni cuozzo`,
 `revolut dublin` → Trasferimento.
-- [ ] Anomalie trovate nei dati live (9/11), da sistemare a parte: 24 transazioni con una categoria di tipo diverso dal loro, 1 con la categoria di un altro utente. Per non bloccarne la modifica, i controlli nuovi valgono solo per le T
+- [x] Anomalie (9/11: 24 transazioni con categoria di tipo diverso, 1 con categoria di un altro utente): ricontrollato il
+  10/11, **0 anomalie su 333 transazioni**. Erano tutte prima del 01/06 ed sono sparite con la pulizia
+- [ ] Ora che i dati sono puliti, il server può pretendere anche per entrate e spese una categoria dell'utente e dello
+  stesso tipo (oggi lo controlla solo per le `T`, per non bloccare la modifica di quelle righe)
+- [ ] Revolut: le 6 ricariche/rientri sono in "Altro" via "Not a transfer" (10/11). La regola `revolut dublin` resta su
+  Trasferimento perché il sistema non impara verso "Altro": le prossime ricariche arriveranno da assegnare (scelta di Gio)
 - [x] Client (passo 3) — 9/11, branch `plan/salvadanai-annuali` di `flow-wise-client`, non pubblicato:
   - "Add transaction" ha una terza scelta **Transfer**: wallet "From" e "To", categoria di sistema scelta da sola
   - nuova pagina **/transfers** (voce "Transfers" nel menu): in alto i trasferimenti **da assegnare**, ognuno con la scelta del wallet mancante e "Assegna"; sotto l'elenco completo con eliminazione
