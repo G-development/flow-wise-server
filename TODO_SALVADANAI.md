@@ -62,8 +62,8 @@ Client — pagina `/movements` (inglese)
   ridotto a 3 con "Show all", descrizioni a due righe, badge Default sotto il nome
 - [ ] Non provato nell'app vera: salvataggio di una modifica, eliminazione, creazione / eliminazione di un wallet
   (tutti scrivono dati veri)
-- [ ] Pubblicazione: server (`/transaction/all` con le date) prima del client. Il client funziona anche col server
-  vecchio, ma senza filtro per date la tabella mostrerebbe tutti i movimenti
+- [x] Pubblicato il 10/11: server `4748414..eb2d4e6` su `main` (deploy Production riuscito, `/healthz` 204), poi client
+  `b6a18f0..6204ee8` (deploy Production riuscito, `/movements` 200, `/incomes` → 307 verso `/movements?types=I`)
 - [ ] Nota: il bonifico di 4,33 € del 29/10 ha "BIC. ORD.: TRBKITMMXXX" (Trade Republic Bank): è un rientro da
   Trade Republic, non da Revolut
 
