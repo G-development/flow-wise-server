@@ -472,9 +472,13 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
 - [x] Rate esplicite (data, importo previsto, pagamento collegato) invece di una regola di ricorrenza
 - [x] "Copia sull'anno dopo" (ultimi 12 mesi della voce)
 - [x] Quota consigliata, tetto (fisso o dal piano), proiezione a 12 mesi, pagamento collegato a mano
-- [ ] Rilascio: Gio applica la `013` su Supabase → push server → push client → verifica sul live
-- [ ] Tetti: Emergenze 1.000 € fisso, Savings 1.000 € fisso, Annuali dal piano (da "Set cap", dopo il rilascio)
-- [ ] Inserire le voci dall'Excel (lista sopra, condominio escluso) dopo l'ok di Gio sulla lista
+- [x] 10/11 rilascio: Gio ha applicato la `013` e pushato server (c05b96a) e client (862d204); pagina verificata sul live
+- [x] 10/11 tetti scritti sul DB (wallet 18, 19, 20 dell'utente): Emergenze e Savings 100.000 cent fissi, Annuali
+  `cap_from_plan`. "Set cap" provato solo in locale, non sul live
+- [x] 10/11 voci inserite in Annuali dopo l'ok di Gio (giorni: assicurazione il 3, le altre il primo del mese,
+  universita' con le date dell'Excel; AdE da gennaio 2027). Sul live: tetto 3.187 €, quota consigliata 440 €/mese
+  (vincolo: 500 € di universita' a dicembre con 60 € di saldo e un solo versamento utile)
+- [ ] Condominio: solo la quota di Gio, quando la decide
 
 ## Fase 4 — In parallelo con l'Excel
 
