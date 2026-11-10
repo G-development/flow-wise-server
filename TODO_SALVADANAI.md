@@ -490,11 +490,14 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
 
 Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno alla volta, con verifica a 375 px.
 
-- [ ] U1. **Menu laterale mobile**: Main = Dashboard, Movements, Annual plan, **AI Beta**; Management = Categories,
+- [x] U1. **Menu laterale mobile**: Main = Dashboard, Movements, Annual plan, **AI Beta**; Management = Categories,
   **Your Bank**; Settings = Import, **Account** (ultima voce). Solo il menu mobile: la barra desktop non cambia
-- [ ] U2. **Barra in basso mobile**: ordine Dashboard, Movements, **+ New**, Annual plan
-- [ ] U3. **Movements**: il pulsante "Add transaction" in alto si nasconde **solo su mobile** (c'è il + della barra);
+- [x] U2. **Barra in basso mobile**: ordine Dashboard, Movements, **+ New**, Annual plan
+- [x] U3. **Movements**: il pulsante "Add transaction" in alto si nasconde **solo su mobile** (c'è il + della barra);
   su desktop resta, perché è l'unico modo per aggiungere un movimento
+  - 10/11: U1–U3 fatti e verificati nel browser locale a 375 px (sezioni del menu, barra Dashboard / Movements / New /
+    Annual plan, "Add Transaction" nascosto, nessun overflow) e a 1280 px (barra desktop invariata, pulsante presente).
+    Corretto anche un errore introdotto col changelog: due voci "Novembre 2026" con la stessa chiave React
 - [ ] U4. **Your Bank su mobile**: eliminare gli overflow orizzontali (da misurare elemento per elemento a 375 px,
   prima di correggere)
 - [ ] U5. **Your Bank — wallet di una banca**: i salvadanai non si possono scegliere né nell'import automatico (card
