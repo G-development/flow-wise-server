@@ -379,8 +379,12 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 - [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
 - [x] Saldi reali dei salvadanai dati da Gio il **10/11** (V2): Emergenze **100 €**, Savings **150 €**, Annuali **60 €**
   (coincidono con gli accantonamenti del 30/10: 100, 150, 60, come le assegnazioni di novembre nell'Excel)
-- [ ] Gio assegna i 20 movimenti salvadanaio (19 + quello del 30/10 riportato da assegnare); al 10/11 nessuno assegnato
-- [ ] **Saldi di apertura**: Gio legge oggi dall'app Intesa i saldi dei tre salvadanai (data D); apertura
+- [x] 20 movimenti salvadanaio assegnati il 10/11 su richiesta di Gio, ricostruiti dal foglio "Savings ISP" dell'Excel
+  (ottobre e settembre tornano mese per mese; agosto e i due rientri da 100 € del 14 e 16/10 sono una ricostruzione)
+- [x] Aperture al 10/08: Emergenze 180 €, Savings 100 €, Annuali 650 € (totale 930 €, coerente con i movimenti
+  bancari; nessun salvadanaio sotto zero; tutti a 0 a fine ottobre come nell'Excel). **Saldi verificati nell'app:
+  100 / 150 / 60 €**, uguali a Intesa il 10/11. ISP e Trade Republic invariati
+- [x] **Saldi di apertura**: Gio legge oggi dall'app Intesa i saldi dei tre salvadanai (data D); apertura
   di ogni salvadanaio = saldo reale a D − somma dei trasferimenti assegnati fino a D. Poi verifica:
   saldi nell'app = saldi Intesa
 - Tetti (D7: 1.000 / 1.000 / somma spese annuali) e piano Annuali restano alla fase 3
