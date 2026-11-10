@@ -370,9 +370,11 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
     conto con salvadanai non eliminabile, promozione del default su un conto, rollback bloccato con salvadanai e
     pulito senza). Server: `POST /wallet` con `kind`/`parent_wallet_id`, errori 45004/45005, fake e 3 test nuovi:
     238/238. **Non applicata sul live**
-- [ ] Client: i salvadanai compaiono come card più piccole sotto la card del loro conto; "Add savings pot"
+- [x] Client: i salvadanai compaiono come card più piccole sotto la card del loro conto; "Add savings pot"
   nel menu della card del conto; il riquadro "da assegnare" li propone come destinazione/origine
-- [ ] Creazione di Emergenze, Savings, Annuali sotto ISP con apertura 0
+- [x] 10/11: sul live la `004` **non era applicata** (funzioni assenti, scoperto dal pre-check della `012`): Gio ha
+  applicato `004` e poi `012`. Verificato: `wallet_set_default` risponde, i 5 wallet sono `account`, saldi invariati
+- [x] Creati Emergenze (18), Savings (19), Annuali (20) come `pot` sotto ISP, apertura 0
 - [ ] Gio assegna i 19 movimenti salvadanaio
 - [ ] **Saldi di apertura**: Gio legge oggi dall'app Intesa i saldi dei tre salvadanai (data D); apertura
   di ogni salvadanaio = saldo reale a D − somma dei trasferimenti assegnati fino a D. Poi verifica:
