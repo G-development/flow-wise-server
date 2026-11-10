@@ -383,7 +383,7 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
   spesa (se esce) o entrata (se entra) con una categoria; la correzione riscrive la regola (es. `revolut dublin`),
   quindi i movimenti simili arrivano gia' cosi'. Client `lib/transfer.ts` + riquadro; test client 42, server 239.
   Verificato nel browser locale (modalita' e categorie proposte), nessun dato scritto. Corretto anche il badge
-  Default dentro un `<p>` (errore di idratazione). Non pubblicato
+  Default dentro un `<p>` (errore di idratazione). Pubblicato il 10/11 (client `47f78f1`, deploy Production riuscito)
 - [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
 - [x] Saldi reali dei salvadanai dati da Gio il **10/11** (V2): Emergenze **100 €**, Savings **150 €**, Annuali **60 €**
   (coincidono con gli accantonamenti del 30/10: 100, 150, 60, come le assegnazioni di novembre nell'Excel)
