@@ -500,10 +500,13 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
     Corretto anche un errore introdotto col changelog: due voci "Novembre 2026" con la stessa chiave React
 - [x] U3b. **Dashboard**: anche qui "Add Transaction" in alto si nasconde solo su mobile (deciso da Gio il 10/11); verificato
   in locale a 375 px (assente, "Edit" resta, nessun overflow) e a 1280 px (presente)
-- [ ] U4. **Your Bank su mobile**: eliminare gli overflow orizzontali (da misurare elemento per elemento a 375 px,
+- [x] U4. **Your Bank su mobile**: eliminare gli overflow orizzontali (da misurare elemento per elemento a 375 px,
   prima di correggere)
-  - Notato il 10/11, da decidere con Gio: la card dice "Categoria scelta dall'AI, altrimenti 'Altro'", ma dal 6/11 la
-    categoria la scelgono le regole locali (nessuna AI)
+  - 10/11: misurato a 375 px: l'unico overflow era la tabella dei movimenti (878 px in una card da 307), più la finestra
+    Import con la descrizione ridotta a "PAGA…". Scelte di Gio: su mobile **lista a schede** (la tabella resta da `lg`);
+    nella finestra Import la categoria va sotto la descrizione (2 righe). Frase della card corretta in "Categoria dalle
+    tue regole, altrimenti 'Altro'" (dal 6/11 non c'è AI). Verificato: 375 px nessun elemento che scorre, 1280 px tabella;
+    finestra Import aperta e chiusa con Annulla, nessun dato scritto
 - [x] U5. **Your Bank — wallet di una banca**: i salvadanai non si possono scegliere né nell'import automatico (card
   della banca, `AutoImportSettings.tsx`) né nella finestra Import manuale (`ImportTransactionDialog.tsx`): una banca
   importa sempre in un conto, i movimenti dei salvadanai arrivano come trasferimenti da assegnare. Valutare se
