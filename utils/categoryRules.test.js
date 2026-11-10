@@ -184,3 +184,21 @@ test("learnRuleFromCorrection: una correzione verso Trasferimento impara la cate
   // Il salvadanaio scelto (to_wallet_id 20) non entra nella regola.
   assert.deepEqual(Object.keys(upserts[0].payload).sort(), ["category_id", "keyword", "source", "type", "updated_at", "user_id"]);
 });
+
+test("learnRuleFromCorrection: un trasferimento trasformato in spesa ('Not a transfer') impara la nuova categoria", async () => {
+  // Ricarica Revolut importata come T da assegnare (regola `revolut dublin` -> Trasferimento 54):
+  // l'utente la trasforma in spesa "Revolut" (72). La regola, stessa chiave e stesso tipo E,
+  // viene riscritta: le ricariche successive arrivano gia' come spesa.
+  const ricarica = { description: "PAGAMENTO POS EFFETTUATO IL 17/09/2026 MEDIANTE LA CARTA 5167 PRESSO Revolut**8371* Dublin", counterparty: "", amount: -100 };
+  const { client, upserts } = fakeClient({ category: { id: 72, name: "Revolut", type: "E" }, bankTxn: ricarica });
+  const rule = await learnRuleFromCorrection(client, {
+    userId: "u1",
+    previousCategoryId: 54,
+    transaction: { bank_transaction_id: "b7", category_id: 72, type: "E", wallet_id: 1, to_wallet_id: null },
+  });
+
+  assert.equal(rule.keyword, "revolut dublin");
+  assert.equal(upserts[0].payload.type, "E");
+  assert.equal(upserts[0].payload.category_id, 72);
+  assert.deepEqual(upserts[0].options, { onConflict: "user_id,type,keyword" });
+});

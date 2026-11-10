@@ -379,6 +379,11 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 - [x] Trade Republic allineato il 10/11 al saldo indicato da Gio, **6.347,15 €**: bonifico di 100 € del 31/08 assegnato
   a Trade Republic (con il suo ok) e apertura da 5.864,79 € a 5.869,12 € (+4,33 €, il rientro del 29/10). Restano da
   assegnare solo i 6 movimenti Revolut
+- [x] "Not a transfer" (10/11, deciso da Gio): un trasferimento da assegnare verso/da un conto non tracciato diventa
+  spesa (se esce) o entrata (se entra) con una categoria; la correzione riscrive la regola (es. `revolut dublin`),
+  quindi i movimenti simili arrivano gia' cosi'. Client `lib/transfer.ts` + riquadro; test client 42, server 239.
+  Verificato nel browser locale (modalita' e categorie proposte), nessun dato scritto. Corretto anche il badge
+  Default dentro un `<p>` (errore di idratazione). Non pubblicato
 - [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
 - [x] Saldi reali dei salvadanai dati da Gio il **10/11** (V2): Emergenze **100 €**, Savings **150 €**, Annuali **60 €**
   (coincidono con gli accantonamenti del 30/10: 100, 150, 60, come le assegnazioni di novembre nell'Excel)
