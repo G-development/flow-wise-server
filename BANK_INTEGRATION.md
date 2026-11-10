@@ -79,10 +79,10 @@ Tutte le route (tranne `/bank/mock-auth`, `/bank/callback` e scheduler) richiedo
 | `GET` | `/bank/callback` | `?code=<code>&state=<state>` | Callback OAuth: scambia codice, salva conto e avvia primo sync |
 | `GET` | `/bank/status` | `?bank=<id>` | Stato connessione, account ID, timestamp ultimo sync e `balance` (o `null`) |
 | `GET` | `/bank/connections` | — | Elenco di tutte le banche connesse dall'utente, ciascuna con il suo `balance` (o `null`) e `autoImport: { enabled, walletId, fromDate }` |
-| `PUT` | `/bank/connections/:bank/auto-import` | `{ walletId: number \| null, fromDate?: "YYYY-MM-DD" \| null }` | Attiva (wallet di destinazione + data di partenza) o disattiva (`walletId: null`) l'import automatico della banca |
+| `PUT` | `/bank/connections/:bank/auto-import` | `{ walletId: number \| null, fromDate?: "YYYY-MM-DD" \| null }` | Attiva (wallet di destinazione + data di partenza) o disattiva (`walletId: null`) l'import automatico della banca. Il wallet dev'essere un **conto**: un salvadanaio risponde `400` `POT_NOT_ALLOWED` |
 | `POST` | `/bank/sync` | `?bank=<id>` | Sincronizza manualmente i movimenti del conto |
 | `GET` | `/bank/transactions` | `?bank=<id>&startDate=<YYYY-MM-DD>&endDate=<YYYY-MM-DD>` | Elenco movimenti sincronizzati con filtri periodo |
-| `POST` | `/bank/import` | `{ transactionIds: string[], walletId: number, categoryId: number, defaultType?: "I" \| "E" }` | Converte transazioni bancarie in entrate/spese nei Wallet |
+| `POST` | `/bank/import` | `{ transactionIds: string[], walletId: number, categoryId: number, defaultType?: "I" \| "E" }` | Converte transazioni bancarie in entrate/spese (o trasferimenti da assegnare) nel wallet indicato, che dev'essere un **conto**: un salvadanaio risponde `400` `POT_NOT_ALLOWED` e non scrive nulla |
 | `POST` | `/bank/disconnect` | `?bank=<id>` | Disconnette la banca conservando lo storico dei movimenti |
 | `GET` | `/bank/scheduler/status` | Header `x-scheduler-secret` | Se lo scheduler interno facoltativo (`BANK_SYNC_CRON`) è attivo |
 | `POST` | `/bank/scheduler/sync-now` | Header `x-scheduler-secret` | Sincronizza subito tutte le banche connesse; risponde con soli conteggi ed errori per banca |

@@ -622,7 +622,7 @@
               <code class="endpoint-path">/bank/connections/:bank/auto-import</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Enable (target wallet + start date) or disable (<code>walletId: null</code>) the daily auto-import for a connected bank</div>
+            <div class="endpoint-description">Enable (target wallet + start date) or disable (<code>walletId: null</code>) the daily auto-import for a connected bank; the target must be an account, a savings pot answers <code>400 POT_NOT_ALLOWED</code></div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
@@ -654,7 +654,7 @@
               <code class="endpoint-path">/bank/import</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Move selected bank movements into Flow Wise (<code>{ transactionIds, walletId, categoryId, defaultType? }</code>)</div>
+            <div class="endpoint-description">Move selected bank movements into Flow Wise (<code>{ transactionIds, walletId, categoryId, defaultType? }</code>); the target must be an account, a savings pot answers <code>400 POT_NOT_ALLOWED</code></div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">

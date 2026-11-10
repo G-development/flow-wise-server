@@ -482,8 +482,8 @@ router.put(
       }
       res.json({ bank: connection.bank_id, autoImport: toAutoImportView(connection) });
     } catch (error) {
-      if (error.status === 404) {
-        return res.status(404).json({ error: error.message });
+      if (error.status === 404 || error.status === 400) {
+        return res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
       }
       throw error;
     }
@@ -598,12 +598,19 @@ router.post(
       return res.status(400).json({ error: "Categoria di destinazione obbligatoria" });
     }
 
-    const result = await importBankTransactionsToApp(req.user.id, {
-      transactionIds,
-      walletId,
-      categoryId,
-      defaultType,
-    });
+    let result;
+    try {
+      result = await importBankTransactionsToApp(req.user.id, {
+        transactionIds,
+        walletId,
+        categoryId,
+        defaultType,
+      });
+    } catch (error) {
+      // Solo gli errori marcati (es. salvadanaio come destinazione) diventano un 400 leggibile.
+      if (error.status === 400) return res.status(400).json({ error: error.message, code: error.code });
+      throw error;
+    }
 
     res.status(201).json(result);
   })

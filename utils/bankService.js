@@ -1047,6 +1047,17 @@ export const ensureValidToken = async (userId, bankId) => {
 };
 
 /**
+ * Una banca importa sempre in un conto, mai in un salvadanaio (U5, deciso da Gio il 10/11/2026):
+ * i movimenti dei salvadanai arrivano come trasferimenti da assegnare dal conto.
+ */
+const potNotAllowed = () => {
+  const error = new Error("Una banca importa in un conto, non in un salvadanaio");
+  error.status = 400;
+  error.code = "POT_NOT_ALLOWED";
+  return error;
+};
+
+/**
  * Configura l'import automatico di una banca collegata.
  * `walletId: null` lo disattiva (resta la data, che non ha effetto senza wallet).
  * Attivandolo senza `fromDate` l'import parte da oggi: niente movimenti passati importati
@@ -1059,7 +1070,7 @@ export const updateBankAutoImport = async (userId, bankId, { walletId, fromDate 
   if (walletId != null) {
     const { data: wallet, error: walletError } = await supabase
       .from("Wallet")
-      .select("id")
+      .select("id, kind")
       .eq("id", walletId)
       .eq("userid", userId)
       .maybeSingle();
@@ -1069,6 +1080,7 @@ export const updateBankAutoImport = async (userId, bankId, { walletId, fromDate 
       error.status = 404;
       throw error;
     }
+    if (wallet.kind === "pot") throw potNotAllowed();
   }
 
   const update = { import_wallet_id: walletId };
@@ -1124,7 +1136,7 @@ export const importBankTransactionsToApp = async (
   // rimossa da migrations/005_drop_wallet_balance.sql e il saldo è derivato.
   const { data: wallet, error: walletError } = await supabase
     .from("Wallet")
-    .select("id, name")
+    .select("id, name, kind")
     .eq("id", walletId)
     .eq("userid", userId)
     .single();
@@ -1132,6 +1144,7 @@ export const importBankTransactionsToApp = async (
   if (walletError || !wallet) {
     throw new Error("Wallet di destinazione non trovato o non autorizzato");
   }
+  if (wallet.kind === "pot") throw potNotAllowed();
 
   // Verifica esistenza e proprietà della categoria
   const { data: category, error: categoryError } = await supabase

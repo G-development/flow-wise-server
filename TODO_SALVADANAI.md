@@ -502,10 +502,17 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
   in locale a 375 px (assente, "Edit" resta, nessun overflow) e a 1280 px (presente)
 - [ ] U4. **Your Bank su mobile**: eliminare gli overflow orizzontali (da misurare elemento per elemento a 375 px,
   prima di correggere)
-- [ ] U5. **Your Bank — wallet di una banca**: i salvadanai non si possono scegliere né nell'import automatico (card
+  - Notato il 10/11, da decidere con Gio: la card dice "Categoria scelta dall'AI, altrimenti 'Altro'", ma dal 6/11 la
+    categoria la scelgono le regole locali (nessuna AI)
+- [x] U5. **Your Bank — wallet di una banca**: i salvadanai non si possono scegliere né nell'import automatico (card
   della banca, `AutoImportSettings.tsx`) né nella finestra Import manuale (`ImportTransactionDialog.tsx`): una banca
   importa sempre in un conto, i movimenti dei salvadanai arrivano come trasferimenti da assegnare. Valutare se
   rifiutarlo anche sul server (`PUT /bank/connections/:bank/auto-import`, `POST /bank/import`)
+  - 10/11: fatto. Client: i due menu filtrano `kind === "pot"`. Server (scelta di Gio): `updateBankAutoImport` e
+    `importBankTransactionsToApp` rifiutano un salvadanaio con `400 POT_NOT_ALLOWED`, senza scrivere
+    (`routes/bank.pots.test.js`, 4 test; server 261). Verificato in locale: import automatico propone Disattivato / ISP /
+    Trade Republic, finestra Import ISP / Trade Republic; nessun dato scritto. Il caso positivo dell'import manuale non è
+    testabile end-to-end: il Supabase finto non gestisce l'`upsert` con `onConflict`
 - [ ] U6. **Dashboard, spese per categoria su mobile**: barre orizzontali (nome, barra proporzionale, importo,
   ordinate dalla più alta) al posto della torta; su desktop resta la torta
 - [x] U7. **Widget Total Balance**: al posto di "5 wallets" una riga piccola tipo "6.427 € in 2 conti · 310 € in 3

@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `561a1f0`.
+Forma `express`, radice sorgente `.`, commit `89035d1`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -72,6 +72,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `GET /bank/scheduler/status` — header `x-scheduler-secret`
   - `POST /bank/scheduler/sync-now` — header `x-scheduler-secret`
   - `POST /bank/scheduler/import` — header `x-scheduler-secret`
+- `routes/bank.pots.test.js` — test
 - `routes/category.js` — mount `/category` — exports: const `createCategoryRouter`
   - `GET /category` — middleware `auth`
   - `GET /category/active` — middleware `auth`
