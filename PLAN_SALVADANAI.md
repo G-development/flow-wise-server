@@ -122,14 +122,17 @@ il codice: cambia solo come classifichi i movimenti nuovi.
 
 ## 5. Fasi
 
-| Fase | Contenuto | Dipende da |
-| --- | --- | --- |
-| 0 | Decisioni e verifiche V1–V3 | — |
-| 1 | Trasferimenti: categoria marcata come trasferimento, esclusa dalle statistiche; ripulire Giroconto | 0 |
-| 2 | Salvadanai: wallet `pot`, saldi di apertura, giroconti collegati, assegnazione dei movimenti importati | 1, V1, V2 |
-| 3 | Piano Annuali: voci, quota, proiezione, scadenze pagate | 2 |
-| 4 | Verifica in parallelo con l'Excel per uno o due mesi | 2, 3 |
-| 5 | Rimborsi e spese condivise (fuori da questo piano, da progettare dopo V4) | 1 |
+| Fase | Contenuto | Dipende da | Stato |
+| --- | --- | --- | --- |
+| 0 | Decisioni e verifiche V1–V3 | — | chiusa |
+| 1 | Trasferimenti: tipo `T` (migrazione 011), esclusi dalle statistiche; Giroconto eliminato | 0 | pubblicata 9–10/11 |
+| 2 | Salvadanai: wallet `pot` (012), saldi di apertura, movimenti assegnati, pagina Movements | 1, V1, V2 | pubblicata 10/11 |
+| 3 | Piano Annuali: voci, quota, tetto, proiezione, pagamenti (013) | 2 | pubblicata 10/11, 7 voci inserite |
+| 4 | Verifica in parallelo con l'Excel per uno o due mesi | 2, 3 | da iniziare |
+| 5 | Rimborsi e spese condivise (fuori da questo piano, da progettare dopo V4) | 1 | da progettare |
+
+Revolut è **rinviato** per scelta di Gio (10/11): non si collega e non ha un wallet; i passaggi verso
+Revolut si registrano come spese con "Not a transfer". Dettagli in `TODO_SALVADANAI.md`, passo 4.
 
 La chiusura mensile (assegnare l'avanzo finché resta zero) viene dopo: usa i salvadanai e i
 trasferimenti di queste fasi.

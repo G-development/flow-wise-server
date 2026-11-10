@@ -26,11 +26,14 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 - [x] 39 movimenti con le persone → "Persone — da classificare" (entrata id 58: 25; spesa id 59: 14); le 7 regole sulle persone spostate lì
 - [x] Categorie "Giroconto" (51, 52) eliminate, verificate vuote
 - [x] Trade Republic: apertura ridotta dei 5 bonifici a se stesso (482,36 €) → 5.864,79 €; assegnandoli a Trade Republic in /transfers il saldo torna 6.347,15 €
-- [ ] Gio assegna i 32 trasferimenti in /transfers (i 20 dei salvadanai aspettano la fase 2; il 4,33 € del 29/10 forse è un rimborso abbonamenti, da riportare a entrata)
-- [ ] Controllo dei totali agosto–ottobre con l'Excel
+- [x] Trasferimenti assegnati (10/11): i 20 dei salvadanai dopo la fase 2, i bonifici a Trade Republic, il 4,33 € del 29/10 come rientro da Trade Republic; i 6 Revolut chiusi con "Not a transfer". Da assegnare: 0
+- [ ] Controllo dei totali agosto–ottobre con l'Excel → spostato nella fase 4
 
-**4. Revolut**
-- [ ] Gio ricollega Revolut sul **suo** account (la connessione attuale è su `test@test.it`); poi passo Revolut: wallet "Revolut" (conto), saldo di apertura, import dei movimenti (D-R3)
+**4. Revolut — rinviato per scelta di Gio (10/11): per ora Revolut non si collega**
+- Nessun wallet Revolut, nessun import dei suoi movimenti. I passaggi Intesa ↔ Revolut si registrano con
+  "Not a transfer" (spesa / entrata sul conto) e la regola `revolut dublin` li fa arrivare già così.
+  La connessione GoCardless esistente resta sull'account `test@test.it`: non toccarla
+- [ ] Solo se Gio cambia idea: ricollegarlo sul **suo** account, wallet "Revolut" (conto), apertura, import (D-R3)
 
 **5. Pagina "Movements"** (sostituisce Incomes, Expenses, Transfers e Wallets) — decisioni di Gio del 9/11
 - In alto le **card dei wallet**: logo e nome della banca (logo GoCardless per i conti collegati, icona generica per gli altri), saldo attuale, entrate e spese del periodo, azioni di modifica (nome, saldo di apertura, default, elimina) e "aggiungi wallet". Cliccare una card filtra solo quel wallet
@@ -67,7 +70,7 @@ Client — pagina `/movements` (inglese)
 - [ ] Nota: il bonifico di 4,33 € del 29/10 ha "BIC. ORD.: TRBKITMMXXX" (Trade Republic Bank): è un rientro da
   Trade Republic, non da Revolut
 
-**6. 1° dicembre**: Gio legge i saldi dei salvadanai dall'app Intesa (V2) → fase 2
+**6. ~~1° dicembre~~**: superato — la fase 2 è stata anticipata e Gio ha dato i saldi dei salvadanai il 10/11 (V2)
 
 ## Fase 0 — Decisioni e verifiche
 
@@ -87,14 +90,14 @@ Verifiche:
 
 - [x] V1. **No**: la requisition Intesa (stato `LN`) espone **un solo conto**, quello principale (IBAN IT96…3032), lo stesso già salvato in `bank_connections`. I salvadanai non sono conti separati per GoCardless; i loro saldi li tiene l'app — verificato il 9/11. Resta un controllo a costo zero: al ricollegamento (entro il 6/1/2027) guardare se la schermata di consenso Intesa propone altri conti
 - [ ] V1b. Nota a margine: `handleGoCardlessCallback` usa solo `accounts[0]`. Oggi va bene (c'è un solo conto); diventerebbe un problema solo se una requisition ne avesse più di uno
-- [ ] V2. Saldi reali dei salvadanai alla data di taglio, letti dall'app Intesa
+- [x] V2. Saldi reali dei salvadanai letti dall'app Intesa il 10/11 (data di taglio anticipata): 100 / 150 / 60 €
 - [x] V3. I bonifici "a favore di Giovanni Cuozzo" vanno a **Trade Republic**: diventano `T` conto ISP → Trade Republic — confermato il 9/11
 - [x] V4. I movimenti con Michele, Eduard, Akissi sono **pagamenti tra amici** (bar, uscite, cene) — confermato il 9/11. Non sono giroconti: escono da "Giroconto" e diventano spese e rimborsi (fase 5)
 - [x] V4b. Confermato il 9/11: oggi luce, gas e Iliad li paga Michele e Gio gli manda la sua parte; il condominio lo paga Gio e i coinquilini gli rimandano la loro. **Vincolo di Gio: nessuna associazione persona → significato nel codice** (vedi principio in `PLAN_SALVADANAI.md`)
 
 Pulizia (dopo D8):
 
-- [ ] Elenco delle 31 transazioni della categoria "Annuali" (id 11) mostrato a Gio; eliminazione di transazioni e categoria **solo dopo il suo ok su quell'elenco** (non reversibile)
+- [x] Superato: le 31 transazioni sono sparite con la pulizia di tutto ciò che precede il 01/06/2026 (ok di Gio, 9/11) e la categoria "Annuali" (id 11) è stata eliminata vuota
 
 ## Fase 1 — Trasferimenti fuori dalle statistiche
 
@@ -389,7 +392,7 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
   quindi i movimenti simili arrivano gia' cosi'. Client `lib/transfer.ts` + riquadro; test client 42, server 239.
   Verificato nel browser locale (modalita' e categorie proposte), nessun dato scritto. Corretto anche il badge
   Default dentro un `<p>` (errore di idratazione). Pubblicato il 10/11 (client `47f78f1`, deploy Production riuscito)
-- [ ] Il wallet Revolut va creato quando Gio ricollega Revolut sul suo account (passo 4)
+- [x] Wallet Revolut: non si crea, Revolut è rinviato per scelta di Gio (passo 4)
 - [x] Saldi reali dei salvadanai dati da Gio il **10/11** (V2): Emergenze **100 €**, Savings **150 €**, Annuali **60 €**
   (coincidono con gli accantonamenti del 30/10: 100, 150, 60, come le assegnazioni di novembre nell'Excel)
 - [x] 20 movimenti salvadanaio assegnati il 10/11 su richiesta di Gio, ricostruiti dal foglio "Savings ISP" dell'Excel

@@ -227,5 +227,5 @@ rimozione della colonna fantasma `Wallet.balance`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare
 `balance == (opening_balance_cents + movimenti) / 100`. È **storico**: dopo
 `005_drop_wallet_balance.sql` la colonna `balance` non esiste più, quindi lo script
-si ferma con un messaggio esplicito e l'apertura si modifica dalla pagina /wallets
+si ferma con un messaggio esplicito e l'apertura si modifica dalla card del wallet in /movements
 (`PUT /wallet/:id`). I wallet nuovi non richiedono backfill: partono dal default 0.

@@ -686,7 +686,7 @@
               <code class="endpoint-path">/bank/scheduler/import</code>
               <span class="endpoint-auth auth-secret">SECRET</span>
             </div>
-            <div class="endpoint-description">One batch (<code>?limit=1-100</code>, default 50) of automatic import of booked bank transactions into incomes/expenses, categorized by the user's local keyword rules (no external service), "Altro" as fallback; call again until <code>remaining</code> is 0</div>
+            <div class="endpoint-description">One batch (<code>?limit=1-100</code>, default 50) of automatic import of booked bank transactions into incomes/expenses (or pending transfers, when a rule points to the transfer category), categorized by the user's local keyword rules (no external service), "Altro" as fallback; call again until <code>remaining</code> is 0</div>
           </li>
         </ul>
       </div>
