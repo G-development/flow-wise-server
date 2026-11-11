@@ -619,8 +619,17 @@ Esempi: condominio 132,91 × 2 (5/10), TaRi 28,33 / 30,33 con testo "Tari agosto
   Client: `isRefund`/`totalForType` (entrate senza rimborsi, spese nette), Movements (filtri, totali, badge
   "Refund"), Dashboard, casella "Refund" nel pannello, "Refund · categoria" in "Not a transfer". 53 test.
   **Non applicata sul live, non pubblicato, non provato nel browser**
-- [ ] Rilascio: Gio applica la `014` (innocua per il codice di oggi) → verifica nel browser → push server → push client
-- [ ] Riclassificare i 43 movimenti con le persone: elenco proposto a Gio prima di scrivere
+- [x] 11/11 rilascio: Gio ha applicato la `014` (341 righe, 0 rimborsi) e pushato server (`2eaa072`) e client (`acab358`); deploy riusciti. **Non provato nel browser** (sessione scaduta sia in locale sia sul live): da guardare Dashboard, Movements e la casella "Refund"
+- [x] 11/11, ok di Gio: 27 dei 43 movimenti con le persone riclassificati incrociando le note dei fogli Ago–Nov.
+  10 spese (6 a Michele → Bollette; Eduard 310 → Straordinarie, 50 → Viaggi, 20 "cena" → Uscite, 44 → Trasporti) e
+  17 rimborsi (TaRi ×4 → Bollette, condominio ×2 → Condominio, Eduard 100 ×2 → Viaggi, 5 + 9 → Asporto, 12 + 11 +
+  53,50 + 12 + 36 → Uscite, 3,10 + 12 → Altro). Regole imparate solo dal testo: `tari`, `condominio`, `panciccio`;
+  nessuna sui nomi. Controllo: Condominio di ottobre 132,95 € (Excel 132,92). Il proposto diceva "29 sicuri e 14 da
+  chiarire": erano 27 e 16, conteggio corretto qui
+- [ ] Ancora in "Persone — da classificare", da chiarire con Gio (16): uscite Eduard 40 (3/9) e 35 (26/9), Michele 21
+  (9/9), Eduard 100 "Prelievo" (17/9, Prelievi?), Michele 7,35 (9/11, Iliad?); entrate PayPal 12 (20/8), Eduard 5,50
+  (9/9), PayPal 3,50 (15/9), Michele 11 (4/10), e il gruppo di fine ottobre (Michele 7,67 + 16,60, Akissi 7,67 + 16,60,
+  Eduard 8 + 18,50, PayPal 16,60 = 91,64 €: rimborso Uscite?)
 - [ ] L'agente `/ai-beta` legge solo le spese `E`: i rimborsi non entrano nella sua analisi (da valutare)
 
 - [ ] Progettare i due casi generici del principio "persone" (in `PLAN_SALVADANAI.md`) e scriverli qui prima di implementare:
