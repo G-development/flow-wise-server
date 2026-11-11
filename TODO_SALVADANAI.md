@@ -558,9 +558,11 @@ nessun codice nei repo):
   `pag fin`, `anthropic claude`, `bakery woman` e i 7 locali. **Non** imparate di proposito: `adue cod` (prefisso di
   tutti gli addebiti SEPA, avrebbe mandato ogni addebito in Casello) e `anagnina` (avrebbe preso anche "Tabacchi
   Anagnina"). Dopo: Spesa 72,87, Casello 43,70, Abbonamenti 21,96, Rate 170,82, Affitto 325 = Excel; "Altro" 129,10 €
-- [ ] Ancora in "Altro", da chiedere a Gio: Freni e Frizioni 37 (31/10), Mirante Simone 9,50 e Caffetteria Mirò 1,30
-  (3/11), SumUp *Luce Srl 17 (6/11), PayPal *scorzielloilen 20 e PayPal *marika 36 (quale dei due è il "Regalo
-  Marika"?). Tabacchi 8,30 resta in Altro come nell'Excel
+- [x] 11/11, risposte di Gio: Freni e Frizioni, Mirante Simone, Caffetteria Mirò → Uscite (regole imparate);
+  PayPal a Ilenia 20 € = "Regalo Marika" → Straordinarie; PayPal a Marika 36 € = quota di un pranzo → Uscite. Sui due
+  PayPal **nessuna regola**, di proposito: sarebbero regole su una persona (principio "persone" del piano).
+  SumUp *Luce Srl 17 € = barbiere: resta in "Altro", come "18 Barber" nell'Excel (la categoria Barber è disattivata).
+  "Altro" di novembre ora 25,30 € (barbiere + tabacchi)
 
 - [ ] Totali di agosto–ottobre nell'app, senza trasferimenti, confrontati con "Over year" dell'Excel: differenze spiegate una per una
 - [ ] Novembre e dicembre 2026 tenuti sia nell'Excel sia nell'app
