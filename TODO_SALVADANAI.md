@@ -10,12 +10,17 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 - [ ] Fase 5 nel browser (badge "Refund", spese nette in Dashboard): rimandata da Gio
 - [x] Sync e import manuale dalla banca (workflow lanciato a mano alle 20:59 UTC): 271 movimenti sincronizzati,
   2 importati con le regole
-- [x] **ISP non torna con la banca.** App 24,72 €, banca 104,08 € alle 20:59 (195,58 € alle 12:19, senza movimenti
+- [x] **ISP non torna con la banca** (chiuso: non è un errore, sono movimenti in sospeso). App 24,72 €, banca 104,08 € alle 20:59 (195,58 € alle 12:19, senza movimenti
   contabilizzati in mezzo). I movimenti da ottobre coincidono uno per uno: la differenza viene dall'allineamento del
   9/11 (122,37 € letti quel giorno). Il saldo GoCardless si muove prima della lista dei movimenti, quindi si
   riallinea l'apertura di ISP **sul saldo che Gio legge nell'app Intesa**, dopo il suo ok
-  - 11/11 sera: Gio legge nell'app Intesa **104,08 €** (uguale alla banca delle 20:59). Apertura di ISP da 1.140,52 a
-    **1.219,88 €** (+79,36); saldo nell'app verificato: 104,08 €. I movimenti non sono stati toccati
+  - 11/11 sera: Gio legge nell'app Intesa **104,08 €**. Ho riallineato l'apertura a 1.219,88 € e **Gio l'ha corretto:
+    era sbagliato**. La differenza sono movimenti **non ancora contabilizzati** che si vedono nell'app Intesa e nel
+    saldo della banca, mentre Flow-Wise importa solo i contabilizzati (e GoCardless per Intesa non restituisce i
+    movimenti in sospeso: 0 nel sync). Quando arriveranno, il saldo dell'app si allinea da solo; un'apertura
+    corretta a mano li conterebbe due volte. **Apertura ripristinata a 1.140,52 €** (ISP nell'app 24,72 €).
+    Il saldo vero lo mostra già il Total Balance (saldo della banca). Regola: **mai correggere l'apertura per
+    inseguire il saldo della banca**; si confronta solo quando non ci sono movimenti in sospeso
 - [x] Badge "Refund" dopo il nome della categoria (client `660eb0c`)
 - [x] Total Balance: per i conti collegati il saldo letto dalla banca, con l'ora e "app says …" se diverso
   (client `607c3b3`, `lib/balanceBreakdown.ts` + test)
