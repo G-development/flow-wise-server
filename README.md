@@ -227,6 +227,9 @@ rimozione della colonna fantasma `Wallet.balance`:
   `/income/all` lo esclude, `/expense/all` lo include. Colonna e non un valore nuovo dell'enum `type`,
   che non si potrebbe togliere. Va applicata **prima** del server (le liste filtrano su `is_refund`).
   Rollback in `014_refunds.down.sql`.
+- `015_installment_paid.sql` — `annual_installments.is_paid` (default false): una rata si segna pagata a mano,
+  anche senza `transaction_id`; pagata = `is_paid` o collegata. Innocua per il codice precedente. Rollback in
+  `015_installment_paid.down.sql`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare

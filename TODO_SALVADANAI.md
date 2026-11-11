@@ -3,17 +3,39 @@
 Contesto e motivazioni in `PLAN_SALVADANAI.md`. Si spunta una voce solo quando è fatta **e verificata**.
 Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 
+## Richieste di Gio dell'11/11/2026 (sera)
+
+- [x] Barbiere: resta in "Altro", la categoria "Barber" resta disattivata (decisione di Gio)
+- [x] I 16 movimenti ancora in "Persone — da classificare": Gio non ricorda cosa siano, restano lì
+- [ ] Fase 5 nel browser (badge "Refund", spese nette in Dashboard): rimandata da Gio
+- [x] Sync e import manuale dalla banca (workflow lanciato a mano alle 20:59 UTC): 271 movimenti sincronizzati,
+  2 importati con le regole
+- [ ] **ISP non torna con la banca.** App 24,72 €, banca 104,08 € alle 20:59 (195,58 € alle 12:19, senza movimenti
+  contabilizzati in mezzo). I movimenti da ottobre coincidono uno per uno: la differenza viene dall'allineamento del
+  9/11 (122,37 € letti quel giorno). Il saldo GoCardless si muove prima della lista dei movimenti, quindi si
+  riallinea l'apertura di ISP **sul saldo che Gio legge nell'app Intesa**, dopo il suo ok
+- [x] Badge "Refund" dopo il nome della categoria (client `660eb0c`)
+- [x] Total Balance: per i conti collegati il saldo letto dalla banca, con l'ora e "app says …" se diverso
+  (client `607c3b3`, `lib/balanceBreakdown.ts` + test)
+- [x] Piano annuale: "Paid" da Edit anche senza movimento (migrazione `015`, server `267283e`, client `212de92`).
+  **La `015` va applicata sul live prima del push del server**
+- [x] Tutta l'app in inglese, compresi landing, changelog (nuova voce di novembre), Privacy e Terms (versione
+  dell'11/11), e i messaggi d'errore del server. Multilingua rimandato (decisione di Gio): i testi restano nel codice
+- [ ] Inserimento manuale del rimborso: resta la casella "Refund" nel pannello di un'entrata (Gio: per ora così)
+- [ ] Rilascio: Gio applica la `015` → push server → push client
+
 ## Cosa resta aperto (riepilogo all'11/11/2026)
 
 Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 
 - **Da vedere dal vivo:** il primo accantonamento di fine mese deve arrivare dalla banca come trasferimento da assegnare (passo 1)
-- **Mai provato sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet (passo 5), "Set cap" (fase 3)
+- **Mai provato sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet (passo 5), "Set cap" (fase 3), fase 5 e "Paid" nel browser
+- **ISP da riallineare** sul saldo dell'app Intesa (sezione "Richieste dell'11/11 sera")
 - ~~Da decidere con Gio~~ — decise l'11/11: un salvadanaio scambia soldi solo con il suo conto; entrate e spese con una
   categoria dell'utente e del tipo giusto (entrambe rifiutate dal server con un 400)
 - **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
 - **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
-- **Fase 5:** rimborsi e spese condivise, da progettare
+- **Fase 5:** pubblicata l'11/11; 16 movimenti restano in "Persone — da classificare"
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
 
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)

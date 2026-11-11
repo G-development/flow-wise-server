@@ -129,7 +129,7 @@ il codice: cambia solo come classifichi i movimenti nuovi.
 | 2 | Salvadanai: wallet `pot` (012), saldi di apertura, movimenti assegnati, pagina Movements | 1, V1, V2 | pubblicata 10/11 |
 | 3 | Piano Annuali: voci, quota, tetto, proiezione, pagamenti (013) | 2 | pubblicata 10/11, 7 voci inserite |
 | 4 | Verifica in parallelo con l'Excel per uno o due mesi | 2, 3 | da iniziare |
-| 5 | Rimborsi e spese condivise (fuori da questo piano, da progettare dopo V4) | 1 | da progettare |
+| 5 | Rimborsi e spese condivise: rimborsi per categoria (014), regole sul testo del bonifico | 1 | pubblicata 11/11 |
 
 Ritocchi dell'interfaccia chiesti da Gio il 10/11 (menu mobile, Your Bank, dashboard, Total Balance): voci U1–U7
 in `TODO_SALVADANAI.md`, da fare prima della fase 4 o in parallelo.
