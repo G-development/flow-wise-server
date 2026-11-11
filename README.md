@@ -222,6 +222,11 @@ rimozione della colonna fantasma `Wallet.balance`:
   policy come `category_rules`; `Wallet.cap_cents` / `Wallet.cap_from_plan` per il tetto dei salvadanai.
   Calcolo in `utils/annualPlan.js`, route in `routes/annualPlan.js`. Va applicata **prima** del server
   che la usa. Rollback in `013_annual_plan.down.sql` (elimina voci e rate).
+- `014_refunds.sql` — rimborsi (fase 5): `Transaction.is_refund` (default false) con il vincolo
+  `transaction_refund_is_income_chk` (solo su `I`). Un rimborso è un'entrata con categoria di spesa:
+  `/income/all` lo esclude, `/expense/all` lo include. Colonna e non un valore nuovo dell'enum `type`,
+  che non si potrebbe togliere. Va applicata **prima** del server (le liste filtrano su `is_refund`).
+  Rollback in `014_refunds.down.sql`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare

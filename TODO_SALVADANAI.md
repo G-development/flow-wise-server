@@ -612,6 +612,17 @@ Esempi: condominio 132,91 × 2 (5/10), TaRi 28,33 / 30,33 con testo "Tari agosto
 
 *Effetto sulla fase 4:* il confronto con l'Excel non dovrà più sottrarre a mano le entrate dalle persone
 
+- [x] 11/11, progetto approvato da Gio. Migrazione `014` (+ `.down.sql`) provata su Postgres locale (due volte,
+  rimborso su `I` ammesso, su `E` rifiutato, rollback pulito). Server: `is_refund` in schemi e controlli, liste,
+  import bancario (entrata + categoria di spesa = rimborso), regole sul testo libero che vincono sulla controparte,
+  apprendimento dei rimborsi solo dal testo libero (`extractFreeText`, `freeTextKey`). 276 test (+10).
+  Client: `isRefund`/`totalForType` (entrate senza rimborsi, spese nette), Movements (filtri, totali, badge
+  "Refund"), Dashboard, casella "Refund" nel pannello, "Refund · categoria" in "Not a transfer". 53 test.
+  **Non applicata sul live, non pubblicato, non provato nel browser**
+- [ ] Rilascio: Gio applica la `014` (innocua per il codice di oggi) → verifica nel browser → push server → push client
+- [ ] Riclassificare i 43 movimenti con le persone: elenco proposto a Gio prima di scrivere
+- [ ] L'agente `/ai-beta` legge solo le spese `E`: i rimborsi non entrano nella sua analisi (da valutare)
+
 - [ ] Progettare i due casi generici del principio "persone" (in `PLAN_SALVADANAI.md`) e scriverli qui prima di implementare:
   - pago io la quota di una spesa anticipata da altri → spesa normale, categoria scelta sul movimento
   - anticipo io e gli altri mi rimborsano → rimborso collegato alla spesa, che diventa netta (oggi nell'Excel: "98,5 − 53,5 Cene", condominio diviso per tre)

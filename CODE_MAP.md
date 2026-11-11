@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `c0ed6a7`.
+Forma `express`, radice sorgente `.`, commit `9b85a92`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -133,7 +133,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `startBankSyncScheduler`, `stopBankSyncScheduler`
 - `utils/bankTokenCrypto.js` — exports: const `decryptToken`, `ENCRYPTED_TOKEN_PREFIX`, `encryptToken`, `isEncryptedToken`
 - `utils/bankTokenCrypto.test.js` — test
-- `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractMerchantKey`, `findMatchingRule`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
+- `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
 - `utils/categoryRules.test.js` — test
 - `utils/paginatedSelect.js` — exports: const `DEFAULT_MAX_PAGES`, `DEFAULT_PAGE_SIZE`, `fetchAllRows`, `toListResponse`
 - `utils/paginatedSelect.test.js` — test
@@ -182,6 +182,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/012_wallet_pots.sql` — 012_wallet_pots.sql
 - `migrations/013_annual_plan.down.sql` — 013_annual_plan.down.sql
 - `migrations/013_annual_plan.sql` — 013_annual_plan.sql
+- `migrations/014_refunds.down.sql` — 014_refunds.down.sql
+- `migrations/014_refunds.sql` — 014_refunds.sql
 
 ## Script di radice
 

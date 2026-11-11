@@ -398,7 +398,7 @@
               <code class="endpoint-path">/transaction</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Create a new transaction (<code>type</code> <code>"I"</code>/<code>"E"</code> with <code>wallet_id</code>, or <code>"T"</code> transfer from <code>wallet_id</code> to <code>to_wallet_id</code> with the transfer category). An income/expense needs one of your categories of the same type; a savings pot can only exchange money with its own account (otherwise <code>400</code>)</div>
+            <div class="endpoint-description">Create a new transaction (<code>type</code> <code>"I"</code>/<code>"E"</code> with <code>wallet_id</code>, or <code>"T"</code> transfer from <code>wallet_id</code> to <code>to_wallet_id</code> with the transfer category). An income/expense needs one of your categories of the same type; a refund (<code>is_refund: true</code>, income only) uses an expense category; a savings pot can only exchange money with its own account (otherwise <code>400</code>)</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
@@ -434,7 +434,7 @@
               <code class="endpoint-path">/income/all</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Get all income transactions</div>
+            <div class="endpoint-description">Get all income transactions (refunds excluded)</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
@@ -442,7 +442,7 @@
               <code class="endpoint-path">/expense/all</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Get all expense transactions</div>
+            <div class="endpoint-description">Get all expense transactions, plus refunds (<code>is_refund: true</code>) to subtract</div>
           </li>
         </ul>
       </div>
