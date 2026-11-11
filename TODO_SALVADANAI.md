@@ -10,10 +10,12 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 - [ ] Fase 5 nel browser (badge "Refund", spese nette in Dashboard): rimandata da Gio
 - [x] Sync e import manuale dalla banca (workflow lanciato a mano alle 20:59 UTC): 271 movimenti sincronizzati,
   2 importati con le regole
-- [ ] **ISP non torna con la banca.** App 24,72 €, banca 104,08 € alle 20:59 (195,58 € alle 12:19, senza movimenti
+- [x] **ISP non torna con la banca.** App 24,72 €, banca 104,08 € alle 20:59 (195,58 € alle 12:19, senza movimenti
   contabilizzati in mezzo). I movimenti da ottobre coincidono uno per uno: la differenza viene dall'allineamento del
   9/11 (122,37 € letti quel giorno). Il saldo GoCardless si muove prima della lista dei movimenti, quindi si
   riallinea l'apertura di ISP **sul saldo che Gio legge nell'app Intesa**, dopo il suo ok
+  - 11/11 sera: Gio legge nell'app Intesa **104,08 €** (uguale alla banca delle 20:59). Apertura di ISP da 1.140,52 a
+    **1.219,88 €** (+79,36); saldo nell'app verificato: 104,08 €. I movimenti non sono stati toccati
 - [x] Badge "Refund" dopo il nome della categoria (client `660eb0c`)
 - [x] Total Balance: per i conti collegati il saldo letto dalla banca, con l'ora e "app says …" se diverso
   (client `607c3b3`, `lib/balanceBreakdown.ts` + test)
@@ -32,7 +34,6 @@ Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 
 - **Da vedere dal vivo:** il primo accantonamento di fine mese deve arrivare dalla banca come trasferimento da assegnare (passo 1)
 - **Mai provato sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet (passo 5), "Set cap" (fase 3), fase 5 e "Paid" nel browser
-- **ISP da riallineare** sul saldo dell'app Intesa (sezione "Richieste dell'11/11 sera")
 - ~~Da decidere con Gio~~ — decise l'11/11: un salvadanaio scambia soldi solo con il suo conto; entrate e spese con una
   categoria dell'utente e del tipo giusto (entrambe rifiutate dal server con un 400)
 - **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
