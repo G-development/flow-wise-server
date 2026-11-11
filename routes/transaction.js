@@ -16,6 +16,8 @@ const router = express.Router();
  *   categoria di sistema di tipo `T` ("Trasferimento", migrazione 011). Un salvadanaio
  *   scambia soldi **solo con il suo conto** (`parent_wallet_id`): con entrambi i lati
  *   indicati, se uno è un salvadanaio l'altro dev'essere il suo conto (deciso da Gio l'11/11/2026).
+ * - Rimborso (`I` con `is_refund`, fase 5, migrazione 014): la categoria è dell'utente ed è
+ *   **di spesa** (`E`): i soldi entrano nel wallet ma nelle statistiche riducono quella spesa.
  * - Entrata o spesa: la categoria è dell'utente ed è dello stesso tipo (`I` o `E`), quindi
  *   mai quella di tipo `T` (deciso da Gio l'11/11/2026, dopo aver verificato che nessuna
  *   delle 341 transazioni live violava la regola: la pulizia del 9/11 aveva tolto le 24
@@ -35,8 +37,11 @@ const checkTransactionReferences = async (userId, body) => {
   if (body.type !== "T") {
     if (!category) return "category not found";
     if (category.type === "T") return "the transfer category can only be used by transfers (type T)";
-    if (category.type !== body.type) {
-      return `category type ${category.type} does not match transaction type ${body.type}`;
+    const expected = body.is_refund === true ? "E" : body.type;
+    if (category.type !== expected) {
+      return body.is_refund === true
+        ? "a refund must use an expense category (type E)"
+        : `category type ${category.type} does not match transaction type ${body.type}`;
     }
     return null;
   }
@@ -142,6 +147,8 @@ router.post(
         wallet_id: wallet_id ?? null,
         to_wallet_id: to_wallet_id ?? null,
         category_id,
+        // Solo se il client lo manda: la colonna esiste dalla migrazione 014.
+        ...(req.body.is_refund !== undefined ? { is_refund: req.body.is_refund === true } : {}),
       })
       .select()
       .single();
@@ -183,6 +190,7 @@ router.put(
         wallet_id: wallet_id ?? null,
         to_wallet_id: to_wallet_id ?? null,
         category_id,
+        ...(req.body.is_refund !== undefined ? { is_refund: req.body.is_refund === true } : {}),
       })
       .eq("id", id)
       .eq("userid", req.user.id)

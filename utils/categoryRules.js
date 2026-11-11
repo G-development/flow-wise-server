@@ -7,8 +7,12 @@
  *   accenti, solo lettere separate da uno spazio. Le cifre spariscono, cosi' anche
  *   "VIALE DEI14/07" diventa "viale dei".
  * - Una regola combacia se la sua parola chiave compare a parole intere nel testo
- *   (descrizione + controparte). Tra piu' regole vince la piu' lunga, a pari lunghezza la
- *   piu' recente.
+ *   (descrizione + controparte). Una regola sulla controparte ("da …", "verso …") perde
+ *   sempre contro una regola su altre parole (es. il testo libero del bonifico "Rata 4 tari"):
+ *   il nome di una persona non dice cosa sta pagando (fase 5, deciso da Gio l'11/11/2026).
+ *   A parita' di genere vince la piu' lunga, a pari lunghezza la piu' recente.
+ * - Una regola di tipo `I` che punta a una categoria di spesa (`E`) crea un **rimborso**
+ *   (fase 5, migrazione 014): `buildAppTransactionFromBank` lo marca `is_refund`.
  * - `extractMerchantKey` ricava dal movimento il nome del negozio o della controparte, nei
  *   formati delle descrizioni Intesa Sanpaolo visti nei dati. Serve a imparare una regola
  *   da una correzione e a proporre le regole iniziali.
@@ -78,6 +82,32 @@ export const extractMerchantKey = (description, counterparty = "") => {
   return keyFromFragment(counterparty) || keyFromFragment(text);
 };
 
+/**
+ * Testo libero di un bonifico in entrata, normalizzato, o "". Nei movimenti Intesa sta tra il
+ * codice dopo "CASH" e "Bonifico a Vostro favore" ("… CASH NOTPROVIDED Rata 4 tari Bonifico a
+ * Vostro favore disposto da: MITT.: …"); "INSTANT TRANSFER" (PayPal) non e' testo dell'utente.
+ */
+export const extractFreeText = (description) => {
+  const match = String(description ?? "").match(/\bCASH\s+\S+\s+(.*?)\s*Bonifico a Vostro favore/i);
+  if (!match) return "";
+  return normalizeForRules(match[1].replace(/instant transfer/gi, ""));
+};
+
+/** Parole del testo libero che non dicono cosa si paga: mesi, rate, saldi. */
+const FREE_TEXT_NOISE = new Set(
+  `rata rate quota quote saldo saldi acconto vecchie vecchia mese mesi anno
+  gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre`.split(/\s+/)
+);
+
+/** Parola chiave da imparare dal testo libero ("rata tari" -> "tari", "condominio settembre" -> "condominio"). */
+export const freeTextKey = (description) =>
+  extractFreeText(description)
+    .split(" ")
+    .find((word) => word.length >= 3 && !GENERIC_WORDS.has(word) && !FREE_TEXT_NOISE.has(word)) ?? "";
+
+/** Regola costruita sulla controparte (persona o azienda): vale meno di una sul testo. */
+const isCounterpartyRule = (keyword) => /^(da|verso) /.test(String(keyword));
+
 /** Una parola chiave e' valida se, normalizzata, ha almeno 3 lettere. */
 export const isValidKeyword = (keyword) => {
   const normalized = normalizeForRules(keyword);
@@ -96,6 +126,10 @@ export const findMatchingRule = (text, type, rules) => {
   for (const rule of rules) {
     if (rule.type !== type || !rule.keyword) continue;
     if (!haystack.includes(` ${rule.keyword} `)) continue;
+    if (best && isCounterpartyRule(rule.keyword) !== isCounterpartyRule(best.keyword)) {
+      if (!isCounterpartyRule(rule.keyword)) best = rule;
+      continue;
+    }
     if (
       !best ||
       rule.keyword.length > best.keyword.length ||
@@ -122,6 +156,7 @@ export const ruleTextFor = (description, counterparty = "") =>
  * combacia o la regola punta a una categoria non attiva o di un altro tipo.
  * La categoria di sistema "Trasferimento" (tipo `T`, migrazione 011) va bene per
  * qualsiasi segno: il movimento diventa un trasferimento (`buildAppTransactionFromBank`).
+ * Una categoria di spesa va bene anche per un movimento in entrata: e' un rimborso (014).
  * @param {Array<{ref, type, description, counterparty}>} items
  */
 export const categorizeWithRules = (items, { rules, categories }) => {
@@ -135,7 +170,9 @@ export const categorizeWithRules = (items, { rules, categories }) => {
     result.set(
       item.ref,
       categoryId != null &&
-        (activeTypeById.get(categoryId) === item.type || activeTypeById.get(categoryId) === "T")
+        (activeTypeById.get(categoryId) === item.type ||
+          activeTypeById.get(categoryId) === "T" ||
+          (item.type === "I" && activeTypeById.get(categoryId) === "E"))
         ? categoryId
         : null
     );
@@ -199,7 +236,9 @@ export const learnRuleFromCorrection = async (client, { userId, previousCategory
     .eq("userid", userId)
     .maybeSingle();
   if (categoryError) throw new Error(`Lettura categoria fallita: ${categoryError.message}`);
-  if (!category || category.type !== transaction.type || isFallbackCategoryName(category.name)) return null;
+  const isRefund = transaction.is_refund === true;
+  const expectedType = isRefund ? "E" : transaction.type;
+  if (!category || category.type !== expectedType || isFallbackCategoryName(category.name)) return null;
 
   const { data: bankTxn, error: bankError } = await client
     .from("bank_transactions")
@@ -210,7 +249,11 @@ export const learnRuleFromCorrection = async (client, { userId, previousCategory
   if (bankError) throw new Error(`Lettura movimento bancario fallita: ${bankError.message}`);
   if (!bankTxn) return null;
 
-  const keyword = extractMerchantKey(bankTxn.description, bankTxn.counterparty);
+  // Un rimborso si impara solo dal testo libero del bonifico ("tari", "condominio"), mai dal
+  // nome di chi lo manda: lo stesso amico rimborsa sia la luce sia la pizza.
+  const keyword = isRefund
+    ? freeTextKey(bankTxn.description)
+    : extractMerchantKey(bankTxn.description, bankTxn.counterparty);
   if (!isValidKeyword(keyword)) return null;
 
   return upsertRule(client, {

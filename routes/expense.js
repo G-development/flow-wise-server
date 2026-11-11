@@ -21,7 +21,9 @@ router.get(
       let query = supabase
         .from("Transaction")
         .select("*", { count: "exact" })
-        .eq("type", "E")
+        // Spese e rimborsi (fase 5, migrazione 014): un rimborso e' una riga `I` con
+        // `is_refund`, che chi somma le spese deve sottrarre (client: `lib/amount.ts`).
+        .or("type.eq.E,is_refund.eq.true")
         .eq("userid", req.user.id)
         .order("date", { ascending: false })
         // Tiebreaker: `date` non è univoco, senza un secondo criterio Postgres può

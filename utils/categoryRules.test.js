@@ -2,8 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   categorizeWithRules,
+  extractFreeText,
   extractMerchantKey,
   findMatchingRule,
+  freeTextKey,
   isValidKeyword,
   learnRuleFromCorrection,
   normalizeForRules,
@@ -201,4 +203,63 @@ test("learnRuleFromCorrection: un trasferimento trasformato in spesa ('Not a tra
   assert.equal(upserts[0].payload.type, "E");
   assert.equal(upserts[0].payload.category_id, 72);
   assert.deepEqual(upserts[0].options, { onConflict: "user_id,type,keyword" });
+});
+
+
+// ---------------------------------------------------------------------------
+// Fase 5 (11/11/2026): rimborsi e testo libero dei bonifici. Nomi inventati.
+// ---------------------------------------------------------------------------
+
+const TARI = "ACCR BON ISTANT COD. DISP.: 0126111070157926 CASH NOTPROVIDED Rata 4 tari Bonifico a Vostro favore disposto da: MITT.: Luca Verdi BENEF.: Mario Rossi BIC. ORD.: REVOITM2XXX";
+const CONDOMINIO = "ACCR BON ISTANT COD. DISP.: 0126100566660162 CASH NOTPROVIDED Condominio settembre + rate vecchie Bonifico a Vostro favore disposto da: MITT.: Luca Verdi BENEF.: Mario Rossi";
+const PAYPAL = "ACCR BON ISTANT COD. DISP.: 0126110968385567 CASH 26110914036427434 INSTANT TRANSFER Bonifico a Vostro favore disposto da: MITT.: PAYPAL BENEF.: Mario Rossi";
+
+test("extractFreeText e freeTextKey: il testo dell'utente, senza mesi, rate e PayPal", () => {
+  assert.equal(extractFreeText(TARI), "rata tari");
+  assert.equal(freeTextKey(TARI), "tari");
+  assert.equal(freeTextKey(CONDOMINIO), "condominio");
+  assert.equal(extractFreeText(PAYPAL), "");
+  assert.equal(freeTextKey(PAYPAL), "");
+  assert.equal(extractFreeText("PAGAM. TRAMITE POS CONAD"), "");
+});
+
+test("findMatchingRule: una regola sul testo vince su una regola sulla persona, anche se piu' corta", () => {
+  const rules = [
+    { keyword: "da luca verdi", type: "I", category_id: 58 },
+    { keyword: "tari", type: "I", category_id: 12 },
+  ];
+  const text = `${TARI} | da luca verdi`;
+  assert.equal(findMatchingRule(text, "I", rules).category_id, 12);
+  // Senza testo libero la persona resta l'unica indicazione (verso "Persone — da classificare").
+  assert.equal(findMatchingRule(`${PAYPAL} | da luca verdi`, "I", rules).category_id, 58);
+  assert.equal(findMatchingRule("ACCR. BANCOMAT PAY Da LUCA VERDI data: 10.11 | da luca verdi", "I", rules).category_id, 58);
+});
+
+test("categorizeWithRules: una regola in entrata verso una categoria di spesa e' un rimborso valido", () => {
+  const result = categorizeWithRules(
+    [{ ref: "r1", type: "I", description: TARI, counterparty: "" }],
+    { rules: [{ keyword: "tari", type: "I", category_id: 12 }], categories: [{ id: 12, type: "E", active: true }] }
+  );
+  assert.equal(result.get("r1"), 12);
+});
+
+test("learnRuleFromCorrection: un rimborso impara dal testo libero, mai dal nome di chi lo manda", async () => {
+  const refund = { bank_transaction_id: "b2", category_id: 12, type: "I", is_refund: true };
+  const conTesto = fakeClient({ category: { id: 12, name: "Bollette", type: "E" }, bankTxn: { description: TARI, counterparty: "", amount: 30.33 } });
+  const rule = await learnRuleFromCorrection(conTesto.client, { userId: "u1", previousCategoryId: 58, transaction: refund });
+  assert.equal(rule.keyword, "tari");
+  assert.equal(conTesto.upserts[0].payload.type, "I");
+  assert.equal(conTesto.upserts[0].payload.category_id, 12);
+
+  const senzaTesto = fakeClient({ category: { id: 12, name: "Uscite", type: "E" }, bankTxn: { description: PAYPAL, counterparty: "", amount: 36 } });
+  assert.equal(await learnRuleFromCorrection(senzaTesto.client, { userId: "u1", previousCategoryId: 58, transaction: refund }), null);
+  assert.equal(senzaTesto.upserts.length, 0);
+});
+
+test("learnRuleFromCorrection: un'entrata normale con una categoria di spesa (senza is_refund) non impara", async () => {
+  const wrong = fakeClient({ category: { id: 12, name: "Bollette", type: "E" }, bankTxn: { description: TARI, counterparty: "", amount: 30.33 } });
+  assert.equal(
+    await learnRuleFromCorrection(wrong.client, { userId: "u1", previousCategoryId: 58, transaction: { bank_transaction_id: "b2", category_id: 12, type: "I" } }),
+    null
+  );
 });

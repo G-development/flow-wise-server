@@ -360,3 +360,54 @@ test("entrate e spese: anche il PUT rifiuta una categoria del tipo sbagliato", a
   assert.match(body.error, /does not match/);
   assert.equal(fake.state.store.Transaction.find((t) => t.id === 1).category_id, CAT_SPESA);
 });
+
+
+// ---------------------------------------------------------------------------
+// Rimborsi (fase 5, migrazione 014)
+// ---------------------------------------------------------------------------
+
+const refund = (overrides = {}) => ({
+  description: "quota cena", amount: 36, date: "2026-11-09", type: "I", is_refund: true, wallet_id: CONTO, category_id: CAT_SPESA, ...overrides,
+});
+
+test("rimborso: un'entrata con una categoria di spesa, salvata con is_refund e saldo in entrata", async () => {
+  const { status, body } = await request("POST", "/transaction", refund());
+  assert.equal(status, 201);
+  assert.equal(body.type, "I");
+  assert.equal(body.is_refund, true);
+  // 1000 − 40 di spesa + 36 rimborsati.
+  const saldi = await balances();
+  assert.equal(saldi[CONTO], 996);
+});
+
+test("rimborso: con una categoria di entrata, su una spesa o su un trasferimento e' rifiutato", async () => {
+  addPotFixtures();
+  const categoriaEntrata = await request("POST", "/transaction", refund({ category_id: CAT_STIPENDIO }));
+  const suSpesa = await request("POST", "/transaction", refund({ type: "E" }));
+  const suTrasferimento = await request("POST", "/transaction", transfer({ is_refund: true }));
+  assert.equal(categoriaEntrata.status, 400);
+  assert.match(categoriaEntrata.body.error, /expense category/);
+  assert.equal(suSpesa.status, 400);
+  assert.equal(suTrasferimento.status, 400);
+});
+
+test("rimborso: escluso da /income/all, incluso in /expense/all", async () => {
+  addPotFixtures();
+  await request("POST", "/transaction", refund());
+  await request("POST", "/transaction", { description: "stipendio", amount: 1800, date: "2026-11-01", type: "I", wallet_id: CONTO, category_id: CAT_STIPENDIO });
+
+  const incomes = await request("GET", "/income/all");
+  const expenses = await request("GET", "/expense/all");
+  assert.deepEqual(incomes.body.data.map((row) => row.description), ["stipendio"]);
+  assert.deepEqual(expenses.body.data.map((row) => row.description).sort(), ["quota cena", "spesa"]);
+});
+
+test("rimborso: un PUT lo riporta a entrata normale solo con una categoria di entrata", async () => {
+  addPotFixtures();
+  const created = await request("POST", "/transaction", refund());
+  const sbagliato = await request("PUT", `/transaction/${created.body.id}`, refund({ is_refund: false }));
+  const giusto = await request("PUT", `/transaction/${created.body.id}`, refund({ is_refund: false, category_id: CAT_STIPENDIO }));
+  assert.equal(sbagliato.status, 400);
+  assert.equal(giusto.status, 200);
+  assert.equal(giusto.body.is_refund, false);
+});

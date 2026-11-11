@@ -91,14 +91,35 @@ const compare = (a, b) => {
 
 /**
  * Filtri `col=eq.valore`, `col=is.valore`, `col=gte.valore`, `col=lte.valore` (gli operatori
- * usati dalle route). `gte`/`lte` confrontano come stringhe: bastano per le date ISO
- * (`2026-11-01`), che sono l'unico uso nelle route.
+ * usati dalle route) e `or=(col.op.valore,…)` (solo `eq`/`is` dentro). `gte`/`lte` confrontano
+ * come stringhe: bastano per le date ISO (`2026-11-01`), che sono l'unico uso nelle route.
+ * Una colonna booleana assente nella riga di prova vale `false`, come il default delle colonne
+ * aggiunte dalle migrazioni (es. `is_refund`, 014): le righe dei test vecchi restano valide.
  */
+const matchesCondition = (row, column, operator, expected) => {
+  const value = row[column];
+  if (operator === "is" && expected === "null") return value === null || value === undefined;
+  if (operator === "gte") return value != null && String(value) >= expected;
+  if (operator === "lte") return value != null && String(value) <= expected;
+  if (value === undefined && (expected === "false" || expected === "true")) return expected === "false";
+  return String(value) === expected;
+};
+
 const applyFilters = (rows, searchParams) => {
   let out = rows;
 
   for (const [column, raw] of searchParams.entries()) {
     if (RESERVED_PARAMS.has(column)) continue;
+
+    if (column === "or") {
+      const parts = raw.replace(/^\(|\)$/g, "").split(",").map((part) => {
+        const m = /^([^.]+)\.(eq|is)\.(.*)$/.exec(part);
+        if (!m) throw new Error(`fake supabase: condizione or non supportata "${part}"`);
+        return m.slice(1);
+      });
+      out = out.filter((row) => parts.some(([col, op, val]) => matchesCondition(row, col, op, val)));
+      continue;
+    }
 
     const match = /^(eq|is|gte|lte)\.(.*)$/.exec(raw);
     if (!match) {
@@ -108,15 +129,7 @@ const applyFilters = (rows, searchParams) => {
     }
 
     const [, operator, expected] = match;
-    out = out.filter((row) => {
-      const value = row[column];
-      if (operator === "is" && expected === "null") {
-        return value === null || value === undefined;
-      }
-      if (operator === "gte") return value != null && String(value) >= expected;
-      if (operator === "lte") return value != null && String(value) <= expected;
-      return String(value) === expected;
-    });
+    out = out.filter((row) => matchesCondition(row, column, operator, expected));
   }
 
   return out;

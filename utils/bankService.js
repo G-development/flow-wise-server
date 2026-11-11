@@ -1231,6 +1231,12 @@ export const buildAppTransactionFromBank = (
     };
   }
 
+  // Entrata con una categoria di spesa: e' un rimborso (fase 5, migrazione 014). Il flag si
+  // scrive solo quando serve, cosi' l'import funziona anche prima della 014.
+  if (categoryType === "E" && rawAmount >= 0 && !defaultType) {
+    return { ...base, type: "I", is_refund: true, wallet_id: Number(walletId), to_wallet_id: null };
+  }
+
   return {
     ...base,
     type: defaultType || (rawAmount >= 0 ? "I" : "E"),

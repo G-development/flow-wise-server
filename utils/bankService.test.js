@@ -274,3 +274,18 @@ test("buildAppTransactionFromBank: con la categoria T il movimento diventa un tr
   assert.equal(expense.wallet_id, 7);
   assert.equal(expense.to_wallet_id, null);
 });
+
+
+test("buildAppTransactionFromBank: un'entrata con una categoria di spesa diventa un rimborso", () => {
+  const base = { id: "bank-uuid-3", bank_id: "BANK", date: "2026-11-10", counterparty: "", description: "Rata 4 tari" };
+  const refund = buildAppTransactionFromBank({ ...base, amount: 30.33 }, { userId: "u1", walletId: "7", categoryId: 12, categoryType: "E" });
+  assert.equal(refund.type, "I");
+  assert.equal(refund.is_refund, true);
+  assert.equal(refund.amount, 30.33);
+  assert.equal(refund.wallet_id, 7);
+
+  // Un'uscita con la stessa categoria resta una spesa, e la colonna non viene nemmeno scritta.
+  const expense = buildAppTransactionFromBank({ ...base, amount: -30.33 }, { userId: "u1", walletId: "7", categoryId: 12, categoryType: "E" });
+  assert.equal(expense.type, "E");
+  assert.equal("is_refund" in expense, false);
+});

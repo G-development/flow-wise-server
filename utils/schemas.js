@@ -22,6 +22,9 @@ const transactionBaseShape = {
 const incomeExpenseSchema = z.object({
   ...transactionBaseShape,
   type: z.enum(["I", "E"]),
+  // Rimborso (fase 5, migrazione 014): un'entrata con una categoria di spesa, che nelle
+  // statistiche riduce le spese di quella categoria. Solo per `I` (superRefine sotto).
+  is_refund: z.boolean().optional(),
   wallet_id: z.number(),
   to_wallet_id: z.null({ invalid_type_error: "to_wallet_id is only allowed for transfers (type T)" }).optional(),
 });
@@ -32,6 +35,7 @@ const incomeExpenseSchema = z.object({
 const transferSchema = z.object({
   ...transactionBaseShape,
   type: z.literal("T"),
+  is_refund: z.literal(false, { invalid_type_error: "a transfer cannot be a refund" }).optional(),
   wallet_id: z.number().nullable().optional(),
   to_wallet_id: z.number().nullable().optional(),
 });
@@ -39,6 +43,13 @@ const transferSchema = z.object({
 export const transactionCreateSchema = z
   .discriminatedUnion("type", [incomeExpenseSchema, transferSchema])
   .superRefine((value, ctx) => {
+    if (value.type === "E" && value.is_refund === true) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["is_refund"],
+        message: "only an income (type I) can be a refund",
+      });
+    }
     if (value.type !== "T") return;
     const from = value.wallet_id ?? null;
     const to = value.to_wallet_id ?? null;

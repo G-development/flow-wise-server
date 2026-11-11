@@ -22,6 +22,8 @@ router.get(
         .from("Transaction")
         .select("*", { count: "exact" })
         .eq("type", "I")
+        // I rimborsi (fase 5, migrazione 014) non sono entrate: stanno con le spese.
+        .eq("is_refund", false)
         .eq("userid", req.user.id)
         .order("date", { ascending: false })
         // Tiebreaker: `date` non è univoco, senza un secondo criterio Postgres può
