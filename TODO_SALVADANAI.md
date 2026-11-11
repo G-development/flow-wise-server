@@ -571,6 +571,47 @@ nessun codice nei repo):
 
 ## Fase 5 — Rimborsi e spese condivise (da progettare)
 
+**Decisioni di Gio (11/11/2026):** rimborso **per categoria**, non collegato al singolo pagamento; conta **nel mese in
+cui arriva**; nelle regole **il testo libero del bonifico vince** sul nome della persona.
+
+**Progetto (da approvare prima del codice)**
+
+*Dati 11/11:* 43 movimenti in "Persone — da classificare" (agosto–novembre), 860,38 € in entrata e 731,91 € in uscita.
+Esempi: condominio 132,91 × 2 (5/10), TaRi 28,33 / 30,33 con testo "Tari agosto", "Rata 4 tari", cene e PayPal.
+
+*I due casi*
+1. **Pago io la mia quota di una spesa anticipata da altri** (bollette a Michele): spesa normale con la sua categoria
+   (Bollette, Uscite…). Non serve niente di nuovo: si sceglie la categoria
+2. **Anticipo io e gli altri mi rimborsano** (condominio, cene): l'entrata diventa un **rimborso** di una categoria di
+   spesa. Nelle statistiche è una spesa in meno di quella categoria nel mese in cui arriva, mai un'entrata.
+   Esempio: ottobre Condominio 398,73 − 132,91 − 132,91 = 132,91, come nell'Excel
+
+*Dati (migrazione `014`)*
+- `Transaction.is_refund boolean not null default false`. Un rimborso è una riga `I` (i soldi entrano nel wallet, il
+  saldo è giusto senza cambiare `walletDeltasCents`) con `is_refund = true` e una categoria **di tipo `E`**
+- Perché una colonna e non un nuovo tipo `R`: `type` è un enum di Postgres e un valore aggiunto non si toglie più
+  (nessun `.down.sql` possibile); la colonna si rimuove pulita
+- Vincolo: `is_refund` solo su `I`. Il controllo delle categorie (11/11) diventa: entrata → categoria `I`; rimborso →
+  categoria `E`; spesa → categoria `E`
+
+*Server*
+- Schemi Zod e `checkTransactionReferences` con `is_refund`; test
+- `/income/all` esclude i rimborsi; `/expense/all` li include, marcati, così chi somma li sottrae
+- Import bancario: una regola di tipo `I` che punta a una categoria `E` crea un rimborso; correggere un'entrata in
+  rimborso impara la regola (dal testo se c'è, mai dal solo nome della persona)
+- Regole: una parola chiave trovata nel **testo libero** del bonifico vince su una regola costruita sulla controparte
+  (`da …` / `verso …`), che resta solo un suggerimento verso "Persone — da classificare"
+
+*Client*
+- Pannello del movimento: per un'entrata, "Refund of" + categoria di spesa
+- Movements: il rimborso si vede come "Refund · Uscite" e nei totali riduce le spese; Dashboard: spese per categoria e
+  totali al netto dei rimborsi, entrate senza rimborsi
+- "Transfers to assign" → "Not a transfer": per un'entrata si può scegliere anche "Refund of"
+
+*Dati esistenti:* i 43 movimenti li riclassifico solo dopo, con un elenco proposto a Gio (come per novembre)
+
+*Effetto sulla fase 4:* il confronto con l'Excel non dovrà più sottrarre a mano le entrate dalle persone
+
 - [ ] Progettare i due casi generici del principio "persone" (in `PLAN_SALVADANAI.md`) e scriverli qui prima di implementare:
   - pago io la quota di una spesa anticipata da altri → spesa normale, categoria scelta sul movimento
   - anticipo io e gli altri mi rimborsano → rimborso collegato alla spesa, che diventa netta (oggi nell'Excel: "98,5 − 53,5 Cene", condominio diviso per tre)
