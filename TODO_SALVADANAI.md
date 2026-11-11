@@ -541,6 +541,19 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
 
 ## Fase 4 — In parallelo con l'Excel
 
+**Come si confronta (decisioni di Gio, 11/11/2026).** Ogni fine mese un **report** (sola lettura di Excel e database,
+nessun codice nei repo):
+- **Mese come nell'Excel:** lo stipendio pagato a fine mese conta per il mese dopo (il foglio "Novembre" ha lo stipendio
+  del 30/10); le spese per mese di calendario. Cambia solo il confronto, non le date nell'app
+- **Rimborsi:** fino alla fase 5 il confronto sottrae dalle spese le entrate di "Persone — da classificare", perché
+  nell'Excel le spese sono già nette (es. "27+36+60-36-12", condominio solo la quota di Gio)
+- **"Altro":** a novembre 516 € di spese su ~940 € sono in "Altro": propongo io la categoria di ognuno (dalle note
+  dell'Excel), li cambio solo dopo l'ok di Gio, e le regole imparano dalle correzioni
+- Si confrontano anche i movimenti dei salvadanai (foglio "Savings ISP") e i versamenti a Trade Republic
+- Struttura dell'Excel letta l'11/11: fogli mensili Gen…Nov (Entrate, Uscite per voce con note, Avanzo → salvadanai/TR),
+  "Over year" (stipendio netto, spese, salvadanai per mese), "Savings ISP" (movimenti mensili dei salvadanai e TR),
+  "Overview" (buste paga), "Specchietto per uni", "Med Exp"
+
 - [ ] Totali di agosto–ottobre nell'app, senza trasferimenti, confrontati con "Over year" dell'Excel: differenze spiegate una per una
 - [ ] Novembre e dicembre 2026 tenuti sia nell'Excel sia nell'app
 - [ ] A fine mese: saldi dei salvadanai, spese annuali pagate e totali coincidono, oppure la differenza è spiegata
