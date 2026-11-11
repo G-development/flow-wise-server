@@ -3,6 +3,19 @@
 Contesto e motivazioni in `PLAN_SALVADANAI.md`. Si spunta una voce solo quando è fatta **e verificata**.
 Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 
+## Cosa resta aperto (riepilogo all'11/11/2026)
+
+Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
+
+- **Da vedere dal vivo:** il primo accantonamento di fine mese deve arrivare dalla banca come trasferimento da assegnare (passo 1)
+- **Mai provato sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet (passo 5), "Set cap" (fase 3)
+- **Da decidere con Gio:** una `T` conto ↔ salvadanaio solo tra un salvadanaio e il suo conto? (fase 2); il server deve
+  pretendere anche per entrate e spese una categoria dell'utente e del tipo giusto? (passo 4)
+- **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
+- **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
+- **Fase 5:** rimborsi e spese condivise, da progettare
+- **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
+
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
 
 Fatti verificati il 9/11 (sola lettura): la connessione Revolut (`REVOLUT_REVOLT21`) è sull'account
@@ -12,7 +25,7 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 
 **1. Controllo del primo import automatico** (10/11 mattina)
 - [x] 10/11: workflow "Bank auto-import" riuscito (partito alle 13:09 UTC, non alle 06:00: GitHub ritarda i cron), `imported: 4`, `byRule: 2`, `errors: []`. Le regole sulle persone mandano i movimenti in "Persone — da classificare"
-- [ ] Nessun movimento di salvadanaio o verso Giovanni Cuozzo era nel lotto: il percorso `T` dall'import automatico è coperto dai test ma non ancora visto dal vivo. Ricontrollare dopo il prossimo accantonamento (di solito a fine mese)
+- [ ] Nessun movimento di salvadanaio o verso Giovanni Cuozzo era nel lotto: il percorso `T` dall'import automatico è coperto dai test ma non ancora visto dal vivo. Ricontrollare dopo il prossimo accantonamento (di solito a fine mese). 11/11: 8 movimenti importati in automatico dopo il deploy, nessun `T` (nessun accantonamento): ancora da vedere
 
 **2. Pulizia delle transazioni prima del 01/06/2026** (decisa da Gio il 9/11)
 - [x] Eliminate le 1.282 transazioni con `date < 2026-06-01` di tutti gli account — 9/11, dopo la conferma finale di Gio, senza backup per sua scelta. Restano 329 transazioni, nessuna prima del 01/06
@@ -27,11 +40,12 @@ Republic; account di test: 1); nessuna ha `bank_transaction_id`.
 - [x] Categorie "Giroconto" (51, 52) eliminate, verificate vuote
 - [x] Trade Republic: apertura ridotta dei 5 bonifici a se stesso (482,36 €) → 5.864,79 €; assegnandoli a Trade Republic in /transfers il saldo torna 6.347,15 €
 - [x] Trasferimenti assegnati (10/11): i 20 dei salvadanai dopo la fase 2, i bonifici a Trade Republic, il 4,33 € del 29/10 come rientro da Trade Republic; i 6 Revolut chiusi con "Not a transfer". Da assegnare: 0
-- [ ] Controllo dei totali agosto–ottobre con l'Excel → spostato nella fase 4
+- [x] Controllo dei totali agosto–ottobre con l'Excel → spostato nella fase 4 (chiuso qui l'11/11)
 
 **4. Revolut — rinviato per scelta di Gio (10/11): per ora Revolut non si collega**
-- Nessun wallet Revolut, nessun import dei suoi movimenti. I passaggi Intesa ↔ Revolut si registrano con
-  "Not a transfer" (spesa / entrata sul conto) e la regola `revolut dublin` li fa arrivare già così.
+- Nessun wallet Revolut, nessun import dei suoi movimenti. La regola `revolut dublin` punta ancora a Trasferimento
+  (il sistema non impara verso "Altro"): le prossime ricariche arrivano **da assegnare** e si chiudono con
+  "Not a transfer" (spesa / entrata sul conto). Corretto l'11/11: prima qui c'era scritto che arrivavano già come spesa
   La connessione GoCardless esistente resta sull'account `test@test.it`: non toccarla
 - [ ] Solo se Gio cambia idea: ricollegarlo sul **suo** account, wallet "Revolut" (conto), apertura, import (D-R3)
 
@@ -67,7 +81,7 @@ Client — pagina `/movements` (inglese)
   (tutti scrivono dati veri)
 - [x] Pubblicato il 10/11: server `4748414..eb2d4e6` su `main` (deploy Production riuscito, `/healthz` 204), poi client
   `b6a18f0..6204ee8` (deploy Production riuscito, `/movements` 200, `/incomes` → 307 verso `/movements?types=I`)
-- [ ] Nota: il bonifico di 4,33 € del 29/10 ha "BIC. ORD.: TRBKITMMXXX" (Trade Republic Bank): è un rientro da
+- [x] Nota: il bonifico di 4,33 € del 29/10 ha "BIC. ORD.: TRBKITMMXXX" (Trade Republic Bank): è un rientro da — **chiuso l'11/11:** assegnato come rientro da Trade Republic il 10/11
   Trade Republic, non da Revolut
 
 **6. ~~1° dicembre~~**: superato — la fase 2 è stata anticipata e Gio ha dato i saldi dei salvadanai il 10/11 (V2)
@@ -244,7 +258,7 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
   - `routes/user.js`: la registrazione crea anche "Trasferimento"
   - test: 230/230 (24 nuovi in `routes/transfer.test.js`, `utils/amount.test.js`, `utils/walletService.test.js`, `utils/schemas.test.js`); due test esistenti aggiornati perché ora la guardia fa una query in più
   - **Ordine di rilascio:** questo server legge e scrive `to_wallet_id`, quindi va pubblicato **dopo** aver applicato la `011`
-- [ ] Import CSV: resta `I`/`E` (deciso)
+- [x] Import CSV: resta `I`/`E` (deciso) — **chiuso l'11/11:** era una decisione, non un'azione
 - [x] Import bancario → `T` (passo 4) — progetto approvato e implementato il 9/11, branch `plan/salvadanai-annuali`, non pubblicato:
   - `categorizeWithRules` accetta la categoria `T` per entrambi i segni; `learnRuleFromCorrection` impara "Trasferimento" col tipo del segno e senza wallet
   - `buildAppTransactionFromBank` con `categoryType: "T"` produce una `T` da assegnare (conto = origine se uscita, destinazione se entrata); usato da import automatico e manuale
@@ -254,8 +268,8 @@ non è `I`" come spesa: un tipo sconosciuto diventa un errore, non una spesa sil
 - [x] Regole aggiornate il 9/11, dopo il deploy del server: `salvadanaio` (E 51→54, I 52→54),
   `verso giovanni cuozzo` (51→54), `da giovanni cuozzo` (52→54), `revolut dublin` (51→54).
   Su Giroconto restano solo le 7 regole sulle persone (passo 5)
-- [ ] Controllare il primo import automatico dopo il deploy (job delle 06:00): accantonamenti e riunioni somme devono entrare come `T` da assegnare
-- [ ] Creare il wallet "Revolut" (conto) — D-R1
+- [x] Controllare il primo import automatico dopo il deploy (job delle 06:00): accantonamenti e riunioni somme devono entrare come `T` da assegnare — **chiuso l'11/11:** doppione della voce al passo 1, che resta aperta
+- [x] Creare il wallet "Revolut" (conto) — D-R1 — **chiuso l'11/11:** superato: Revolut rinviato per scelta di Gio (passo 4)
 
 ### Progetto del passo 4: import bancario dei trasferimenti (proposta, 9/11)
 
@@ -325,7 +339,7 @@ Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, 
   10/11, **0 anomalie su 333 transazioni**. Erano tutte prima del 01/06 ed sono sparite con la pulizia
 - [ ] Ora che i dati sono puliti, il server può pretendere anche per entrate e spese una categoria dell'utente e dello
   stesso tipo (oggi lo controlla solo per le `T`, per non bloccare la modifica di quelle righe)
-- [ ] Revolut: le 6 ricariche/rientri sono in "Altro" via "Not a transfer" (10/11). La regola `revolut dublin` resta su
+- [x] Revolut: le 6 ricariche/rientri sono in "Altro" via "Not a transfer" (10/11). La regola `revolut dublin` resta su
   Trasferimento perché il sistema non impara verso "Altro": le prossime ricariche arriveranno da assegnare (scelta di Gio)
 - [x] Client (passo 3) — 9/11, branch `plan/salvadanai-annuali` di `flow-wise-client`, non pubblicato:
   - "Add transaction" ha una terza scelta **Transfer**: wallet "From" e "To", categoria di sistema scelta da sola
@@ -352,12 +366,12 @@ Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, 
   `flow-wise-server.vercel.app` risponde (`/healthz` 204) e serve la pagina API nuova
 - [x] Client su `main` e in produzione — 9/11: push di Gio `a22bf51..b6a18f0`, deploy Vercel Production riuscito,
   `flow-wise-client.vercel.app/transfers` risponde 200
-- [ ] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto
-- [ ] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare
-- [ ] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima
-- [ ] Le regole costruite solo sul nome di una persona (`verso michele scaldarella`, `da eduard echimov`…) smettono di categorizzare in automatico: rimangono, ma come suggerimento da confermare
-- [ ] Decidere cosa resta della categoria "Giroconto" quando è vuota
-- [ ] Controllo: i totali di agosto–ottobre nell'app, senza trasferimenti, confrontati con "Over year" dell'Excel. Le differenze vanno spiegate una per una
+- [x] Da capire a parte (non legato alle `T`): il saldo di GC Default wallet nell'app è −1.248,92 € con apertura 13.264,23 €; va confrontato con il saldo reale del conto — **chiuso l'11/11:** saldo allineato al reale il 9/11 (passo 2)
+- [x] Convertire in `T` i movimenti interni oggi in "Giroconto": salvadanai (conto ↔ salvadanaio, dal 1/12) e bonifici a Giovanni Cuozzo (conto ↔ Trade Republic). Elenco mostrato a Gio prima di modificare — **chiuso l'11/11:** fatto il 9/11 (passo 3), i 32 movimenti assegnati il 10/11
+- [x] Spostare i movimenti verso e da persone, oggi in "Giroconto", in una categoria provvisoria "Persone — da classificare" in attesa della fase 5; elenco mostrato a Gio prima — **chiuso l'11/11:** fatto il 9/11 (passo 3: 39 movimenti)
+- [x] Le regole costruite solo sul nome di una persona (`verso michele scaldarella`, `da eduard echimov`…) smettono di categorizzare in automatico: rimangono, ma come suggerimento da confermare — **chiuso l'11/11:** superato: le 7 regole sulle persone puntano a "Persone — da classificare" (passo 3); il modello vero è la fase 5
+- [x] Decidere cosa resta della categoria "Giroconto" quando è vuota — **chiuso l'11/11:** eliminata vuota il 9/11 (passo 3)
+- [x] Controllo: i totali di agosto–ottobre nell'app, senza trasferimenti, confrontati con "Over year" dell'Excel. Le differenze vanno spiegate una per una — **chiuso l'11/11:** spostato nella fase 4
 
 ## Fase 2 — Salvadanai (anticipata al 10/11, decisione di Gio)
 
@@ -407,14 +421,14 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 
 ### Fase 2 — voci originali
 
-- [ ] Progettare `Wallet.kind` (`account` | `pot`) e la modifica al trigger del limite (migrazione `004`)
-- [ ] Migrazione + `.down.sql` + test degli invarianti (limite sui soli conti, salvadanaio mai default)
-- [ ] Un salvadanaio appartiene a un conto (`parent_wallet_id`): una `T` conto ↔ salvadanaio ammessa solo tra un salvadanaio e il suo conto? Decidere e testare
-- [ ] Svuotare le transazioni di prova del wallet Trade Republic (id 11): elenco da approvare prima di cancellare
-- [ ] Creare i salvadanai con i saldi di apertura di V2
-- [ ] Import: per un movimento "MOVIM. SALVADANAIO" senza abbinamento, l'app chiede a quale salvadanaio va
-- [ ] UI per creare un giroconto a mano (conto ↔ salvadanaio)
-- [ ] Riconciliazione: saldi dei salvadanai nell'app = saldi dell'app Intesa alla stessa data
+- [x] Progettare `Wallet.kind` (`account` | `pot`) e la modifica al trigger del limite (migrazione `004`) — **chiuso l'11/11:** fatto con la migrazione 012
+- [x] Migrazione + `.down.sql` + test degli invarianti (limite sui soli conti, salvadanaio mai default) — **chiuso l'11/11:** fatto con la 012 (test 238 → oggi 261)
+- [ ] Un salvadanaio appartiene a un conto (`parent_wallet_id`): una `T` conto ↔ salvadanaio ammessa solo tra un salvadanaio e il suo conto? Decidere e testare — **ancora aperta (11/11):** oggi il server accetta una `T` tra due wallet qualsiasi dell'utente; da decidere con Gio
+- [x] Svuotare le transazioni di prova del wallet Trade Republic (id 11): elenco da approvare prima di cancellare — **chiuso l'11/11:** sparite con la pulizia del 9/11: nessuna transazione di Trade Republic prima del 01/06 (verificato l'11/11)
+- [x] Creare i salvadanai con i saldi di apertura di V2 — **chiuso l'11/11:** fatto il 10/11 (fase 2)
+- [x] Import: per un movimento "MOVIM. SALVADANAIO" senza abbinamento, l'app chiede a quale salvadanaio va — **chiuso l'11/11:** superato: entra come trasferimento da assegnare e si sceglie il salvadanaio in Movements
+- [x] UI per creare un giroconto a mano (conto ↔ salvadanaio) — **chiuso l'11/11:** fatto: "Transfer" nel pannello di creazione movimento
+- [x] Riconciliazione: saldi dei salvadanai nell'app = saldi dell'app Intesa alla stessa data — **chiuso l'11/11:** fatta il 10/11 (100 / 150 / 60 € come Intesa); il controllo mensile è nella fase 4
 
 ## Fase 3 — Piano Annuali
 
@@ -527,6 +541,7 @@ Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno all
 
 ## Fase 4 — In parallelo con l'Excel
 
+- [ ] Totali di agosto–ottobre nell'app, senza trasferimenti, confrontati con "Over year" dell'Excel: differenze spiegate una per una
 - [ ] Novembre e dicembre 2026 tenuti sia nell'Excel sia nell'app
 - [ ] A fine mese: saldi dei salvadanai, spese annuali pagate e totali coincidono, oppure la differenza è spiegata
 - [ ] Decidere se l'Excel si può dismettere
