@@ -7,7 +7,11 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 
 - [x] Barbiere: resta in "Altro", la categoria "Barber" resta disattivata (decisione di Gio)
 - [x] I 16 movimenti ancora in "Persone — da classificare": Gio non ricorda cosa siano, restano lì
-- [ ] Fase 5 nel browser (badge "Refund", spese nette in Dashboard): rimandata da Gio
+- [x] Fase 5 nel browser, sul live (11/11 notte, nessun dato scritto): Movements con filtro Expense mostra i rimborsi con
+  il badge dopo la categoria; Dashboard con spese nette (Bollette di novembre sparisce perché i rimborsi superano le
+  spese), entrate senza rimborsi, Total Balance 6761,23 € con ISP dalla banca (104,08 €, "app says 24,72 €"); pannello
+  New con la casella Refund che propone le categorie di spesa; Edit della rata con la casella Paid. Trovata e
+  corretta l'ultima parola italiana ("Bilancio" → "Balance"). La 2ª rata dell'assicurazione l'aveva tolta Gio (era sbagliata)
 - [x] Sync e import manuale dalla banca (workflow lanciato a mano alle 20:59 UTC): 271 movimenti sincronizzati,
   2 importati con le regole
 - [x] **ISP non torna con la banca** (chiuso: non è un errore, sono movimenti in sospeso). App 24,72 €, banca 104,08 € alle 20:59 (195,58 € alle 12:19, senza movimenti
