@@ -28,6 +28,9 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
   **La `015` va applicata sul live prima del push del server**
 - [x] Tutta l'app in inglese, compresi landing, changelog (nuova voce di novembre), Privacy e Terms (versione
   dell'11/11), e i messaggi d'errore del server. Multilingua rimandato (decisione di Gio): i testi restano nel codice
+- [x] Barra in basso mobile: aggiunto **Your Bank** come ultima voce, dopo Annual plan (5 voci, verificato a 375 px)
+- [ ] Idea proposta e messa da parte da Gio: in Your Bank una riga "saldo banca / contabilizzato in Flow-Wise /
+  differenza non ancora contabilizzata", con avviso se la differenza resta uguale per alcuni giorni
 - [ ] Inserimento manuale del rimborso: resta la casella "Refund" nel pannello di un'entrata (Gio: per ora così)
 - [x] 11/11 rilascio: `015` applicata (17 rate, nessuna pagata a mano), server `5442728` e client `1a82fd2` online
   (landing in inglese con la nuova voce del changelog, Privacy in inglese). Nel piano manca la 2ª rata dell'assicurazione
