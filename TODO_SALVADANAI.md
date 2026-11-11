@@ -22,7 +22,9 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
 - [x] Tutta l'app in inglese, compresi landing, changelog (nuova voce di novembre), Privacy e Terms (versione
   dell'11/11), e i messaggi d'errore del server. Multilingua rimandato (decisione di Gio): i testi restano nel codice
 - [ ] Inserimento manuale del rimborso: resta la casella "Refund" nel pannello di un'entrata (Gio: per ora così)
-- [ ] Rilascio: Gio applica la `015` → push server → push client
+- [x] 11/11 rilascio: `015` applicata (17 rate, nessuna pagata a mano), server `5442728` e client `1a82fd2` online
+  (landing in inglese con la nuova voce del changelog, Privacy in inglese). Nel piano manca la 2ª rata dell'assicurazione
+  (3/10/2027): probabilmente eliminata da Gio dall'app, da confermare
 
 ## Cosa resta aperto (riepilogo all'11/11/2026)
 
