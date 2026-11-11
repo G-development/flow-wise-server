@@ -9,8 +9,8 @@ Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 
 - **Da vedere dal vivo:** il primo accantonamento di fine mese deve arrivare dalla banca come trasferimento da assegnare (passo 1)
 - **Mai provato sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet (passo 5), "Set cap" (fase 3)
-- **Da decidere con Gio:** una `T` conto ↔ salvadanaio solo tra un salvadanaio e il suo conto? (fase 2); il server deve
-  pretendere anche per entrate e spese una categoria dell'utente e del tipo giusto? (passo 4)
+- ~~Da decidere con Gio~~ — decise l'11/11: un salvadanaio scambia soldi solo con il suo conto; entrate e spese con una
+  categoria dell'utente e del tipo giusto (entrambe rifiutate dal server con un 400)
 - **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
 - **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
 - **Fase 5:** rimborsi e spese condivise, da progettare
@@ -337,8 +337,8 @@ Regole da aggiornare (punto 5): `salvadanaio` (E e I), `verso giovanni cuozzo`, 
 `revolut dublin` → Trasferimento.
 - [x] Anomalie (9/11: 24 transazioni con categoria di tipo diverso, 1 con categoria di un altro utente): ricontrollato il
   10/11, **0 anomalie su 333 transazioni**. Erano tutte prima del 01/06 ed sono sparite con la pulizia
-- [ ] Ora che i dati sono puliti, il server può pretendere anche per entrate e spese una categoria dell'utente e dello
-  stesso tipo (oggi lo controlla solo per le `T`, per non bloccare la modifica di quelle righe)
+- [x] Ora che i dati sono puliti, il server può pretendere anche per entrate e spese una categoria dell'utente e dello
+  stesso tipo (oggi lo controlla solo per le `T`, per non bloccare la modifica di quelle righe) — **deciso da Gio l'11/11: sì.** Categoria inesistente, altrui o di tipo diverso → 400; nessuna delle 341 transazioni live la violava. Server 266 test, client 49
 - [x] Revolut: le 6 ricariche/rientri sono in "Altro" via "Not a transfer" (10/11). La regola `revolut dublin` resta su
   Trasferimento perché il sistema non impara verso "Altro": le prossime ricariche arriveranno da assegnare (scelta di Gio)
 - [x] Client (passo 3) — 9/11, branch `plan/salvadanai-annuali` di `flow-wise-client`, non pubblicato:
@@ -423,7 +423,7 @@ vanno lì diventa 6.342,82 €, cioè il versato (6.347,15 €) meno il rientro 
 
 - [x] Progettare `Wallet.kind` (`account` | `pot`) e la modifica al trigger del limite (migrazione `004`) — **chiuso l'11/11:** fatto con la migrazione 012
 - [x] Migrazione + `.down.sql` + test degli invarianti (limite sui soli conti, salvadanaio mai default) — **chiuso l'11/11:** fatto con la 012 (test 238 → oggi 261)
-- [ ] Un salvadanaio appartiene a un conto (`parent_wallet_id`): una `T` conto ↔ salvadanaio ammessa solo tra un salvadanaio e il suo conto? Decidere e testare — **ancora aperta (11/11):** oggi il server accetta una `T` tra due wallet qualsiasi dell'utente; da decidere con Gio
+- [x] Un salvadanaio appartiene a un conto (`parent_wallet_id`): una `T` conto ↔ salvadanaio ammessa solo tra un salvadanaio e il suo conto? Decidere e testare — **deciso da Gio l'11/11: solo il suo conto.** Server (`checkTransactionReferences`) e menu del client (`canTransferBetween`); nessuna delle 341 transazioni live la violava
 - [x] Svuotare le transazioni di prova del wallet Trade Republic (id 11): elenco da approvare prima di cancellare — **chiuso l'11/11:** sparite con la pulizia del 9/11: nessuna transazione di Trade Republic prima del 01/06 (verificato l'11/11)
 - [x] Creare i salvadanai con i saldi di apertura di V2 — **chiuso l'11/11:** fatto il 10/11 (fase 2)
 - [x] Import: per un movimento "MOVIM. SALVADANAIO" senza abbinamento, l'app chiede a quale salvadanaio va — **chiuso l'11/11:** superato: entra come trasferimento da assegnare e si sceglie il salvadanaio in Movements

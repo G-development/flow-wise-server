@@ -13,13 +13,13 @@ const router = express.Router();
  * Controlli sui riferimenti di una transazione che lo schema Zod non può fare.
  *
  * - Trasferimento (`T`): i wallet indicati sono dell'utente e la categoria è la sua
- *   categoria di sistema di tipo `T` ("Trasferimento", migrazione 011).
- * - Entrata o spesa: la categoria non è quella di tipo `T`.
- *
- * Per entrate e spese non si verifica altro di proposito: nel database live 24
- * transazioni hanno una categoria di tipo diverso dal loro e una ha la categoria di
- * un altro utente (9/11/2026). Un controllo più severo impedirebbe di modificarle;
- * vanno sistemate a parte (TODO_SALVADANAI.md).
+ *   categoria di sistema di tipo `T` ("Trasferimento", migrazione 011). Un salvadanaio
+ *   scambia soldi **solo con il suo conto** (`parent_wallet_id`): con entrambi i lati
+ *   indicati, se uno è un salvadanaio l'altro dev'essere il suo conto (deciso da Gio l'11/11/2026).
+ * - Entrata o spesa: la categoria è dell'utente ed è dello stesso tipo (`I` o `E`), quindi
+ *   mai quella di tipo `T` (deciso da Gio l'11/11/2026, dopo aver verificato che nessuna
+ *   delle 341 transazioni live violava la regola: la pulizia del 9/11 aveva tolto le 24
+ *   righe incoerenti di prima).
  *
  * @returns {Promise<string|null>} messaggio d'errore, o null se va tutto bene
  */
@@ -33,25 +33,38 @@ const checkTransactionReferences = async (userId, body) => {
   if (categoryError) throw new Error(categoryError.message);
 
   if (body.type !== "T") {
-    return category?.type === "T"
-      ? "the transfer category can only be used by transfers (type T)"
-      : null;
+    if (!category) return "category not found";
+    if (category.type === "T") return "the transfer category can only be used by transfers (type T)";
+    if (category.type !== body.type) {
+      return `category type ${category.type} does not match transaction type ${body.type}`;
+    }
+    return null;
   }
 
   if (category?.type !== "T") {
     return "a transfer must use the transfer category (type T)";
   }
 
+  const sides = [];
   for (const walletId of [body.wallet_id, body.to_wallet_id]) {
     if (walletId == null) continue;
     const { data: wallet, error: walletError } = await supabase
       .from("Wallet")
-      .select("id")
+      .select("id, kind, parent_wallet_id")
       .eq("id", walletId)
       .eq("userid", userId)
       .maybeSingle();
     if (walletError) throw new Error(walletError.message);
     if (!wallet) return `wallet ${walletId} not found`;
+    sides.push(wallet);
+  }
+
+  if (sides.length === 2) {
+    const [from, to] = sides;
+    const potOk = (pot, other) => pot.kind !== "pot" || String(pot.parent_wallet_id) === String(other.id);
+    if (!potOk(from, to) || !potOk(to, from)) {
+      return "a savings pot can only exchange money with its own account";
+    }
   }
 
   return null;

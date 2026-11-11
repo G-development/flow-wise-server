@@ -276,3 +276,87 @@ test("GET /transaction/all filtra per startDate / endDate e include le T", async
   assert.deepEqual(fromDecember.body.data.map((row) => row.amount), [20]);
   assert.equal(november.body.truncated, false);
 });
+
+// ---------------------------------------------------------------------------
+// Regole decise da Gio l'11/11/2026
+// ---------------------------------------------------------------------------
+
+// Un vero salvadanaio di CONTO, un secondo conto e un salvadanaio dell'altro conto: aggiunti
+// solo qui, per non cambiare i saldi attesi dai test sopra.
+const POT_DI_CONTO = 3;
+const ALTRO_CONTO = 4;
+const POT_DI_ALTRO = 5;
+const CAT_STIPENDIO = 11;
+const CAT_SPESA_U2 = 12;
+const addPotFixtures = () => {
+  fake.state.store.Wallet.push(
+    { id: POT_DI_CONTO, userid: U1, name: "Savings", is_default: false, kind: "pot", parent_wallet_id: CONTO, opening_balance_cents: 0 },
+    { id: ALTRO_CONTO, userid: U1, name: "Trade Republic", is_default: false, kind: "account", parent_wallet_id: null, opening_balance_cents: 0 },
+    { id: POT_DI_ALTRO, userid: U1, name: "Pot TR", is_default: false, kind: "pot", parent_wallet_id: ALTRO_CONTO, opening_balance_cents: 0 }
+  );
+  fake.state.store.Category.push(
+    { id: CAT_STIPENDIO, userid: U1, name: "Stipendio", type: "I", active: true },
+    { id: CAT_SPESA_U2, userid: U2, name: "Spesa", type: "E", active: true }
+  );
+};
+
+test("salvadanaio: scambia soldi con il suo conto, nei due versi", async () => {
+  addPotFixtures();
+  const versamento = await request("POST", "/transaction", transfer({ wallet_id: CONTO, to_wallet_id: POT_DI_CONTO }));
+  const prelievo = await request("POST", "/transaction", transfer({ wallet_id: POT_DI_CONTO, to_wallet_id: CONTO }));
+  assert.equal(versamento.status, 201);
+  assert.equal(prelievo.status, 201);
+});
+
+test("salvadanaio: verso un altro conto o un altro salvadanaio e' rifiutato, senza scrivere", async () => {
+  addPotFixtures();
+  const before = fake.state.store.Transaction.length;
+  const versoAltroConto = await request("POST", "/transaction", transfer({ wallet_id: POT_DI_CONTO, to_wallet_id: ALTRO_CONTO }));
+  const daAltroConto = await request("POST", "/transaction", transfer({ wallet_id: ALTRO_CONTO, to_wallet_id: POT_DI_CONTO }));
+  const traSalvadanai = await request("POST", "/transaction", transfer({ wallet_id: POT_DI_CONTO, to_wallet_id: POT_DI_ALTRO }));
+  for (const response of [versoAltroConto, daAltroConto, traSalvadanai]) {
+    assert.equal(response.status, 400);
+    assert.match(response.body.error, /only exchange money with its own account/);
+  }
+  assert.equal(fake.state.store.Transaction.length, before);
+});
+
+test("salvadanaio: assegnare a un trasferimento il salvadanaio di un altro conto e' rifiutato", async () => {
+  addPotFixtures();
+  const pending = await request("POST", "/transaction", transfer({ wallet_id: ALTRO_CONTO, to_wallet_id: null }));
+  assert.equal(pending.status, 201);
+  const sbagliato = await request("PUT", `/transaction/${pending.body.id}`, transfer({ wallet_id: ALTRO_CONTO, to_wallet_id: POT_DI_CONTO }));
+  const giusto = await request("PUT", `/transaction/${pending.body.id}`, transfer({ wallet_id: ALTRO_CONTO, to_wallet_id: POT_DI_ALTRO }));
+  assert.equal(sbagliato.status, 400);
+  assert.equal(giusto.status, 200);
+});
+
+test("entrate e spese: categoria dell'utente e dello stesso tipo, altrimenti 400", async () => {
+  addPotFixtures();
+  const spesa = (category_id, type = "E") => ({ description: "x", amount: 5, date: "2026-11-03", type, wallet_id: CONTO, category_id });
+  const before = fake.state.store.Transaction.length;
+
+  const tipoSbagliato = await request("POST", "/transaction", spesa(CAT_STIPENDIO));
+  const altrui = await request("POST", "/transaction", spesa(CAT_SPESA_U2));
+  const inesistente = await request("POST", "/transaction", spesa(999));
+  assert.equal(tipoSbagliato.status, 400);
+  assert.match(tipoSbagliato.body.error, /does not match/);
+  assert.equal(altrui.status, 400);
+  assert.equal(inesistente.status, 400);
+  assert.equal(fake.state.store.Transaction.length, before);
+
+  const ok = await request("POST", "/transaction", spesa(CAT_SPESA));
+  const entrata = await request("POST", "/transaction", spesa(CAT_STIPENDIO, "I"));
+  assert.equal(ok.status, 201);
+  assert.equal(entrata.status, 201);
+});
+
+test("entrate e spese: anche il PUT rifiuta una categoria del tipo sbagliato", async () => {
+  addPotFixtures();
+  const { status, body } = await request("PUT", "/transaction/1", {
+    description: "spesa", amount: 40, date: "2026-11-01", type: "E", wallet_id: CONTO, category_id: CAT_STIPENDIO,
+  });
+  assert.equal(status, 400);
+  assert.match(body.error, /does not match/);
+  assert.equal(fake.state.store.Transaction.find((t) => t.id === 1).category_id, CAT_SPESA);
+});
