@@ -398,7 +398,7 @@
               <code class="endpoint-path">/transaction</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>
             </div>
-            <div class="endpoint-description">Create a new transaction (<code>type</code> <code>"I"</code>/<code>"E"</code> with <code>wallet_id</code>, or <code>"T"</code> transfer from <code>wallet_id</code> to <code>to_wallet_id</code> with the transfer category)</div>
+            <div class="endpoint-description">Create a new transaction (<code>type</code> <code>"I"</code>/<code>"E"</code> with <code>wallet_id</code>, or <code>"T"</code> transfer from <code>wallet_id</code> to <code>to_wallet_id</code> with the transfer category). An income/expense needs one of your categories of the same type; a savings pot can only exchange money with its own account (otherwise <code>400</code>)</div>
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
