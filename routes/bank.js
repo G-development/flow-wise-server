@@ -478,7 +478,7 @@ router.put(
     try {
       const connection = await updateBankAutoImport(req.user.id, req.params.bank, req.body);
       if (!connection) {
-        return res.status(404).json({ error: "Banca non connessa" });
+        return res.status(404).json({ error: "Bank not connected" });
       }
       res.json({ bank: connection.bank_id, autoImport: toAutoImportView(connection) });
     } catch (error) {
@@ -538,12 +538,12 @@ router.post(
 
     const connection = await getBankConnection(req.user.id, bank);
     if (!connection) {
-      return res.status(404).json({ error: "Banca non connessa" });
+      return res.status(404).json({ error: "Bank not connected" });
     }
 
     const accessToken = await ensureValidToken(req.user.id, bank);
     if (!accessToken) {
-      return res.status(401).json({ error: "Token di accesso non valido o scaduto" });
+      return res.status(401).json({ error: "Access token invalid or expired" });
     }
 
     const transactions = await syncBankTransactions(
@@ -589,13 +589,13 @@ router.post(
     const { transactionIds, walletId, categoryId, defaultType } = req.body;
 
     if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
-      return res.status(400).json({ error: "Nessuna transazione selezionata per l'importazione" });
+      return res.status(400).json({ error: "No movement selected for import" });
     }
     if (!walletId) {
-      return res.status(400).json({ error: "Wallet di destinazione obbligatorio" });
+      return res.status(400).json({ error: "Target wallet is required" });
     }
     if (!categoryId) {
-      return res.status(400).json({ error: "Categoria di destinazione obbligatoria" });
+      return res.status(400).json({ error: "Target category is required" });
     }
 
     let result;
@@ -630,7 +630,7 @@ router.post(
 
     const connection = await getBankConnection(req.user.id, bank);
     if (!connection) {
-      return res.status(404).json({ error: "Banca non connessa" });
+      return res.status(404).json({ error: "Bank not connected" });
     }
     await disconnectBankConnection(req.user.id, bank);
     res.json({ success: true, message: "Banca disconnessa con successo" });

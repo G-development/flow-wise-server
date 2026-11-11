@@ -185,12 +185,12 @@ export const loadRules = async (client, userId) => {
     .from("category_rules")
     .select("keyword, type, category_id, updated_at")
     .eq("user_id", userId);
-  if (error) throw new Error(`Lettura regole di categoria fallita: ${error.message}`);
+  if (error) throw new Error(`Reading category rules failed: ${error.message}`);
   return data ?? [];
 };
 
 export const upsertRule = async (client, { userId, keyword, type, categoryId, source = "manual" }) => {
-  if (!isValidKeyword(keyword)) throw new Error("Parola chiave non valida");
+  if (!isValidKeyword(keyword)) throw new Error("Invalid keyword");
   const { data, error } = await client
     .from("category_rules")
     .upsert(
@@ -206,7 +206,7 @@ export const upsertRule = async (client, { userId, keyword, type, categoryId, so
     )
     .select("keyword, type, category_id, source")
     .single();
-  if (error) throw new Error(`Impossibile salvare la regola: ${error.message}`);
+  if (error) throw new Error(`Could not save the rule: ${error.message}`);
   return data;
 };
 
@@ -235,7 +235,7 @@ export const learnRuleFromCorrection = async (client, { userId, previousCategory
     .eq("id", transaction.category_id)
     .eq("userid", userId)
     .maybeSingle();
-  if (categoryError) throw new Error(`Lettura categoria fallita: ${categoryError.message}`);
+  if (categoryError) throw new Error(`Reading the category failed: ${categoryError.message}`);
   const isRefund = transaction.is_refund === true;
   const expectedType = isRefund ? "E" : transaction.type;
   if (!category || category.type !== expectedType || isFallbackCategoryName(category.name)) return null;
@@ -246,7 +246,7 @@ export const learnRuleFromCorrection = async (client, { userId, previousCategory
     .eq("id", transaction.bank_transaction_id)
     .eq("user_id", userId)
     .maybeSingle();
-  if (bankError) throw new Error(`Lettura movimento bancario fallita: ${bankError.message}`);
+  if (bankError) throw new Error(`Reading the bank movement failed: ${bankError.message}`);
   if (!bankTxn) return null;
 
   // Un rimborso si impara solo dal testo libero del bonifico ("tari", "condominio"), mai dal

@@ -107,14 +107,14 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
     .eq("id", connection.import_wallet_id)
     .eq("userid", connection.user_id)
     .maybeSingle();
-  if (walletError) throw new Error(`Lettura wallet fallita: ${walletError.message}`);
-  if (!wallet) throw new Error("Il wallet di destinazione non appartiene all'utente");
+  if (walletError) throw new Error(`Reading the wallet failed: ${walletError.message}`);
+  if (!wallet) throw new Error("The target wallet does not belong to the user");
 
   const { data: rows, error: rowsError } = await importableQuery(client, connection)
     .order("date", { ascending: true })
     .order("id", { ascending: true })
     .limit(limit);
-  if (rowsError) throw new Error(`Lettura movimenti fallita: ${rowsError.message}`);
+  if (rowsError) throw new Error(`Reading movements failed: ${rowsError.message}`);
   if (!rows || rows.length === 0) return outcome;
 
   const { data: categories, error: categoriesError } = await client
@@ -122,7 +122,7 @@ const importConnection = async ({ client, connection, limit, categorize }) => {
     .select("id, name, type, active")
     .eq("userid", connection.user_id)
     .eq("active", true);
-  if (categoriesError) throw new Error(`Lettura categorie fallita: ${categoriesError.message}`);
+  if (categoriesError) throw new Error(`Reading categories failed: ${categoriesError.message}`);
 
   const rules = await loadRules(client, connection.user_id);
   const assignments = categorize(
@@ -191,7 +191,7 @@ export const runAutoImport = async ({
     .from("bank_connections")
     .select("user_id, bank_id, account_id, import_wallet_id, auto_import_from")
     .not("import_wallet_id", "is", null);
-  if (error) throw new Error(`Lettura connessioni bancarie fallita: ${error.message}`);
+  if (error) throw new Error(`Reading bank connections failed: ${error.message}`);
 
   let budget = clampLimit(limit);
   for (const connection of connections ?? []) {
@@ -209,13 +209,13 @@ export const runAutoImport = async ({
           summary.errors.push({
             bank: connection.bank_id,
             step: "fallback",
-            message: "Manca una categoria 'Altro' attiva per il tipo del movimento",
+            message: "No active 'Altro' category for the movement type",
           });
         }
       }
 
       const { count, error: countError } = await importableQuery(client, connection, { head: true });
-      if (countError) throw new Error(`Conteggio movimenti fallito: ${countError.message}`);
+      if (countError) throw new Error(`Counting movements failed: ${countError.message}`);
       // Senza categoria di ripiego quei movimenti resterebbero 'synced' per sempre:
       // non vanno contati come lavoro da rifare, o il chiamante girerebbe a vuoto.
       if (!summary.errors.some((e) => e.bank === connection.bank_id && e.step === "fallback")) {

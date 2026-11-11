@@ -67,9 +67,9 @@ test("saldo e totali per tipo concordano su un set misto, righe negative incluse
 test("signedAmountCents rifiuta ogni tipo che non sia I o E (T compreso)", () => {
   // Prima della migrazione 011 tutto cio' che non era "I" diventava una spesa: una
   // "T" avrebbe scalato l'origine senza accreditare la destinazione.
-  assert.throws(() => signedAmountCents(50, "T"), /non è un'entrata né una spesa/);
-  assert.throws(() => signedAmountCents(50, undefined), /non è un'entrata né una spesa/);
-  assert.throws(() => signedAmountCents(50, "e"), /non è un'entrata né una spesa/);
+  assert.throws(() => signedAmountCents(50, "T"), /neither an income nor an expense/);
+  assert.throws(() => signedAmountCents(50, undefined), /neither an income nor an expense/);
+  assert.throws(() => signedAmountCents(50, "e"), /neither an income nor an expense/);
 });
 
 test("walletDeltasCents: entrate e spese toccano solo wallet_id", () => {
@@ -98,5 +98,5 @@ test("walletDeltasCents: un lato da assegnare non tocca nessun saldo", () => {
 });
 
 test("walletDeltasCents rifiuta un tipo sconosciuto", () => {
-  assert.throws(() => walletDeltasCents({ amount: 1, type: "X", wallet_id: 1 }), /non è un'entrata né una spesa/);
+  assert.throws(() => walletDeltasCents({ amount: 1, type: "X", wallet_id: 1 }), /neither an income nor an expense/);
 });

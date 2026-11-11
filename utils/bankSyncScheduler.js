@@ -49,7 +49,7 @@ const getAllBankConnections = async () => {
     .select("user_id, bank_id")
     .not("user_id", "is", null);
   if (error) {
-    throw new Error(`Lettura connessioni bancarie fallita: ${error.message}`);
+    throw new Error(`Reading bank connections failed: ${error.message}`);
   }
   return data || [];
 };

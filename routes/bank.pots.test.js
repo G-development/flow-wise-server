@@ -92,6 +92,6 @@ test("import manuale: un conto supera il controllo (si ferma dopo, sulla categor
   const { status, body } = await request("POST", "/bank/import", { transactionIds: [100], walletId: CONTO, categoryId: 999 });
   assert.notEqual(body?.code, "POT_NOT_ALLOWED");
   assert.equal(status, 500);
-  assert.match(body.error, /Categoria/);
+  assert.match(body.error, /category/);
   assert.equal(fake.state.store.Transaction.length, 0);
 });

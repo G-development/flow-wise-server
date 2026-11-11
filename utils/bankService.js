@@ -422,7 +422,7 @@ export const getAuthorizationUrl = async (userId, bankId) => {
         "GoCardless Requisition Error:",
         err.response?.data || err.message
       );
-      throw new Error(`Errore GoCardless: ${err.message}`);
+      throw new Error(`GoCardless error: ${err.message}`);
     }
   }
 
@@ -455,7 +455,7 @@ export const handleGoCardlessCallback = async (userId, bankId, requisitionId) =>
   const { accounts, status } = reqRes.data;
 
   if (!accounts || accounts.length === 0) {
-    throw new Error(`Nessun conto associato a questa autorizzazione (Stato: ${status})`);
+    throw new Error(`No account linked to this authorization (status: ${status})`);
   }
 
   const accountId = accounts[0];
@@ -615,7 +615,7 @@ export const fetchAccountBalance = async (accountId, accessToken, options = {}) 
     return normalizeAccountBalance(response.data?.balances);
   } catch (error) {
     const detail = error.response?.data?.detail || error.response?.data?.message || error.message;
-    throw new Error(`Errore nel recupero del saldo bancario: ${detail}`);
+    throw new Error(`Error reading the bank balance: ${detail}`);
   }
 };
 
@@ -702,7 +702,7 @@ export const fetchTransactions = async (
         err.message;
       // Nessun fallback al mock: in live un errore del provider resta un errore.
       console.error("Error fetching transactions from GoCardless:", detail);
-      throw new Error(`Errore nel recupero dei movimenti da GoCardless: ${detail}`);
+      throw new Error(`Error reading movements from GoCardless: ${detail}`);
     }
   }
 
@@ -1051,7 +1051,7 @@ export const ensureValidToken = async (userId, bankId) => {
  * i movimenti dei salvadanai arrivano come trasferimenti da assegnare dal conto.
  */
 const potNotAllowed = () => {
-  const error = new Error("Una banca importa in un conto, non in un salvadanaio");
+  const error = new Error("A bank imports into an account, not into a savings pot");
   error.status = 400;
   error.code = "POT_NOT_ALLOWED";
   return error;
@@ -1074,9 +1074,9 @@ export const updateBankAutoImport = async (userId, bankId, { walletId, fromDate 
       .eq("id", walletId)
       .eq("userid", userId)
       .maybeSingle();
-    if (walletError) throw new Error(`Lettura wallet fallita: ${walletError.message}`);
+    if (walletError) throw new Error(`Reading the wallet failed: ${walletError.message}`);
     if (!wallet) {
-      const error = new Error("Wallet di destinazione non trovato");
+      const error = new Error("Target wallet not found");
       error.status = 404;
       throw error;
     }
@@ -1097,7 +1097,7 @@ export const updateBankAutoImport = async (userId, bankId, { walletId, fromDate 
     .eq("bank_id", bankId)
     .select("*")
     .single();
-  if (error) throw new Error(`Impossibile salvare l'import automatico: ${error.message}`);
+  if (error) throw new Error(`Could not save the auto-import: ${error.message}`);
   return data;
 };
 
@@ -1129,7 +1129,7 @@ export const importBankTransactionsToApp = async (
   { transactionIds, walletId, categoryId, defaultType }
 ) => {
   if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
-    throw new Error("Nessun ID transazione fornito per l'importazione");
+    throw new Error("No movement id given for import");
   }
 
   // Verifica esistenza e proprietà del wallet. Nessun `balance`: la colonna è stata
@@ -1142,7 +1142,7 @@ export const importBankTransactionsToApp = async (
     .single();
 
   if (walletError || !wallet) {
-    throw new Error("Wallet di destinazione non trovato o non autorizzato");
+    throw new Error("Target wallet not found or not yours");
   }
   if (wallet.kind === "pot") throw potNotAllowed();
 
@@ -1155,7 +1155,7 @@ export const importBankTransactionsToApp = async (
     .single();
 
   if (categoryError || !category) {
-    throw new Error("Categoria di destinazione non trovata o non autorizzata");
+    throw new Error("Target category not found or not yours");
   }
 
   // Recupera le transazioni bancarie da importare
@@ -1166,7 +1166,7 @@ export const importBankTransactionsToApp = async (
     .in("id", transactionIds);
 
   if (fetchError || !bankTxns || bankTxns.length === 0) {
-    throw new Error("Nessun movimento bancario corrispondente trovato");
+    throw new Error("No matching bank movement found");
   }
 
   const appTransactions = bankTxns.map((bankTxn) =>
@@ -1262,7 +1262,7 @@ export const insertImportedTransactions = async (client, appTransactions) => {
     .select();
 
   if (error) {
-    throw new Error(`Impossibile inserire le transazioni: ${error.message}`);
+    throw new Error(`Could not insert the movements: ${error.message}`);
   }
   return data ?? [];
 };
@@ -1278,7 +1278,7 @@ export const markBankTransactionsImported = async (client, userId, bankTransacti
     if (error) {
       // Le Transaction sono gia' inserite e collegate: al giro successivo l'insert le
       // ignora come duplicati e questo update viene ritentato. Va comunque segnalato.
-      throw new Error(`Movimenti importati ma stato non aggiornato: ${error.message}`);
+      throw new Error(`Movements imported but status not updated: ${error.message}`);
     }
   }
 };

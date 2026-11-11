@@ -54,7 +54,7 @@ export const amountToCents = (amount) => {
 export const signedAmountCents = (amount, type) => {
   if (type === "I") return amountToCents(amount);
   if (type === "E") return -amountToCents(amount);
-  throw new Error(`signedAmountCents: tipo ${JSON.stringify(type)} non è un'entrata né una spesa`);
+  throw new Error(`signedAmountCents: type ${JSON.stringify(type)} is neither an income nor an expense`);
 };
 
 /**
