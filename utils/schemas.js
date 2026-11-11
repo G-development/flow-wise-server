@@ -121,7 +121,8 @@ export const annualInstallmentSchema = z.object({
   due_date: isoDate,
   amount_cents: z.number().int().positive("amount_cents must be a positive integer number of cents"),
 });
-export const annualInstallmentUpdateSchema = annualInstallmentSchema.partial();
+// `is_paid` (migrazione 015): rata segnata pagata a mano, anche senza collegare un movimento.
+export const annualInstallmentUpdateSchema = annualInstallmentSchema.partial().extend({ is_paid: z.boolean().optional() });
 export const annualItemCreateSchema = z.object({
   name: z.string().trim().min(1, "name is required"),
   pot_wallet_id: z.number().int(),

@@ -48,7 +48,10 @@ const findItem = async (userId, itemId) => {
   return data;
 };
 
-/** Voci dell'utente con le loro rate ordinate per data; `paid` = collegata a un pagamento. */
+/**
+ * Voci dell'utente con le loro rate ordinate per data. `paid` = segnata pagata a mano
+ * (`is_paid`, migrazione 015) oppure collegata alla transazione che l'ha pagata.
+ */
 const loadItems = async (userId) => {
   const [items, installments] = await Promise.all([
     supabase.from("annual_items").select("*").eq("user_id", userId).order("id"),
@@ -60,7 +63,7 @@ const loadItems = async (userId) => {
     ...item,
     installments: (installments.data ?? [])
       .filter((row) => String(row.item_id) === String(item.id))
-      .map((row) => ({ ...row, paid: row.transaction_id != null })),
+      .map((row) => ({ ...row, paid: row.is_paid === true || row.transaction_id != null })),
   }));
 };
 
@@ -227,7 +230,7 @@ router.post(
   })
 );
 
-// PUT /annual-installments/:id — data o importo previsto
+// PUT /annual-installments/:id — data, importo previsto o `is_paid` (pagata a mano, 015)
 router.put(
   "/annual-installments/:id",
   requireAuth,
@@ -242,7 +245,7 @@ router.put(
       .maybeSingle();
     if (error) return res.status(400).json({ error: error.message });
     if (!data) return res.status(404).json({ error: "Installment not found" });
-    res.status(200).json(data);
+    res.status(200).json({ ...data, paid: data.is_paid === true || data.transaction_id != null });
   })
 );
 
@@ -290,7 +293,7 @@ router.put(
       .maybeSingle();
     if (error) return res.status(400).json({ error: error.message });
     if (!data) return res.status(404).json({ error: "Installment not found" });
-    res.status(200).json({ ...data, paid: data.transaction_id != null });
+    res.status(200).json({ ...data, paid: data.is_paid === true || data.transaction_id != null });
   })
 );
 

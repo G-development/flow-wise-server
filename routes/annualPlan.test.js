@@ -206,3 +206,22 @@ test("le voci di un utente non sono visibili ne' modificabili da un altro", asyn
   assert.equal(remove.status, 404);
   assert.equal(fake.state.store.annual_items[0].name, "Bollo");
 });
+
+test("una rata si segna pagata a mano, senza collegare un movimento, e lascia il calcolo", async () => {
+  const created = await request("POST", "/annual-items", {
+    body: { name: "Universita'", pot_wallet_id: ANNUALI, installments: [{ due_date: inMonths(1, 3), amount_cents: 30000 }] },
+  });
+  const id = created.body.installments[0].id;
+
+  const paid = await request("PUT", `/annual-installments/${id}`, { body: { is_paid: true } });
+  assert.equal(paid.status, 200);
+  assert.equal(paid.body.paid, true);
+  assert.equal(paid.body.transaction_id ?? null, null);
+
+  const plan = await request("GET", `/annual-plan?walletId=${ANNUALI}`);
+  assert.equal(plan.body.items[0].installments[0].paid, true);
+  assert.equal(plan.body.plan.suggestedMonthlyCents, 0, "una rata pagata non chiede piu' versamenti");
+
+  const back = await request("PUT", `/annual-installments/${id}`, { body: { is_paid: false } });
+  assert.equal(back.body.paid, false);
+});
