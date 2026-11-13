@@ -766,7 +766,9 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
     voci, regole, movimenti, budget, layout, codici di reset, banca, salvadanai, conti, categorie, profilo, foto su
     Cloudinary (al meglio) e infine l'utente di Auth; si ferma al primo errore e si puo' riprovare. 8 test (fake
     esteso con l'Admin API). Client: card "Delete account" in Settings; Terms §7/§11 e Privacy §7/§9 aggiornati.
-    Non provato sul live (cancellerebbe un account vero)
+    Provato sul live il 13/11: Gio ha creato un account di prova, salvadanaio, voce e movimento, poi l'ha eliminato.
+    Controllo in sola lettura: utenti 5 prima e 5 dopo, nessun id nuovo rimasto, nessuna riga di utenti inesistenti
+    in 12 tabelle
 - [ ] R5. **Demo al primo accesso** — deciso: tour guidato di 4-5 passaggi, saltabile e rivedibile da Settings.: spiegare come funziona l'app a un utente appena registrato
 
 ## Fuori piano — da valutare dopo
