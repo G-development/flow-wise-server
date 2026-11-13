@@ -750,12 +750,15 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
 
 ## Richieste del 13/11 pomeriggio (da decidere con Gio, poi da fare)
 
-- [ ] R1. **Import bancario, tornare alla categoria suggerita** — deciso: freccia ↺ "Back to suggestion" su ogni riga cambiata.: nella finestra di import di Your Bank, dopo aver
+- [x] R1. **Import bancario, tornare alla categoria suggerita** — deciso: freccia ↺ "Back to suggestion" su ogni riga cambiata.: nella finestra di import di Your Bank, dopo aver
   cambiato la categoria di un movimento, un modo per rimettere quella proposta dalle regole (o "Altro")
-- [ ] R2. **X per chiudere la finestra** — deciso: e' l'avviso "Create the Altro category?". "in questa fase" dell'import: da capire quale (la finestra di import ha
+- [x] R2. **X per chiudere la finestra** — deciso: e' l'avviso "Create the Altro category?". "in questa fase" dell'import: da capire quale (la finestra di import ha
   gia' la X del componente Dialog; l'avviso "Create the Altro category?" non ce l'ha)
-- [ ] R3. **Annual plan guidato**: se non c'e' un salvadanaio, crearlo dalla pagina stessa (oggi c'e' solo il testo
+- [x] R3. **Annual plan guidato**: se non c'e' un salvadanaio, crearlo dalla pagina stessa (oggi c'e' solo il testo
   "Movements → account menu → Add savings pot"), poi accompagnare alla prima voce del piano
+  - 13/11: R1–R3 nel client (commit dopo b753a4e): ↺ su ogni riga dell'import, X sull'avviso Altro, pagina del piano
+    che crea il salvadanaio (tetto dal piano) e apre la prima voce. Non provati nel browser: servono login e, per R3,
+    un account senza salvadanai
 - [ ] R4. **Elimina account** — deciso: subito, con conferma scrivendo la propria email, export proposto prima.: oggi la cancellazione si chiede per mail (Terms §11, Privacy §9). Servono route sul
   server (tutte le tabelle dell'utente + utente di Supabase Auth + connessioni bancarie revocate), conferma forte nel
   client, invito a scaricare prima l'export; i backup cifrati spariscono entro 30 giorni (gia' scritto in Privacy)
