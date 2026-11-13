@@ -136,7 +136,9 @@ Il 13/11 anche il recupero password è stato rimesso in piedi (migrazione 002 ma
 sistema `gc.dev.app@gmail.com`, pagine e mail con lo stile dell'app): dettagli in `TODO_SALVADANAI.md`.
 
 Ritocchi dell'interfaccia chiesti da Gio il 10/11 (menu mobile, Your Bank, dashboard, Total Balance): voci U1–U7
-in `TODO_SALVADANAI.md`, da fare prima della fase 4 o in parallelo.
+in `TODO_SALVADANAI.md`, tutte pubblicate. Il 13/11 anche: richieste R1–R5 (import, annual plan guidato, elimina
+account, tour), pagina Settings e menu rifatti, piano annuale con versamenti mese per mese, nuova pagina Categorie
+con regole visibili, unione, "To review", colore e icona (migrazioni 016 e 017).
 
 Revolut è **rinviato** per scelta di Gio (10/11): non si collega e non ha un wallet; i passaggi verso
 Revolut si registrano come spese con "Not a transfer". Dettagli in `TODO_SALVADANAI.md`, passo 4.

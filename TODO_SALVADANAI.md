@@ -40,19 +40,22 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
   (landing in inglese con la nuova voce del changelog, Privacy in inglese). Nel piano manca la 2ª rata dell'assicurazione
   (3/10/2027): probabilmente eliminata da Gio dall'app, da confermare
 
-## Cosa resta aperto (riepilogo all'11/11/2026)
+## Cosa resta aperto (riepilogo al 13/11/2026 sera)
 
-Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
+Fasi 0–3, 5 e 6 pubblicate; la 4 e' in corso. Restano:
 
-- **Da vedere dal vivo:** il primo accantonamento di fine mese deve arrivare dalla banca come trasferimento da assegnare (passo 1)
-- **Mai provato sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet (passo 5), "Set cap" (fase 3), fase 5 e "Paid" nel browser
-- ~~Da decidere con Gio~~ — decise l'11/11: un salvadanaio scambia soldi solo con il suo conto; entrate e spese con una
-  categoria dell'utente e del tipo giusto (entrambe rifiutate dal server con un 400)
-- **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
-- **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
-- **Fase 5:** pubblicata l'11/11; 16 movimenti restano in "Persone — da classificare"
-- **Fase 6 (backup ed export):** A (backup notturno cifrato), B (ripristino provato) e C (export JSON + CSV in Settings) fatte il 13/11
-- **Richieste del 13/11 pomeriggio (R1–R5):** import, X della finestra, annual plan guidato, elimina account, demo — da decidere
+- **Fase 4:** novembre e dicembre in parallelo con l'Excel; report a fine novembre quando Gio passa l'Excel, poi la
+  decisione sull'Excel. Prima del confronto va **scritta la soglia** di scarto accettata (condizione del processo `/court`)
+- **Da vedere dal vivo:** il primo backup notturno partito da solo (13→14/11); il primo accantonamento di fine mese
+  arrivato dalla banca come trasferimento da assegnare
+- **Mai provati sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet, "Set cap",
+  salvataggio di colore e icona di una categoria, unione di categorie e regole a mano dalla nuova pagina Categorie
+- **Dati di Gio:** 16 movimenti in "Persone — da classificare" (Gio non ricorda cosa siano: restano li'); 154 + 19
+  movimenti ancora in "Altro", ora sistemabili dal riquadro "To review" della pagina Categorie
+- **Idee messe da parte da Gio:** riga "non ancora contabilizzato" in Your Bank; rimborsi nell'agente AI; multilingua;
+  dominio proprio per le mail; aprire l'app ad altri utenti (secondo processo `/court`: prima prove con utenti veri)
+- **Note tecniche:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo con un conto solo; tabella
+  `Saving` vuota e inutilizzata, da togliere con una migrazione quando capita
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
 
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
@@ -679,13 +682,13 @@ Esempi: condominio 132,91 × 2 (5/10), TaRi 28,33 / 30,33 con testo "Tari agosto
   Eduard 8 + 18,50, PayPal 16,60 = 91,64 €: rimborso Uscite?)
 - [ ] L'agente `/ai-beta` legge solo le spese `E`: i rimborsi non entrano nella sua analisi (da valutare)
 
-- [ ] Progettare i due casi generici del principio "persone" (in `PLAN_SALVADANAI.md`) e scriverli qui prima di implementare:
+- [x] (superata dalla fase 5 dell'11/11: rimborsi per categoria e regole sul testo libero) Progettare i due casi generici del principio "persone" (in `PLAN_SALVADANAI.md`) e scriverli qui prima di implementare:
   - pago io la quota di una spesa anticipata da altri → spesa normale, categoria scelta sul movimento
   - anticipo io e gli altri mi rimborsano → rimborso collegato alla spesa, che diventa netta (oggi nell'Excel: "98,5 − 53,5 Cene", condominio diviso per tre)
-- [ ] Le regole possono usare il testo libero del bonifico ("Condominio settembre", "Tari agosto"), che vince su un nome di persona
-- [ ] Nessuna voce operativa finché il modello non è deciso
+- [x] Le regole possono usare il testo libero del bonifico ("Condominio settembre", "Tari agosto"), che vince su un nome di persona (fase 5, 11/11)
+- [x] Nessuna voce operativa finché il modello non è deciso (deciso e pubblicato l'11/11)
 
-## Fase 6 — Backup ed export (progettata il 13/11, da fare)
+## Fase 6 — Backup ed export (progettata e pubblicata il 13/11)
 
 Nata dai due processi `/court` del 13/11 (11–1 sull'abbandono dell'Excel, 6–0 su "Flow-Wise è un buon
 prodotto"): la condizione chiesta da tutti i giurati è un backup automatico, un export per utente e un
