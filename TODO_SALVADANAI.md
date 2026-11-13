@@ -52,6 +52,7 @@ Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 - **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
 - **Fase 5:** pubblicata l'11/11; 16 movimenti restano in "Persone — da classificare"
 - **Fase 6 (backup ed export):** A (backup notturno cifrato), B (ripristino provato) e C (export JSON + CSV in Settings) fatte il 13/11
+- **Richieste del 13/11 pomeriggio (R1–R5):** import, X della finestra, annual plan guidato, elimina account, demo — da decidere
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
 
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
@@ -746,6 +747,19 @@ Supabase non sono garantiti né scaricabili, e la stessa documentazione consigli
 - [x] Docs: `public/index.html`, README, CODE_MAP, Privacy (oggi la copia si chiede per mail), changelog
 
 Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), poi C.
+
+## Richieste del 13/11 pomeriggio (da decidere con Gio, poi da fare)
+
+- [ ] R1. **Import bancario, tornare alla categoria suggerita**: nella finestra di import di Your Bank, dopo aver
+  cambiato la categoria di un movimento, un modo per rimettere quella proposta dalle regole (o "Altro")
+- [ ] R2. **X per chiudere la finestra** "in questa fase" dell'import: da capire quale (la finestra di import ha
+  gia' la X del componente Dialog; l'avviso "Create the Altro category?" non ce l'ha)
+- [ ] R3. **Annual plan guidato**: se non c'e' un salvadanaio, crearlo dalla pagina stessa (oggi c'e' solo il testo
+  "Movements → account menu → Add savings pot"), poi accompagnare alla prima voce del piano
+- [ ] R4. **Elimina account**: oggi la cancellazione si chiede per mail (Terms §11, Privacy §9). Servono route sul
+  server (tutte le tabelle dell'utente + utente di Supabase Auth + connessioni bancarie revocate), conferma forte nel
+  client, invito a scaricare prima l'export; i backup cifrati spariscono entro 30 giorni (gia' scritto in Privacy)
+- [ ] R5. **Demo al primo accesso**: spiegare come funziona l'app a un utente appena registrato
 
 ## Fuori piano — da valutare dopo
 
