@@ -769,7 +769,11 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
     Provato sul live il 13/11: Gio ha creato un account di prova, salvadanaio, voce e movimento, poi l'ha eliminato.
     Controllo in sola lettura: utenti 5 prima e 5 dopo, nessun id nuovo rimasto, nessuna riga di utenti inesistenti
     in 12 tabelle
-- [ ] R5. **Demo al primo accesso** — deciso: tour guidato di 4-5 passaggi, saltabile e rivedibile da Settings.: spiegare come funziona l'app a un utente appena registrato
+- [x] R5. **Demo al primo accesso** — deciso: tour guidato di 4-5 passaggi, saltabile e rivedibile da Settings.: spiegare come funziona l'app a un utente appena registrato
+  - 13/11: `components/onboarding-tour.tsx` (client), 7 passaggi, punti `data-tour` in navbar e dashboard, avvio solo
+    per account creati dal 13/11 (una volta per dispositivo), "Replay the tour" in Settings. Build ok; non visto nel
+    browser (serve login)
+- [x] 13/11 piano annuale: una voce si rinomina dalla sua card (matita accanto al nome, PUT /annual-items/:id gia' esistente)
 
 ## Fuori piano — da valutare dopo
 
