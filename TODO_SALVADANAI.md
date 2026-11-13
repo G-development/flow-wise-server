@@ -51,6 +51,7 @@ Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 - **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
 - **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
 - **Fase 5:** pubblicata l'11/11; 16 movimenti restano in "Persone — da classificare"
+- **Fase 6 (backup ed export):** progettata il 13/11 dopo i due processi `/court`, da fare (A backup, B ripristino, C export)
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
 
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
@@ -674,6 +675,43 @@ Esempi: condominio 132,91 × 2 (5/10), TaRi 28,33 / 30,33 con testo "Tari agosto
   - anticipo io e gli altri mi rimborsano → rimborso collegato alla spesa, che diventa netta (oggi nell'Excel: "98,5 − 53,5 Cene", condominio diviso per tre)
 - [ ] Le regole possono usare il testo libero del bonifico ("Condominio settembre", "Tari agosto"), che vince su un nome di persona
 - [ ] Nessuna voce operativa finché il modello non è deciso
+
+## Fase 6 — Backup ed export (progettata il 13/11, da fare)
+
+Nata dai due processi `/court` del 13/11 (11–1 sull'abbandono dell'Excel, 6–0 su "Flow-Wise è un buon
+prodotto"): la condizione chiesta da tutti i giurati è un backup automatico, un export per utente e un
+ripristino provato. Decisioni di Gio del 13/11: repo privato con dump cifrato, ogni notte, 30 copie,
+export JSON + CSV dei movimenti.
+
+Fatti verificati: entrambi i repo sono **pubblici** (log e artifact visibili); sul piano gratuito i backup di
+Supabase non sono garantiti né scaricabili, e la stessa documentazione consiglia un dump proprio fuori sede.
+
+**A. Backup notturno cifrato**
+- [ ] Gio crea il repo **privato** `flow-wise-backups` (il workflow vive lì: log e file mai nei repo pubblici)
+- [ ] Gio genera una chiave `age` sul suo Mac e tiene la privata al sicuro (fuori dal Mac, es. password manager);
+      a me serve solo la **pubblica**
+- [ ] Gio imposta di persona il segreto `SUPABASE_DB_URL` (stringa del *session pooler*, IPv4: i runner GitHub
+      non raggiungono la connessione diretta IPv6). Io non vedo né scrivo la password del DB
+- [ ] Workflow ogni notte: `pg_dump` dello schema `public` (+ `auth.users` solo id ed email, per poter
+      ricollegare gli `userid`), `gzip`, cifratura `age` con la chiave pubblica, file `AAAA-MM-GG.sql.gz.age`
+- [ ] Tiene le ultime 30 copie su un ramo con un solo commit riscritto ogni notte, così la storia non cresce
+- [ ] Se fallisce, GitHub manda la mail di default; nei log solo dimensioni e conteggi
+
+**B. Ripristino provato**
+- [ ] Script di prova: Gio decifra un backup con la sua chiave, lo script lo carica nel Postgres locale
+      (`--no-owner --no-privileges`) e confronta righe per tabella e saldi derivati dei wallet con il live
+- [ ] Primo ripristino fatto e annotato qui con data ed esito; poi una prova ogni tanto (da decidere)
+
+**C. Export per utente**
+- [ ] Server `GET /export`: JSON con profilo, wallet e salvadanai, categorie, movimenti, budget, piano annuale,
+      regole, layout, connessioni bancarie **senza** token; niente `password_reset_tokens`. Ogni query
+      filtrata per `userid`, liste con `fetchAllRows`. Test: un altro utente non esce, i token non escono
+- [ ] Server `GET /export/transactions.csv`: data, tipo, importo, categoria, wallet, wallet di destinazione,
+      descrizione, nota, rimborso; separatore `;` e BOM UTF-8 perché si apra bene nell'Excel italiano
+- [ ] Client: in Settings una sezione "Your data" con "Download everything (JSON)" e "Download movements (CSV)"
+- [ ] Docs: `public/index.html`, README, CODE_MAP, Privacy (oggi la copia si chiede per mail), changelog
+
+Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), poi C.
 
 ## Fuori piano — da valutare dopo
 
