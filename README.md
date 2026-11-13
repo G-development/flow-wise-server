@@ -105,7 +105,8 @@ Tutte le route principali sono montate in `app.js`. Su Vercel l'intera app è un
 | `/auth` | Reset password via email, verifica token e aggiornamento password |
 | `/transaction` | `GET /all`, `GET /:id`, creazione, modifica ed eliminazione transazioni |
 | `/income`, `/expense` | Elenchi filtrabili per data e tipo |
-| `/category`, `/wallet` | CRUD categorie e wallet |
+| `/category`, `/wallet` | CRUD categorie e wallet; `GET /category/stats`, `POST /category/:id/merge` |
+| `/category-rules` | Regole di categoria per utente: elenco, aggiunta a mano, eliminazione |
 | `/dashboard-layout` | Lettura/salvataggio layout dashboard |
 | `/import` | Import CSV autenticato |
 | `/bank` | Configurazione provider, OAuth PSD2/Sandbox, sincronizzazione movimenti, filtri data e importazione massiva |

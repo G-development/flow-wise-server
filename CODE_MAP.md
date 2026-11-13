@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `0ac2531`.
+Forma `express`, radice sorgente `.`, commit `b778b3c`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -27,6 +27,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 | `routes/auth.js` | `/auth` |
 | `routes/bank.js` | `/bank` |
 | `routes/category.js` | `/category` |
+| `routes/categoryRules.js` | `/category-rules` |
 | `routes/dashboard-layout.js` | `/dashboard-layout` |
 | `routes/expense.js` | `/expense` |
 | `routes/export.js` | `/export` |
@@ -77,12 +78,19 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `routes/category.js` — mount `/category` — exports: const `createCategoryRouter`
   - `GET /category` — middleware `auth`
   - `GET /category/active` — middleware `auth`
+  - `GET /category/stats` — middleware `auth`
+  - `POST /category/:id/merge` — middleware `auth`
   - `GET /category/:id` — middleware `auth`
   - `POST /category` — middleware `auth`
   - `PUT /category/:id` — middleware `auth`
   - `DELETE /category/:id` — middleware `auth`
+- `routes/category.manage.test.js` — test
 - `routes/category.pagination.test.js` — test
 - `routes/category.test.js` — test
+- `routes/categoryRules.js` — mount `/category-rules` — exports: default `router`
+  - `GET /category-rules` — `requireAuth`
+  - `POST /category-rules` — `requireAuth`
+  - `DELETE /category-rules/:id` — `requireAuth`
 - `routes/dashboard-layout.js` — mount `/dashboard-layout` — exports: default `router`
   - `GET /dashboard-layout` — `requireAuth`
   - `PUT /dashboard-layout` — `requireAuth`
@@ -134,7 +142,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/annualPlan.js` — exports: const `computeAnnualPlan`, `depositSchedule`, `duesByMonth`, `monthIndex`, `nextYearDues`, `PLAN_MONTHS`, `planCapCents`, `shiftOneYear`
 - `utils/annualPlan.test.js` — test
 - `utils/asyncHandler.js` — exports: const `asyncHandler`
-- `utils/bankAutoImport.js` — exports: const `AUTO_IMPORT_DEFAULT_LIMIT`, `AUTO_IMPORT_MAX_LIMIT`, `bankTransactionType`, `clampLimit`, `findFallbackCategories`, `resolveCategories`, `runAutoImport`
+- `utils/bankAutoImport.js` — exports: const `AUTO_IMPORT_DEFAULT_LIMIT`, `AUTO_IMPORT_MAX_LIMIT`, `bankTransactionType`, `clampLimit`, `FALLBACK_CATEGORY_NAMES`, `findFallbackCategories`, `resolveCategories`, `runAutoImport`
 - `utils/bankAutoImport.test.js` — test
 - `utils/bankService.js` — exports: const `buildAppTransactionFromBank`, `createBankOAuthState`, `disconnectBankConnection`, `ensureValidToken`, `fetchAccountBalance`, `fetchTransactions`, `formatSyncedTransaction`, `generateMockBankTransactions`, `getAuthorizationUrl`, `getBankConnection`, `getBankSetupStatus`, `getGoCardlessToken`, `getSupportedBanks`, `getUserBankConnections`, `getUserBankTransactions`, `handleGoCardlessCallback`, `importBankTransactionsToApp`, `insertImportedTransactions`, `isMockBankModeEnabled`, `markBankTransactionsImported`, `normalizeAccountBalance`, `normalizeGoCardlessTransactions`, `POPULAR_BANKS`, `saveBankConnection`, `syncBankTransactions`, `toAutoImportView`, `updateBankAutoImport`, `verifyBankOAuthState`
 - `utils/bankService.test.js` — test
@@ -150,7 +158,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`
 - `utils/passwordResetService.test.js` — test
-- `utils/schemas.js` — exports: const `accountDeleteSchema`, `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
+- `utils/schemas.js` — exports: const `accountDeleteSchema`, `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryMergeSchema`, `categoryRuleCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
 - `utils/schemas.test.js` — test
 - `utils/validate.js` — exports: const `validate`
 - `utils/walletService.js` — exports: const `getWalletBalance`, `getWalletsWithBalances`, `sumBalancesInCents`
@@ -197,6 +205,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/014_refunds.sql` — 014_refunds.sql
 - `migrations/015_installment_paid.down.sql` — 015_installment_paid.down.sql
 - `migrations/015_installment_paid.sql` — 015_installment_paid.sql
+- `migrations/016_transfer_category_english.down.sql` — Annulla la 016: la categoria di sistema torna "Trasferimento".
+- `migrations/016_transfer_category_english.sql` — Migrazione 016 (13/11/2026): la categoria di sistema dei trasferimenti si chiama "Transfer".
 
 ## Script di radice
 

@@ -730,6 +730,58 @@
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">
+            <span class="section-icon">🏷️</span>
+            Category management
+          </h2>
+          <p class="card-description">Usage, merging and the rules that categorise bank movements</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/category/stats</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Per category: movements, total of the current year in cents (refunds lower it), last use and number of rules</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/category/:id/merge</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Move movements, rules and budgets to <code>{ into_id }</code> (same type, never the transfer category), then delete <code>:id</code></div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/category-rules</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">The user's category rules (keyword, type, category, learned or manual)</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-POST">POST</span>
+              <code class="endpoint-path">/category-rules</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Add a rule by hand <code>{ keyword, category_id }</code>: normalised like learned ones; an existing keyword moves to the new category</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/category-rules/:id</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Remove one of the user's rules</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
             <span class="section-icon">📦</span>
             Your data
           </h2>

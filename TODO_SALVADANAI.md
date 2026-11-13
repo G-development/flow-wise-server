@@ -775,6 +775,15 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
     browser (serve login)
 - [x] 13/11 piano annuale: una voce si rinomina dalla sua card (matita accanto al nome, PUT /annual-items/:id gia' esistente)
 
+## Categorie (13/11/2026, idee approvate da Gio)
+
+- [x] Eliminate le 14 categorie di Gio senza movimenti, regole ne' budget (lista confermata da Gio, ricontrollata prima)
+- [x] Migrazione 016: "Trasferimento" -> "Transfer" (**da applicare sul live**); account nuovi con categorie in inglese e "Other"
+- [x] Ripiego dell'import: riconosce "Altro" e "Other"
+- [x] Server: `GET /category/stats`, `POST /category/:id/merge`, `GET/POST/DELETE /category-rules` (8 test)
+- [x] Client: nuova pagina (schede, uso, regole visibili, unione, "To review"), vista in locale sui dati veri
+- [ ] Colore e icona per categoria (migrazione 017), anche nei grafici della dashboard
+
 ## Fuori piano — da valutare dopo
 
 - [ ] Enable Banking come provider per Trade Republic (piano gratuito "restricted production", solo conti propri). A novembre 2026 l'integrazione TR risulta recente e con problemi segnalati (consenso massimo 90 giorni, movimenti duplicati, limiti di richieste). PSD2 copre il conto di liquidità, **non il valore del portafoglio**. Da verificare sulla documentazione ufficiale prima di qualsiasi lavoro
