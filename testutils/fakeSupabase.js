@@ -20,7 +20,7 @@
  *    ogni scrittura sulla tabella: senza, un test sul limite di 3 non proverebbe
  *    niente (il fake accetterebbe il quarto wallet).
  *
- * Supporta: filtri `eq`/`is`, `order` multi-colonna con direzione, `offset`/
+ * Supporta: filtri `eq`/`is`/`in`, upsert con `on_conflict`, `order` multi-colonna con direzione, `offset`/
  * `limit`, `count=exact` (via header `Content-Range`), `Accept:
  * application/vnd.pgrst.object+json` (il `.single()`), insert/update/delete con
  * `return=representation`. Tutto il resto fallisce esplicitamente invece di
@@ -101,6 +101,10 @@ const matchesCondition = (row, column, operator, expected) => {
   if (operator === "is" && expected === "null") return value === null || value === undefined;
   if (operator === "gte") return value != null && String(value) >= expected;
   if (operator === "lte") return value != null && String(value) <= expected;
+  if (operator === "in") {
+    const list = expected.replace(/^\(|\)$/g, "").split(",").map((item) => item.replace(/^"|"$/g, ""));
+    return value != null && list.includes(String(value));
+  }
   if (value === undefined && (expected === "false" || expected === "true")) return expected === "false";
   return String(value) === expected;
 };
@@ -121,10 +125,10 @@ const applyFilters = (rows, searchParams) => {
       continue;
     }
 
-    const match = /^(eq|is|gte|lte)\.(.*)$/.exec(raw);
+    const match = /^(eq|is|gte|lte|in)\.(.*)$/.exec(raw);
     if (!match) {
       throw new Error(
-        `fake supabase: operatore non supportato in "${column}=${raw}" (solo eq/is/gte/lte)`
+        `fake supabase: operatore non supportato in "${column}=${raw}" (solo eq/is/gte/lte/in)`
       );
     }
 
@@ -496,12 +500,22 @@ export const startFakeSupabase = async ({
         }
 
         const defaults = columnDefaults[table] ?? {};
-        const inserted = incoming.map((row) => ({
-          ...defaults,
-          id: row.id ?? nextId(table),
-          ...row,
-        }));
-        rows.push(...inserted);
+        // Upsert (`on_conflict=col1,col2`): una riga con le stesse colonne viene aggiornata.
+        const conflictColumns = (url.searchParams.get("on_conflict") ?? "").split(",").filter(Boolean);
+        const inserted = [];
+        for (const row of incoming) {
+          const existing = conflictColumns.length
+            ? rows.find((candidate) => conflictColumns.every((col) => String(candidate[col]) === String(row[col])))
+            : null;
+          if (existing) {
+            Object.assign(existing, row);
+            inserted.push(existing);
+          } else {
+            const created = { ...defaults, id: row.id ?? nextId(table), ...row };
+            rows.push(created);
+            inserted.push(created);
+          }
+        }
 
         if (!wantsRepresentation) return noContent(201);
         if (wantsObject) return json(201, inserted[0] ?? null);

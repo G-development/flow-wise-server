@@ -170,3 +170,14 @@ export const bankAutoImportSchema = z.object({
 export const accountDeleteSchema = z.object({
   confirmEmail: z.string().trim().min(1, "Type your email to confirm"),
 });
+
+/** POST /category/:id/merge: sposta tutto nella categoria `into_id` (13/11/2026). */
+export const categoryMergeSchema = z.object({
+  into_id: z.number().int().positive(),
+});
+
+/** POST /category-rules: una regola scritta a mano (13/11/2026). */
+export const categoryRuleCreateSchema = z.object({
+  keyword: z.string().trim().min(2, "Type at least 2 letters").max(100),
+  category_id: z.number().int().positive(),
+});

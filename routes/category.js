@@ -3,7 +3,7 @@ import { supabase as supabaseClient } from "../config/supabaseClient.js";
 import { requireAuth as requireAuthMiddleware } from "../config/auth-middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../utils/validate.js";
-import { categoryCreateSchema, categoryUpdateSchema } from "../utils/schemas.js";
+import { categoryCreateSchema, categoryMergeSchema, categoryUpdateSchema } from "../utils/schemas.js";
 import { fetchAllRows, toListResponse } from "../utils/paginatedSelect.js";
 
 /**
@@ -87,6 +87,113 @@ export const createCategoryRouter = ({
       }
 
       res.status(200).json(toListResponse(result));
+    })
+  );
+
+  /**
+   * GET /category/stats — per ogni categoria dell'utente: movimenti, totale dell'anno in corso
+   * (in centesimi, per il tipo della categoria: un rimborso abbassa la spesa), ultimo uso e numero
+   * di regole (13/11/2026, nuova pagina Categorie). Le liste si leggono intere con fetchAllRows.
+   */
+  router.get(
+    "/stats",
+    auth,
+    asyncHandler(async (req, res) => {
+      const year = String(new Date().getUTCFullYear());
+      let movements;
+      let rules;
+      try {
+        [movements, rules] = await Promise.all([
+          fetchAllRows(() =>
+            supabase
+              .from("Transaction")
+              .select("id, category_id, amount, type, is_refund, date")
+              .eq("userid", req.user.id)
+              .order("id")
+          ),
+          fetchAllRows(() =>
+            supabase.from("category_rules").select("id, category_id").eq("user_id", req.user.id).order("id")
+          ),
+        ]);
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+      if (movements.truncated || rules.truncated) {
+        return res.status(400).json({ error: "Too many rows to compute the category stats" });
+      }
+
+      const stats = {};
+      const entry = (id) => (stats[id] ??= { movements: 0, yearCents: 0, lastUsed: null, rules: 0 });
+      for (const row of movements.rows) {
+        if (row.category_id == null) continue;
+        const item = entry(row.category_id);
+        item.movements += 1;
+        if (!item.lastUsed || String(row.date) > item.lastUsed) item.lastUsed = String(row.date).slice(0, 10);
+        if (String(row.date).startsWith(year)) {
+          const cents = Math.round(Math.abs(Number(row.amount) || 0) * 100);
+          item.yearCents += row.is_refund ? -cents : cents;
+        }
+      }
+      for (const rule of rules.rows) entry(rule.category_id).rules += 1;
+
+      res.status(200).json({ year: Number(year), stats });
+    })
+  );
+
+  /**
+   * POST /category/:id/merge — unisce la categoria `:id` in `into_id` (13/11/2026): movimenti,
+   * regole e budget passano alla seconda, poi la prima si elimina. Stesso tipo, mai la categoria
+   * di sistema dei trasferimenti, sempre dell'utente del token. Non e' una transazione unica: ogni
+   * passo e' ripetibile, e se uno fallisce ci si ferma prima di eliminare.
+   */
+  router.post(
+    "/:id/merge",
+    auth,
+    validate(categoryMergeSchema),
+    asyncHandler(async (req, res) => {
+      const sourceId = Number(req.params.id);
+      const intoId = req.body.into_id;
+      if (!Number.isInteger(sourceId) || sourceId === intoId) {
+        return res.status(400).json({ error: "Pick a different category to merge into" });
+      }
+      const { data: pair, error: readError } = await supabase
+        .from("Category")
+        .select("id, type, name")
+        .eq("userid", req.user.id)
+        .in("id", [sourceId, intoId]);
+      if (readError) return res.status(400).json({ error: readError.message });
+      const source = (pair ?? []).find((c) => Number(c.id) === sourceId);
+      const into = (pair ?? []).find((c) => Number(c.id) === intoId);
+      if (!source || !into) return res.status(404).json({ error: "Category not found" });
+      if (source.type === "T" || into.type === "T") return res.status(409).json(SYSTEM_CATEGORY_ERROR);
+      if (source.type !== into.type) {
+        return res.status(400).json({ error: "Both categories must be of the same type" });
+      }
+
+      const moves = [
+        ["Transaction", "category_id", "userid"],
+        ["category_rules", "category_id", "user_id"],
+        ["Budget", "categoryid", "userid"],
+      ];
+      const moved = {};
+      for (const [table, column, owner] of moves) {
+        const { error, count } = await supabase
+          .from(table)
+          .update({ [column]: intoId }, { count: "exact" })
+          .eq(owner, req.user.id)
+          .eq(column, sourceId);
+        if (error) return res.status(400).json({ error: `Merge stopped at ${table}: ${error.message}` });
+        moved[table] = count ?? 0;
+      }
+
+      const { error: deleteError } = await supabase
+        .from("Category")
+        .delete()
+        .eq("id", sourceId)
+        .eq("userid", req.user.id);
+      if (deleteError) return res.status(400).json({ error: deleteError.message });
+
+      res.status(200).json({ mergedInto: intoId, moved });
     })
   );
 
