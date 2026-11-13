@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATEGORY_COLORS, CATEGORY_ICONS } from "./categoryStyle.js";
 
 const transactionBaseShape = {
   description: z.string().min(1, "description is required"),
@@ -70,15 +71,23 @@ export const transactionCreateSchema = z
 
 export const transactionUpdateSchema = transactionCreateSchema; // same shape expected by current code
 
+// Colore e icona (migrazione 017): uno dei valori di utils/categoryStyle.js, oppure null.
+const categoryColor = z.enum(CATEGORY_COLORS).nullable().optional();
+const categoryIcon = z.enum(CATEGORY_ICONS).nullable().optional();
+
 export const categoryCreateSchema = z.object({
   name: z.string().min(1, "name is required"),
   type: z.enum(["I", "E"]),
+  color: categoryColor,
+  icon: categoryIcon,
 });
 
 export const categoryUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   type: z.enum(["I", "E"]).optional(),
   active: z.boolean().optional(),
+  color: categoryColor,
+  icon: categoryIcon,
 });
 
 // Un wallet è un conto (default) o un salvadanaio di un conto (migrazione 012): il

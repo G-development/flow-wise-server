@@ -220,7 +220,7 @@ export const createCategoryRouter = ({
     auth,
     validate(categoryCreateSchema),
     asyncHandler(async (req, res) => {
-      const { name, type } = req.body;
+      const { name, type, color, icon } = req.body;
 
       const { data, error } = await supabase
         .from("Category")
@@ -228,6 +228,9 @@ export const createCategoryRouter = ({
           userid: req.user.id,
           name,
           type,
+          // colore e icona solo se scelti: senza la migrazione 017 le colonne non esistono
+          ...(color !== undefined ? { color } : {}),
+          ...(icon !== undefined ? { icon } : {}),
         })
         .select()
         .single();
@@ -243,7 +246,7 @@ export const createCategoryRouter = ({
     auth,
     validate(categoryUpdateSchema),
     asyncHandler(async (req, res) => {
-      const { name, type, active } = req.body;
+      const { name, type, active, color, icon } = req.body;
 
       if (type !== undefined || active === false) {
         const lookup = await findTransferCategory(req.user.id, req.params.id);
@@ -253,7 +256,13 @@ export const createCategoryRouter = ({
 
       const { data, error } = await supabase
         .from("Category")
-        .update({ name, type, active })
+        .update({
+          name,
+          type,
+          active,
+          ...(color !== undefined ? { color } : {}),
+          ...(icon !== undefined ? { icon } : {}),
+        })
         .eq("id", req.params.id)
         .eq("userid", req.user.id)
         .select()

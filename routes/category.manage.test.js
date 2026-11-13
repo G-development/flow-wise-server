@@ -135,3 +135,21 @@ test("rules: si cancella solo una regola propria", async () => {
   assert.equal((await call("DELETE", "/category-rules/2")).status, 200);
   assert.equal(fake.state.store.category_rules.some((r) => r.id === 2), false);
 });
+
+test("colore e icona (migrazione 017): salvati se validi, rifiutati se sconosciuti, non inviati se assenti", async () => {
+  const created = await call("POST", "/category", { name: "Palestra", type: "E", color: "teal", icon: "dumbbell" });
+  assert.equal(created.status, 201);
+  const row = fake.state.store.Category.find((c) => c.name === "Palestra");
+  assert.equal(row.color, "teal");
+  assert.equal(row.icon, "dumbbell");
+
+  assert.equal((await call("POST", "/category", { name: "X", type: "E", color: "gold" })).status, 400);
+  assert.equal((await call("PUT", "/category/1", { icon: "not-an-icon" })).status, 400);
+
+  fake.state.requests.length = 0;
+  assert.equal((await call("PUT", "/category/1", { name: "Spesa casa" })).status, 200);
+  const patch = fake.restRequests().find((r) => r.method === "PATCH");
+  assert.equal("color" in (patch.body ?? {}), false, "senza colore nel body la colonna non si tocca");
+
+  assert.equal((await call("PUT", "/category/1", { color: null, icon: null })).status, 200, "null = torna automatico");
+});

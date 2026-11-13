@@ -8,6 +8,7 @@ import { validate } from "../utils/validate.js";
 import { userRegisterSchema, accountDeleteSchema } from "../utils/schemas.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { deleteUserAccount, emailMatches } from "../utils/accountDeletion.js";
+import { STARTER_STYLE } from "../utils/categoryStyle.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -92,10 +93,11 @@ router.post("/register", createAccountLimiter, validate(userRegisterSchema), asy
       "Other",
     ];
 
+    // Con colore e icona (migrazione 017, utils/categoryStyle.js).
     const categoryInserts = [
-      ...incBaseCategories.map((name) => ({ name, userid: userId, type: "I" })),
-      ...expBaseCategories.map((name) => ({ name, userid: userId, type: "E" })),
-      { name: "Transfer", userid: userId, type: "T" },
+      ...incBaseCategories.map((name) => ({ name, userid: userId, type: "I", ...STARTER_STYLE[name] })),
+      ...expBaseCategories.map((name) => ({ name, userid: userId, type: "E", ...STARTER_STYLE[name] })),
+      { name: "Transfer", userid: userId, type: "T", ...STARTER_STYLE.Transfer },
     ];
 
     const { error: catError } = await supabase

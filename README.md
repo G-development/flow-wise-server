@@ -260,6 +260,9 @@ rimozione della colonna fantasma `Wallet.balance`:
   ha ancora il nome di prima). Il codice la riconosce dal tipo, quindi non cambia comportamento. Dal 13/11 gli account
   nuovi nascono con categorie in inglese e "Other" come ripiego (riconosciuto insieme ad "Altro"). Rollback in
   `016_transfer_category_english.down.sql`.
+- `017_category_color_icon.sql` — `Category.color` e `Category.icon` (facoltative, solo la forma e' controllata dal
+  DB; l'elenco ammesso sta in `utils/categoryStyle.js` e nel client `lib/categoryStyle.ts`). **Va applicata prima
+  del server**: le categorie di partenza di un account nuovo nascono con colore e icona. Rollback nel `.down.sql`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare
