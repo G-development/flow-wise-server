@@ -342,6 +342,14 @@
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
+              <span class="endpoint-method method-DELETE">DELETE</span>
+              <code class="endpoint-path">/users/me</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Delete the account: body <code>{ confirmEmail }</code> must match the account email (<code>400</code> otherwise). Deletes every table of the user, the avatar and then the login; a failed step stops with <code>500</code> and can be retried</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
               <span class="endpoint-method method-POST">POST</span>
               <code class="endpoint-path">/auth/forgot-password</code>
               <span class="endpoint-auth auth-public">PUBLIC</span>

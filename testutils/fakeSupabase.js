@@ -197,6 +197,10 @@ export const startFakeSupabase = async ({
     failingTables: new Set(),
     /** RPC che il DB non ha: la richiesta risponde `PGRST202`, come PostgREST. */
     missingRpcs: new Set(),
+    /** Utenti cancellati con l'Admin API (`DELETE /auth/v1/admin/users/:id`). */
+    deletedUsers: [],
+    /** Con `true` la cancellazione dell'utente risponde 500. */
+    failAdminDelete: false,
   };
 
   const sequences = new Map();
@@ -396,6 +400,14 @@ export const startFakeSupabase = async ({
         const token = (req.headers.authorization ?? "").replace(/^Bearer /, "");
         if (!token || !users[token]) return json(401, { message: "invalid token" });
         return json(200, users[token]);
+      }
+
+      // Admin API: cancellazione di un utente (elimina account, R4 del 13/11). Registra l'id.
+      const adminUser = url.pathname.match(/^\/auth\/v1\/admin\/users\/([^/]+)$/);
+      if (adminUser && req.method === "DELETE") {
+        if (state.failAdminDelete) return json(500, { message: "admin delete failed" });
+        state.deletedUsers.push(decodeURIComponent(adminUser[1]));
+        return json(200, {});
       }
 
       // --- PostgREST -------------------------------------------------------

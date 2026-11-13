@@ -5,7 +5,9 @@ import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 import rateLimit from "express-rate-limit";
 import { validate } from "../utils/validate.js";
-import { userRegisterSchema } from "../utils/schemas.js";
+import { userRegisterSchema, accountDeleteSchema } from "../utils/schemas.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { deleteUserAccount, emailMatches } from "../utils/accountDeletion.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -169,6 +171,22 @@ router.post(
       res.status(500).json({ message: error.message });
     }
   }
+);
+
+// DELETE /users/me — cancella l'account e tutti i dati (R4, 13/11/2026). Conferma: la propria email.
+router.delete(
+  "/me",
+  requireAuth,
+  validate(accountDeleteSchema),
+  asyncHandler(async (req, res) => {
+    if (!emailMatches(req.body.confirmEmail, req.user.email)) {
+      return res.status(400).json({ error: "The email does not match your account" });
+    }
+    // Senza credenziali Cloudinary (in locale, nei test) la foto non si tocca: niente chiamate di rete a vuoto.
+    const cloudinaryReady = Boolean(cloudinary.config().api_key && cloudinary.config().api_secret);
+    const { deleted, avatarRemoved } = await deleteUserAccount(req.user, { cloudinary: cloudinaryReady ? cloudinary : null });
+    res.status(200).json({ ok: true, removed: deleted, avatarRemoved });
+  })
 );
 
 export default router;

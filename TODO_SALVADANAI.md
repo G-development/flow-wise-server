@@ -759,9 +759,14 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
   - 13/11: R1–R3 nel client (commit dopo b753a4e): ↺ su ogni riga dell'import, X sull'avviso Altro, pagina del piano
     che crea il salvadanaio (tetto dal piano) e apre la prima voce. Non provati nel browser: servono login e, per R3,
     un account senza salvadanai
-- [ ] R4. **Elimina account** — deciso: subito, con conferma scrivendo la propria email, export proposto prima.: oggi la cancellazione si chiede per mail (Terms §11, Privacy §9). Servono route sul
+- [x] R4. **Elimina account** — deciso: subito, con conferma scrivendo la propria email, export proposto prima.: oggi la cancellazione si chiede per mail (Terms §11, Privacy §9). Servono route sul
   server (tutte le tabelle dell'utente + utente di Supabase Auth + connessioni bancarie revocate), conferma forte nel
   client, invito a scaricare prima l'export; i backup cifrati spariscono entro 30 giorni (gia' scritto in Privacy)
+  - 13/11: server `DELETE /users/me` (`utils/accountDeletion.js`): conferma con l'email, cancella in ordine rate,
+    voci, regole, movimenti, budget, layout, codici di reset, banca, salvadanai, conti, categorie, profilo, foto su
+    Cloudinary (al meglio) e infine l'utente di Auth; si ferma al primo errore e si puo' riprovare. 8 test (fake
+    esteso con l'Admin API). Client: card "Delete account" in Settings; Terms §7/§11 e Privacy §7/§9 aggiornati.
+    Non provato sul live (cancellerebbe un account vero)
 - [ ] R5. **Demo al primo accesso** — deciso: tour guidato di 4-5 passaggi, saltabile e rivedibile da Settings.: spiegare come funziona l'app a un utente appena registrato
 
 ## Fuori piano — da valutare dopo

@@ -101,7 +101,7 @@ Tutte le route principali sono montate in `app.js`. Su Vercel l'intera app è un
 
 | Prefisso | Funzioni |
 | --- | --- |
-| `/users` | Registrazione, profilo e avatar |
+| `/users` | Registrazione, profilo, avatar e `DELETE /users/me` (elimina account: conferma con la propria email, cancella tutti i dati e il login; `utils/accountDeletion.js`) |
 | `/auth` | Reset password via email, verifica token e aggiornamento password |
 | `/transaction` | `GET /all`, `GET /:id`, creazione, modifica ed eliminazione transazioni |
 | `/income`, `/expense` | Elenchi filtrabili per data e tipo |

@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `bf4bf15`.
+Forma `express`, radice sorgente `.`, commit `0ac2531`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -107,10 +107,12 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `PUT /transaction/:id` — `requireAuth`
   - `DELETE /transaction/:id` — `requireAuth`
 - `routes/transfer.test.js` — test
+- `routes/user.delete.test.js` — test
 - `routes/user.js` — mount `/users` — exports: default `router`
   - `POST /users/register` — pubblico
   - `GET /users/profile` — `requireAuth`
   - `POST /users/profile/photo` — `requireAuth`
+  - `DELETE /users/me` — `requireAuth`
 - `routes/wallet.balance.test.js` — test
 - `routes/wallet.delete.test.js` — test
 - `routes/wallet.invariants.test.js` — test
@@ -126,6 +128,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 
 ## utils/
 
+- `utils/accountDeletion.js` — exports: const `cloudinaryPublicId`, `deleteUserAccount`, `DELETION_STEPS`, `emailMatches`
 - `utils/amount.js` — exports: const `amountToCents`, `signedAmountCents`, `walletDeltasCents`
 - `utils/amount.test.js` — test
 - `utils/annualPlan.js` — exports: const `computeAnnualPlan`, `depositSchedule`, `duesByMonth`, `monthIndex`, `nextYearDues`, `PLAN_MONTHS`, `planCapCents`, `shiftOneYear`
@@ -147,7 +150,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`
 - `utils/passwordResetService.test.js` — test
-- `utils/schemas.js` — exports: const `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
+- `utils/schemas.js` — exports: const `accountDeleteSchema`, `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
 - `utils/schemas.test.js` — test
 - `utils/validate.js` — exports: const `validate`
 - `utils/walletService.js` — exports: const `getWalletBalance`, `getWalletsWithBalances`, `sumBalancesInCents`

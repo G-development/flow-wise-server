@@ -165,3 +165,8 @@ export const bankAutoImportSchema = z.object({
     .nullable()
     .optional(),
 });
+
+/** DELETE /users/me: la propria email, scritta per conferma (R4, 13/11/2026). */
+export const accountDeleteSchema = z.object({
+  confirmEmail: z.string().trim().min(1, "Type your email to confirm"),
+});
