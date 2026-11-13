@@ -778,7 +778,7 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
 ## Categorie (13/11/2026, idee approvate da Gio)
 
 - [x] Eliminate le 14 categorie di Gio senza movimenti, regole ne' budget (lista confermata da Gio, ricontrollata prima)
-- [x] Migrazione 016: "Trasferimento" -> "Transfer" (**da applicare sul live**); account nuovi con categorie in inglese e "Other"
+- [x] Migrazione 016: "Trasferimento" -> "Transfer", applicata da Gio il 13/11 (verificato: 5 categorie T, tutte "Transfer"); account nuovi con categorie in inglese e "Other"
 - [x] Ripiego dell'import: riconosce "Altro" e "Other"
 - [x] Server: `GET /category/stats`, `POST /category/:id/merge`, `GET/POST/DELETE /category-rules` (8 test)
 - [x] Client: nuova pagina (schede, uso, regole visibili, unione, "To review"), vista in locale sui dati veri
