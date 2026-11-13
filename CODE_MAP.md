@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `b778b3c`.
+Forma `express`, radice sorgente `.`, commit `67e5846`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -151,6 +151,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankTokenCrypto.test.js` — test
 - `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
 - `utils/categoryRules.test.js` — test
+- `utils/categoryStyle.js` — exports: const `CATEGORY_COLORS`, `CATEGORY_ICONS`, `STARTER_STYLE`
 - `utils/emailTemplates.js` — exports: const `escapeHtml`, `renderPasswordResetEmail`
 - `utils/emailTemplates.test.js` — test
 - `utils/exportService.js` — exports: const `buildTransactionsCsv`, `buildUserExport`, `CSV_HEADER`, `csvField`, `EXPORT_FORMAT`, `EXPORT_SECTIONS`, `EXPORT_VERSION`, `formatAmountIt`
@@ -207,6 +208,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/015_installment_paid.sql` — 015_installment_paid.sql
 - `migrations/016_transfer_category_english.down.sql` — Annulla la 016: la categoria di sistema torna "Trasferimento".
 - `migrations/016_transfer_category_english.sql` — Migrazione 016 (13/11/2026): la categoria di sistema dei trasferimenti si chiama "Transfer".
+- `migrations/017_category_color_icon.down.sql` — Annulla la 017: toglie colore e icona delle categorie.
+- `migrations/017_category_color_icon.sql` — Migrazione 017 (13/11/2026): colore e icona per categoria, scelti dall'utente.
 
 ## Script di radice
 

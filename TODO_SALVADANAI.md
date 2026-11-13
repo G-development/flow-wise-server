@@ -782,7 +782,7 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
 - [x] Ripiego dell'import: riconosce "Altro" e "Other"
 - [x] Server: `GET /category/stats`, `POST /category/:id/merge`, `GET/POST/DELETE /category-rules` (8 test)
 - [x] Client: nuova pagina (schede, uso, regole visibili, unione, "To review"), vista in locale sui dati veri
-- [ ] Colore e icona per categoria (migrazione 017), anche nei grafici della dashboard
+- [x] Colore e icona per categoria (migrazione 017, **da applicare sul live prima del push del server**), anche nel grafico delle spese della dashboard
 
 ## Fuori piano — da valutare dopo
 
