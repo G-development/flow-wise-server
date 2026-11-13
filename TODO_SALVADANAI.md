@@ -51,7 +51,7 @@ Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 - **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
 - **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
 - **Fase 5:** pubblicata l'11/11; 16 movimenti restano in "Persone — da classificare"
-- **Fase 6 (backup ed export):** A (backup notturno cifrato) e B (ripristino provato) fatte il 13/11; resta C (export per utente)
+- **Fase 6 (backup ed export):** A (backup notturno cifrato), B (ripristino provato) e C (export JSON + CSV in Settings) fatte il 13/11
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
 
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
@@ -716,13 +716,17 @@ Supabase non sono garantiti né scaricabili, e la stessa documentazione consigli
     File decifrati e database cancellati alla fine
 
 **C. Export per utente**
-- [ ] Server `GET /export`: JSON con profilo, wallet e salvadanai, categorie, movimenti, budget, piano annuale,
+- [x] Server `GET /export`: JSON con profilo, wallet e salvadanai, categorie, movimenti, budget, piano annuale,
       regole, layout, connessioni bancarie **senza** token; niente `password_reset_tokens`. Ogni query
       filtrata per `userid`, liste con `fetchAllRows`. Test: un altro utente non esce, i token non escono
-- [ ] Server `GET /export/transactions.csv`: data, tipo, importo, categoria, wallet, wallet di destinazione,
+- [x] Server `GET /export/transactions.csv`: data, tipo, importo, categoria, wallet, wallet di destinazione,
       descrizione, nota, rimborso; separatore `;` e BOM UTF-8 perché si apra bene nell'Excel italiano
-- [ ] Client: in Settings una sezione "Your data" con "Download everything (JSON)" e "Download movements (CSV)"
-- [ ] Docs: `public/index.html`, README, CODE_MAP, Privacy (oggi la copia si chiede per mail), changelog
+- [x] Client: in Settings una sezione "Your data" con "Download everything (JSON)" e "Download movements (CSV)"
+  - 13/11: `utils/exportService.js` + `routes/export.js` (7 test: isolamento anche con `?userid`, nessun token
+    o `raw_data` anche se il DB li restituisse, errore invece di export parziale, CSV con BOM, `;`, virgola
+    decimale e campi protetti). Client: `components/settings/your-data-card.tsx` in Settings. Esclusi dal JSON
+    anche `raw_data` dei movimenti bancari e `balance_raw_data`: payload del fornitore, non dati dell'utente
+- [x] Docs: `public/index.html`, README, CODE_MAP, Privacy (oggi la copia si chiede per mail), changelog
 
 Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), poi C.
 

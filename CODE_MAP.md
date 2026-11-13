@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `cb6d956`.
+Forma `express`, radice sorgente `.`, commit `3c3c751`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -29,6 +29,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 | `routes/category.js` | `/category` |
 | `routes/dashboard-layout.js` | `/dashboard-layout` |
 | `routes/expense.js` | `/expense` |
+| `routes/export.js` | `/export` |
 | `routes/import.js` | `/import` |
 | `routes/income.js` | `/income` |
 | `routes/transaction.js` | `/transaction` |
@@ -87,6 +88,10 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `PUT /dashboard-layout` — `requireAuth`
 - `routes/expense.js` — mount `/expense` — exports: default `router`
   - `GET /expense/all` — `requireAuth`
+- `routes/export.js` — mount `/export` — exports: default `router`
+  - `GET /export` — `requireAuth`
+  - `GET /export/transactions.csv` — `requireAuth`
+- `routes/export.test.js` — test
 - `routes/import.js` — mount `/import` — exports: const `createImportRouter`; fn `parseAmountValue`
   - `POST /import/csv` — middleware `auth`
 - `routes/import.test.js` — test
@@ -135,6 +140,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankTokenCrypto.test.js` — test
 - `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
 - `utils/categoryRules.test.js` — test
+- `utils/exportService.js` — exports: const `buildTransactionsCsv`, `buildUserExport`, `CSV_HEADER`, `csvField`, `EXPORT_FORMAT`, `EXPORT_SECTIONS`, `EXPORT_VERSION`, `formatAmountIt`
 - `utils/paginatedSelect.js` — exports: const `DEFAULT_MAX_PAGES`, `DEFAULT_PAGE_SIZE`, `fetchAllRows`, `toListResponse`
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`

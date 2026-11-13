@@ -86,6 +86,7 @@ Tutte le route principali sono montate in `app.js`. Su Vercel l'intera app è un
 | `/import` | Import CSV autenticato |
 | `/bank` | Configurazione provider, OAuth PSD2/Sandbox, sincronizzazione movimenti, filtri data e importazione massiva |
 | `/agents/analytics` | Analisi AI delle spese |
+| `/export` | Copia dei dati dell'utente: `GET /export` (JSON completo, senza token della banca) e `GET /export/transactions.csv` (movimenti per Excel) |
 
 Le route protette verificano `Authorization: Bearer <supabase_access_token>`
 tramite `requireAuth`. L'elenco dettagliato delle route bancarie e le migrazioni

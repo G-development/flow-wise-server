@@ -722,6 +722,34 @@
       <div class="card">
         <div class="card-header">
           <h2 class="card-title">
+            <span class="section-icon">📦</span>
+            Your data
+          </h2>
+          <p class="card-description">A copy of the authenticated user's data, as a file to download</p>
+        </div>
+        <ul class="endpoint-list">
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/export</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Every table of the user in one JSON (<code>{ format, version, exported_at, user, counts, data }</code>): profile, wallets and pots, categories, movements, budgets, annual plan, rules, layout, bank connections and bank movements. Bank tokens, raw provider payloads and reset codes are never included; a truncated list fails the export instead of returning a partial copy</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/export/transactions.csv</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">The user's movements as CSV for Excel: UTF-8 with BOM, <code>;</code> separator, decimal comma, columns Date, Type, Amount, Category, Wallet, To wallet, Description, Note, Refund</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
             <span class="section-icon">🤖</span>
             AI Analytics
           </h2>

@@ -19,6 +19,7 @@ import bankRoutes from "./routes/bank.js";
 import authRoutes from "./routes/auth.js";
 import agentRoutes from "./routes/agents.js";
 import annualPlanRoutes from "./routes/annualPlan.js";
+import exportRoutes from "./routes/export.js";
 
 dotenv.config();
 
@@ -88,6 +89,8 @@ app.use("/import", importRoutes);
 app.use("/bank", bankRoutes);
 
 app.use("/agents", agentRoutes);
+
+app.use("/export", exportRoutes);
 
 app.use("/", annualPlanRoutes);
 
