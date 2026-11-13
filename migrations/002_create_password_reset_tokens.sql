@@ -1,4 +1,6 @@
--- Tabella per i token di reset password
+-- Tabella per i token di reset password.
+-- 13/11/2026: verificato che sul progetto live NON era applicata (PGRST205): il "password dimenticata"
+-- non poteva funzionare. Resa idempotente (IF NOT EXISTS, DROP POLICY IF EXISTS) per applicarla senza rischi.
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -11,14 +13,15 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 );
 
 -- Indici per performance
-CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token);
-CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
-CREATE INDEX idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
 
 -- Enable RLS
 ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Policy per password_reset_tokens
+DROP POLICY IF EXISTS "Users can view their own reset tokens" ON password_reset_tokens;
 CREATE POLICY "Users can view their own reset tokens"
   ON password_reset_tokens FOR SELECT
   USING (auth.uid() = user_id);

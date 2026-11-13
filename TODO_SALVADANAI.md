@@ -702,8 +702,13 @@ Supabase non sono garantiti né scaricabili, e la stessa documentazione consigli
   Transaction 345, bank_transactions 390, Category 50, category_rules 42, annual_installments 17, Wallet 8,
   annual_items 7, Profile 3, bank_connections 2, dashboard_layouts 2, Budget 0, Saving 0. Da stanotte gira
   da solo alle 02:30 UTC
-- Da verificare: nello schema `public` non c'è `password_reset_tokens`, che il codice usa (3 query); e c'è
-  una tabella `Saving` vuota che il codice non usa
+- Verificato il 13/11 sul live (sola lettura): `password_reset_tokens` **non esiste** (PostgREST `PGRST205`),
+  quindi il "password dimenticata" non può funzionare: la mail parte ma il token non viene salvato.
+  La migrazione `002_create_password_reset_tokens.sql` non era mai stata applicata. Resa idempotente e
+  provata due volte su un Postgres locale.
+  - [ ] Gio applica la 002 nel SQL editor di Supabase
+  - [ ] verifica: la tabella risponde, poi Gio prova "Forgot password?" con la sua email
+- La tabella `Saving` (0 righe) non è usata dal codice: residuo, si può togliere più avanti con una migrazione
 
 **B. Ripristino provato**
 - [x] Script di prova: Gio decifra un backup con la sua chiave, lo script lo carica nel Postgres locale
