@@ -538,6 +538,14 @@ successivi** (le rate del mese corrente le copre il saldo attuale); le voci part
   ottobre (saldo prec. 157,67 € l'1/10, rata 3 241,10 € il 5/10) sono passate e non sono nel piano. Dopo: tetto
   3.428,10 €, quota consigliata 520,37 €/mese
 
+- [x] 13/11 versamenti mese per mese (richiesta di Gio): la colonna "Installments" diventa **Due** (quanto si
+  paga) e si aggiunge **Deposit**, il versamento consigliato di ogni mese (`depositSchedule` in
+  `utils/annualPlan.js`): ogni mese il minimo che copre le scadenze dei 12 mesi successivi dal saldo previsto,
+  contando anche le stesse rate dell'anno dopo (`nextYearDues`, massimo fra ripetute e gia' copiate). Sul live
+  (Annuali, 60 €): 520,37 a novembre, 427,50 a dicembre, ~401,75 gennaio–marzo, 355,50 ad aprile, poi 245,93
+  (media annua). In alto "Deposit this month" = il versamento di questo mese, uguale alla vecchia quota; il
+  conflitto col tetto ora si valuta sul piano mese per mese e su Annuali sparisce. Tabella a 4 colonne che
+  sta su un telefono. 4 test nuovi
 ## Ritocchi dell'interfaccia (richiesti da Gio il 10/11, decisioni prese con lui)
 
 Tutti nel client. Nessuno tocca dati o API, salvo dove indicato. Da fare uno alla volta, con verifica a 375 px.

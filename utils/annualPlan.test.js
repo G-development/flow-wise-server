@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { computeAnnualPlan, duesByMonth, monthIndex, planCapCents, shiftOneYear } from "./annualPlan.js";
+import { computeAnnualPlan, depositSchedule, duesByMonth, monthIndex, nextYearDues, planCapCents, shiftOneYear } from "./annualPlan.js";
 
 const TODAY = "2026-11-10";
 const rata = (due_date, euro, paid = false) => ({ due_date, amount_cents: Math.round(euro * 100), paid });
@@ -85,4 +85,57 @@ test("tetto dal piano: somma delle rate dei prossimi 12 mesi, pagate o no, senza
 test("shiftOneYear sposta la data di un anno, 29 febbraio compreso", () => {
   assert.equal(shiftOneYear("2026-12-03"), "2027-12-03");
   assert.equal(shiftOneYear("2028-02-29"), "2029-02-28");
+});
+
+// --- Versamenti mese per mese (13/11/2026) -----------------------------------------------------
+
+/** Le rate del salvadanaio Annuali di Gio al 13/11/2026 (dallo screenshot del piano). */
+const annualiDiGio = () => [
+  rata("2026-12-01", 580.37),
+  rata("2027-01-01", 427.5),
+  rata("2027-02-01", 380.37),
+  rata("2027-03-01", 127.5),
+  rata("2027-04-01", 697.36),
+  rata("2027-05-01", 355.5),
+  rata("2027-07-01", 127.5),
+  rata("2027-09-01", 127.5),
+  rata("2027-11-01", 127.5),
+];
+
+test("versamenti: partono alti per recuperare e scendono verso la media annua", () => {
+  const plan = computeAnnualPlan({ balanceCents: 6000, installments: annualiDiGio(), today: "2026-11-13" });
+  const deposits = plan.projection.map((row) => row.depositCents);
+  assert.equal(deposits[0], 52037, "novembre: 580,37 a dicembre con 60 € nel salvadanaio");
+  assert.equal(plan.suggestedMonthlyCents, deposits[0], "la quota in alto e' il versamento di questo mese");
+  assert.equal(deposits[1], 42750);
+  for (let m = 1; m < 6; m += 1) assert.ok(deposits[m] <= deposits[m - 1], `il versamento non risale al mese ${m}`);
+  // da maggio la media annua: 2951,10 € / 12 = 245,925 -> 245,93
+  for (const m of [6, 7, 8, 9, 10, 11]) assert.equal(deposits[m], 24593, `mese ${m}`);
+  assert.deepEqual(plan.negativeMonths, [], "seguendo il piano nessun mese va sotto zero");
+  assert.equal(plan.projection[1].balanceCents, 0, "a fine dicembre il fondo e' esattamente a 0");
+});
+
+test("versamenti: una rata pagata ricalcola il piano", () => {
+  const before = computeAnnualPlan({ balanceCents: 6000, installments: annualiDiGio(), today: "2026-11-13" });
+  const paidDecember = annualiDiGio().map((r, i) => (i === 0 ? { ...r, paid: true } : r));
+  // pagata dal salvadanaio: il saldo scende, la rata non conta piu'
+  const after = computeAnnualPlan({ balanceCents: 0, installments: paidDecember, today: "2026-11-13" });
+  assert.ok(after.projection[0].depositCents < before.projection[0].depositCents);
+  // senza dicembre: gennaio…maggio (1.988,23 €) con 6 versamenti utili -> 331,38 €
+  assert.equal(after.projection[0].depositCents, 33138);
+});
+
+test("versamenti: l'anno dopo conta le rate ripetute, senza contare due volte quelle gia' copiate", () => {
+  const year = [rata("2026-12-01", 120), rata("2027-06-01", 240)];
+  const copied = [...year, rata("2027-12-01", 120), rata("2028-06-01", 240)];
+  const repeated = nextYearDues(year, TODAY);
+  assert.equal(repeated.length, 12);
+  assert.equal(repeated[0], 12000, "dicembre 2027 = dicembre 2026");
+  assert.deepEqual(nextYearDues(copied, TODAY), repeated, "copiate o ripetute, stessa somma");
+});
+
+test("depositSchedule: nessuna scadenza, nessun versamento; un buco va recuperato subito", () => {
+  assert.deepEqual(depositSchedule(0, new Array(25).fill(0)), new Array(13).fill(0));
+  const dues = new Array(25).fill(0);
+  assert.equal(depositSchedule(-5000, dues)[0], 5000, "saldo sotto zero: il primo versamento lo riporta a zero");
 });

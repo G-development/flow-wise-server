@@ -42,57 +42,86 @@ export const planCapCents = (installments, today) =>
   }, 0);
 
 /**
+ * Rate dei 12 mesi dopo l'orizzonte (mesi 13…24), per non far crollare i versamenti verso fine
+ * anno: le spese annuali si ripetono. Il mese 12+j vale il **massimo** fra le rate gia' inserite in
+ * quel mese (es. dopo "Copia sull'anno dopo") e quelle del mese j dell'anno in corso, pagate o no
+ * (stessa regola di `planCapCents`). Il massimo, non la somma: una voce gia' copiata non conta due volte.
+ */
+export const nextYearDues = (installments, today) => {
+  const planned = new Array(PLAN_MONTHS + 1).fill(0);
+  const actual = new Array(PLAN_MONTHS + 1).fill(0);
+  for (const installment of installments) {
+    const index = monthIndex(installment.due_date, today);
+    if (index >= 1 && index <= PLAN_MONTHS) planned[index] += installment.amount_cents;
+    if (!installment.paid && index > PLAN_MONTHS && index <= 2 * PLAN_MONTHS) actual[index - PLAN_MONTHS] += installment.amount_cents;
+  }
+  return planned.map((value, j) => (j === 0 ? 0 : Math.max(value, actual[j]))).slice(1);
+};
+
+/**
+ * Versamenti consigliati mese per mese (13/11/2026, richiesta di Gio): ogni mese m il versamento
+ * piu' basso che, ripetuto, copre tutte le scadenze dei 12 mesi successivi partendo dal saldo
+ * previsto in quel momento. Se il salvadanaio e' indietro i primi versamenti sono alti, poi scendono
+ * verso la media annua. Si ricalcola a ogni richiesta, quindi un pagamento o una rata nuova lo
+ * aggiornano da soli.
+ *
+ * @param {number} startCents saldo a fine mese 0, dopo le rate del mese 0
+ * @param {number[]} dues rate per mese, 0…24
+ * @returns {number[]} versamento del mese m, m = 0…12 (arriva prima delle rate del mese m+1)
+ */
+export const depositSchedule = (startCents, dues) => {
+  const deposits = [];
+  let balance = startCents;
+  for (let m = 0; m <= PLAN_MONTHS; m += 1) {
+    let need = 0;
+    let cumulative = 0;
+    for (let k = m + 1; k <= Math.min(m + PLAN_MONTHS, dues.length - 1); k += 1) {
+      cumulative += dues[k];
+      need = Math.max(need, Math.ceil((cumulative - balance) / (k - m)));
+    }
+    const deposit = Math.max(0, need);
+    deposits.push(deposit);
+    balance += deposit - (dues[m + 1] ?? 0);
+  }
+  return deposits;
+};
+
+/**
  * Il piano di un salvadanaio.
  *
  * - `shortfallNowCents`: quanto manca oggi per le rate del mese corrente (e quelle in ritardo).
- *   Nessuna quota lo risolve: i versamenti di questo mese contano dal mese prossimo.
- * - `suggestedMonthlyCents`: la quota mensile piu' bassa che copre ogni scadenza dei prossimi
- *   12 mesi = max su k di (rate fino al mese k − saldo) / k, arrotondata al centesimo per eccesso,
- *   mai sotto zero.
- * - Tetto (`capCents`, fisso o dal piano): la quota non porta il saldo sopra il tetto in nessun
- *   mese. Se coprire le scadenze richiede di superarlo, vince la copertura e `capConflict` lo dice.
- * - `projection`: saldo previsto a fine di ogni mese 0…12 versando la quota consigliata.
+ *   Nessun versamento lo risolve: i versamenti di questo mese contano dal mese prossimo.
+ * - `projection`: per ogni mese 0…12 le rate (`dueCents`), il versamento consigliato di quel mese
+ *   (`depositCents`, vedi `depositSchedule`) e il saldo a fine mese (`balanceCents`) seguendo il piano.
+ * - `suggestedMonthlyCents`: il versamento di **questo** mese (= `projection[0].depositCents`): la
+ *   quota piu' bassa che copre ogni scadenza dei prossimi 12 mesi, come prima del 13/11.
+ * - Tetto (`capCents`, fisso o dal piano): i versamenti sono gia' i minimi possibili; se seguendoli il
+ *   saldo supera il tetto in qualche mese, coprire le scadenze lo richiede e `capConflict` lo dice.
  *
  * @param {{balanceCents: number, installments: Array<{due_date: string, amount_cents: number, paid?: boolean}>,
  *          today: string, capCents?: number|null, capFromPlan?: boolean}} input
  */
 export const computeAnnualPlan = ({ balanceCents, installments, today, capCents = null, capFromPlan = false }) => {
   const dues = duesByMonth(installments, today);
-  const cumulative = [];
-  dues.reduce((sum, value, index) => (cumulative[index] = sum + value), 0);
+  const allDues = [...dues, ...nextYearDues(installments, today)];
+  const shortfallNowCents = Math.max(0, dues[0] - balanceCents);
 
-  const shortfallNowCents = Math.max(0, cumulative[0] - balanceCents);
-
-  let needed = 0;
-  for (let k = 1; k <= PLAN_MONTHS; k += 1) {
-    needed = Math.max(needed, Math.ceil((cumulative[k] - balanceCents) / k));
+  const deposits = depositSchedule(balanceCents - dues[0], allDues);
+  const projection = [];
+  let balance = balanceCents - dues[0];
+  for (let k = 0; k <= PLAN_MONTHS; k += 1) {
+    if (k > 0) balance += deposits[k - 1] - dues[k];
+    projection.push({ month: k, dueCents: dues[k], depositCents: deposits[k], balanceCents: balance });
   }
-  needed = Math.max(0, needed);
 
   const effectiveCapCents = capFromPlan ? planCapCents(installments, today) : capCents;
-  let suggested = needed;
-  let capConflict = false;
-  if (effectiveCapCents != null) {
-    // Quota massima che non supera il tetto in nessun mese: saldo + k·q − rate fino a k ≤ tetto.
-    let maxUnderCap = Infinity;
-    for (let k = 1; k <= PLAN_MONTHS; k += 1) {
-      maxUnderCap = Math.min(maxUnderCap, Math.floor((effectiveCapCents + cumulative[k] - balanceCents) / k));
-    }
-    maxUnderCap = Math.max(0, maxUnderCap);
-    if (maxUnderCap < needed) capConflict = true;
-    else suggested = Math.min(needed, maxUnderCap);
-  }
-
-  const projection = cumulative.map((due, k) => ({
-    month: k,
-    dueCents: dues[k],
-    balanceCents: balanceCents + k * suggested - due,
-  }));
+  const capConflict =
+    effectiveCapCents != null && projection.some((row) => row.balanceCents > effectiveCapCents);
 
   return {
     balanceCents,
     shortfallNowCents,
-    suggestedMonthlyCents: suggested,
+    suggestedMonthlyCents: deposits[0],
     capCents: effectiveCapCents,
     capConflict,
     projection,
