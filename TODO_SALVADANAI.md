@@ -51,7 +51,7 @@ Le caselle superate sono state chiuse l'11/11 con il motivo accanto. Restano:
 - **Nota tecnica:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo finché la banca espone un conto solo
 - **Fase 4:** novembre e dicembre in parallelo con l'Excel, confronto a fine mese, decisione sull'Excel
 - **Fase 5:** pubblicata l'11/11; 16 movimenti restano in "Persone — da classificare"
-- **Fase 6 (backup ed export):** progettata il 13/11 dopo i due processi `/court`, da fare (A backup, B ripristino, C export)
+- **Fase 6 (backup ed export):** A (backup notturno cifrato) e B (ripristino provato) fatte il 13/11; resta C (export per utente)
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
 
 ## Piano dal 10/11/2026 (ordine concordato con Gio il 9/11)
@@ -706,9 +706,14 @@ Supabase non sono garantiti né scaricabili, e la stessa documentazione consigli
   una tabella `Saving` vuota che il codice non usa
 
 **B. Ripristino provato**
-- [ ] Script di prova: Gio decifra un backup con la sua chiave, lo script lo carica nel Postgres locale
+- [x] Script di prova: Gio decifra un backup con la sua chiave, lo script lo carica nel Postgres locale
       (`--no-owner --no-privileges`) e confronta righe per tabella e saldi derivati dei wallet con il live
-- [ ] Primo ripristino fatto e annotato qui con data ed esito; poi una prova ogni tanto (da decidere)
+- [x] Primo ripristino fatto e annotato qui con data ed esito; poi una prova ogni tanto (da decidere)
+  - 13/11: `scripts/restore-check.sh` nel repo dei backup. Backup `2026-11-13` caricato in un Postgres 18 locale
+    al primo colpo (servono solo ruoli, `auth.users`, `auth.uid()` e `uuid-ossp`, che lo script prepara).
+    Righe: tutte le 12 tabelle e i 4 utenti uguali al manifest. Saldi derivati degli 8 wallet calcolati con
+    `walletDeltasCents` del server: backup e live identici (345 movimenti, nessuno creato dopo il backup).
+    File decifrati e database cancellati alla fine
 
 **C. Export per utente**
 - [ ] Server `GET /export`: JSON con profilo, wallet e salvadanai, categorie, movimenti, budget, piano annuale,
