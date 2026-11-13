@@ -750,16 +750,16 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
 
 ## Richieste del 13/11 pomeriggio (da decidere con Gio, poi da fare)
 
-- [ ] R1. **Import bancario, tornare alla categoria suggerita**: nella finestra di import di Your Bank, dopo aver
+- [ ] R1. **Import bancario, tornare alla categoria suggerita** — deciso: freccia ↺ "Back to suggestion" su ogni riga cambiata.: nella finestra di import di Your Bank, dopo aver
   cambiato la categoria di un movimento, un modo per rimettere quella proposta dalle regole (o "Altro")
-- [ ] R2. **X per chiudere la finestra** "in questa fase" dell'import: da capire quale (la finestra di import ha
+- [ ] R2. **X per chiudere la finestra** — deciso: e' l'avviso "Create the Altro category?". "in questa fase" dell'import: da capire quale (la finestra di import ha
   gia' la X del componente Dialog; l'avviso "Create the Altro category?" non ce l'ha)
 - [ ] R3. **Annual plan guidato**: se non c'e' un salvadanaio, crearlo dalla pagina stessa (oggi c'e' solo il testo
   "Movements → account menu → Add savings pot"), poi accompagnare alla prima voce del piano
-- [ ] R4. **Elimina account**: oggi la cancellazione si chiede per mail (Terms §11, Privacy §9). Servono route sul
+- [ ] R4. **Elimina account** — deciso: subito, con conferma scrivendo la propria email, export proposto prima.: oggi la cancellazione si chiede per mail (Terms §11, Privacy §9). Servono route sul
   server (tutte le tabelle dell'utente + utente di Supabase Auth + connessioni bancarie revocate), conferma forte nel
   client, invito a scaricare prima l'export; i backup cifrati spariscono entro 30 giorni (gia' scritto in Privacy)
-- [ ] R5. **Demo al primo accesso**: spiegare come funziona l'app a un utente appena registrato
+- [ ] R5. **Demo al primo accesso** — deciso: tour guidato di 4-5 passaggi, saltabile e rivedibile da Settings.: spiegare come funziona l'app a un utente appena registrato
 
 ## Fuori piano — da valutare dopo
 
