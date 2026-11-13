@@ -687,15 +687,23 @@ Fatti verificati: entrambi i repo sono **pubblici** (log e artifact visibili); s
 Supabase non sono garantiti né scaricabili, e la stessa documentazione consiglia un dump proprio fuori sede.
 
 **A. Backup notturno cifrato**
-- [ ] Gio crea il repo **privato** `flow-wise-backups` (il workflow vive lì: log e file mai nei repo pubblici)
-- [ ] Gio genera una chiave `age` sul suo Mac e tiene la privata al sicuro (fuori dal Mac, es. password manager);
+- [x] Gio crea il repo **privato** `flow-wise-backups` (il workflow vive lì: log e file mai nei repo pubblici)
+- [x] Gio genera una chiave `age` sul suo Mac e tiene la privata al sicuro (fuori dal Mac, es. password manager);
       a me serve solo la **pubblica**
-- [ ] Gio imposta di persona il segreto `SUPABASE_DB_URL` (stringa del *session pooler*, IPv4: i runner GitHub
+- [x] Gio imposta di persona il segreto `SUPABASE_DB_URL` (stringa del *session pooler*, IPv4: i runner GitHub
       non raggiungono la connessione diretta IPv6). Io non vedo né scrivo la password del DB
-- [ ] Workflow ogni notte: `pg_dump` dello schema `public` (+ `auth.users` solo id ed email, per poter
+- [x] Workflow ogni notte: `pg_dump` dello schema `public` (+ `auth.users` solo id ed email, per poter
       ricollegare gli `userid`), `gzip`, cifratura `age` con la chiave pubblica, file `AAAA-MM-GG.sql.gz.age`
-- [ ] Tiene le ultime 30 copie su un ramo con un solo commit riscritto ogni notte, così la storia non cresce
-- [ ] Se fallisce, GitHub manda la mail di default; nei log solo dimensioni e conteggi
+- [x] Tiene le ultime 30 copie su un ramo con un solo commit riscritto ogni notte, così la storia non cresce
+- [x] Se fallisce, GitHub manda la mail di default; nei log solo dimensioni e conteggi
+
+- 13/11: parte A in funzione. Primo backup lanciato a mano (run 43399886636): `2026-11-13.tar.gz.age`,
+  68.636 byte, 12 tabelle; decifrato da Gio con la sua chiave, manifest letto: server Postgres 17.4, 4 utenti,
+  Transaction 345, bank_transactions 390, Category 50, category_rules 42, annual_installments 17, Wallet 8,
+  annual_items 7, Profile 3, bank_connections 2, dashboard_layouts 2, Budget 0, Saving 0. Da stanotte gira
+  da solo alle 02:30 UTC
+- Da verificare: nello schema `public` non c'è `password_reset_tokens`, che il codice usa (3 query); e c'è
+  una tabella `Saving` vuota che il codice non usa
 
 **B. Ripristino provato**
 - [ ] Script di prova: Gio decifra un backup con la sua chiave, lo script lo carica nel Postgres locale
