@@ -210,7 +210,8 @@ export const upsertRule = async (client, { userId, keyword, type, categoryId, so
   return data;
 };
 
-const isFallbackCategoryName = (name) => normalizeForRules(name) === "altro";
+// "Altro" per gli account storici, "Other" per quelli nuovi (13/11/2026): un ripiego non diventa una regola.
+const isFallbackCategoryName = (name) => ["altro", "other"].includes(normalizeForRules(name));
 
 /**
  * Impara una regola dalla correzione di un movimento importato dalla banca.

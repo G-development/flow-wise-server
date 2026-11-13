@@ -211,3 +211,14 @@ test("runAutoImport: una regola verso Trasferimento importa una T da assegnare d
   assert.equal(summary.byRule, 2);
   assert.deepEqual(summary.errors, []);
 });
+
+test("findFallbackCategories riconosce anche 'Other' (account nuovi dal 13/11/2026)", async () => {
+  const { findFallbackCategories } = await import("./bankAutoImport.js");
+  assert.deepEqual(
+    findFallbackCategories([
+      { id: 1, name: "Other", type: "E", active: true },
+      { id: 2, name: " other ", type: "I", active: true },
+    ]),
+    { I: 2, E: 1 }
+  );
+});

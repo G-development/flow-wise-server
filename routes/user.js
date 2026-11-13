@@ -76,19 +76,26 @@ router.post("/register", createAccountLimiter, validate(userRegisterSchema), asy
       return res.status(400).json({ msg: walletError.message });
     }
 
-    // 4. Creazione categorie di base (opzionale)
-    const incBaseCategories = ["Salary", "Extra"];
-    const expBaseCategories = ["Food", "Transport", "Entertainment"];
-    const baseCategories = [...incBaseCategories, ...expBaseCategories];
+    // 4. Categorie di partenza (13/11/2026, scelte con Gio): in inglese come l'interfaccia, con
+    // "Other" gia' pronta come ripiego dell'import bancario (prima mancava e l'import chiedeva di
+    // crearla) e "Transfer", la categoria di sistema dei trasferimenti (una sola, migrazione 011).
+    const incBaseCategories = ["Salary", "Other"];
+    const expBaseCategories = [
+      "Groceries",
+      "Eating out",
+      "Transport",
+      "Home & bills",
+      "Subscriptions",
+      "Health",
+      "Shopping",
+      "Travel",
+      "Other",
+    ];
 
     const categoryInserts = [
-      ...baseCategories.map((name) => ({
-        name,
-        userid: userId,
-        type: incBaseCategories.includes(name) ? "I" : "E",
-      })),
-      // Categoria di sistema dei trasferimenti: una sola per utente (migrazione 011).
-      { name: "Trasferimento", userid: userId, type: "T" },
+      ...incBaseCategories.map((name) => ({ name, userid: userId, type: "I" })),
+      ...expBaseCategories.map((name) => ({ name, userid: userId, type: "E" })),
+      { name: "Transfer", userid: userId, type: "T" },
     ];
 
     const { error: catError } = await supabase

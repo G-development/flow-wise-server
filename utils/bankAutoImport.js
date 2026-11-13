@@ -39,12 +39,15 @@ const normalizeName = (name) =>
     .trim()
     .toLowerCase();
 
-/** Categoria 'Altro' attiva per tipo: `{ I: id|null, E: id|null }`. */
+/** Nomi della categoria di ripiego: "Altro" (account storici) o "Other" (account nuovi dal 13/11/2026). */
+export const FALLBACK_CATEGORY_NAMES = ["altro", "other"];
+
+/** Categoria di ripiego ('Altro' / 'Other') attiva per tipo: `{ I: id|null, E: id|null }`. */
 export const findFallbackCategories = (categories) => {
   const fallback = { I: null, E: null };
   for (const category of categories) {
     if (category.active === false) continue;
-    if (normalizeName(category.name) !== "altro") continue;
+    if (!FALLBACK_CATEGORY_NAMES.includes(normalizeName(category.name))) continue;
     if ((category.type === "I" || category.type === "E") && fallback[category.type] == null) {
       fallback[category.type] = Number(category.id);
     }
@@ -209,7 +212,7 @@ export const runAutoImport = async ({
           summary.errors.push({
             bank: connection.bank_id,
             step: "fallback",
-            message: "No active 'Altro' category for the movement type",
+            message: "No active 'Other' category for the movement type",
           });
         }
       }

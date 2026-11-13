@@ -255,6 +255,10 @@ rimozione della colonna fantasma `Wallet.balance`:
 - `015_installment_paid.sql` — `annual_installments.is_paid` (default false): una rata si segna pagata a mano,
   anche senza `transaction_id`; pagata = `is_paid` o collegata. Innocua per il codice precedente. Rollback in
   `015_installment_paid.down.sql`.
+- `016_transfer_category_english.sql` — la categoria di sistema `T` "Trasferimento" diventa "Transfer" (solo chi
+  ha ancora il nome di prima). Il codice la riconosce dal tipo, quindi non cambia comportamento. Dal 13/11 gli account
+  nuovi nascono con categorie in inglese e "Other" come ripiego (riconosciuto insieme ad "Altro"). Rollback in
+  `016_transfer_category_english.down.sql`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare
