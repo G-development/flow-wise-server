@@ -25,6 +25,7 @@ export const EXPORT_VERSION = 1;
 /** Colonne di `bank_connections` che si possono esportare: niente token, niente payload grezzi. */
 const BANK_CONNECTION_COLUMNS = [
   "id",
+  "user_id",
   "bank_id",
   "account_id",
   "last_synced",
