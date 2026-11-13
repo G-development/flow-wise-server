@@ -706,8 +706,9 @@ Supabase non sono garantiti né scaricabili, e la stessa documentazione consigli
   quindi il "password dimenticata" non può funzionare: la mail parte ma il token non viene salvato.
   La migrazione `002_create_password_reset_tokens.sql` non era mai stata applicata. Resa idempotente e
   provata due volte su un Postgres locale.
-  - [ ] Gio applica la 002 nel SQL editor di Supabase
-  - [ ] verifica: la tabella risponde, poi Gio prova "Forgot password?" con la sua email
+  - [x] Gio applica la 002 nel SQL editor di Supabase (13/11)
+  - [x] verifica: la tabella risponde sul live con tutte le colonne (200, 0 righe)
+  - [ ] Gio prova "Forgot password?" con la sua email (verifica anche SMTP su Vercel)
 - La tabella `Saving` (0 righe) non è usata dal codice: residuo, si può togliere più avanti con una migrazione
 
 **B. Ripristino provato**
