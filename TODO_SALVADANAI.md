@@ -48,10 +48,14 @@ Fasi 0–3, 5 e 6 pubblicate; la 4 e' in corso. Restano:
   decisione sull'Excel. Prima del confronto va **scritta la soglia** di scarto accettata (condizione del processo `/court`)
 - **Da vedere dal vivo:** il primo backup notturno partito da solo (13→14/11); il primo accantonamento di fine mese
   arrivato dalla banca come trasferimento da assegnare
-- **Mai provati sul live:** modifica ed eliminazione di un movimento, creazione ed eliminazione di un wallet, "Set cap",
-  salvataggio di colore e icona di una categoria, unione di categorie e regole a mano dalla nuova pagina Categorie
-- **Dati di Gio:** 16 movimenti in "Persone — da classificare" (Gio non ricorda cosa siano: restano li'); 154 + 19
-  movimenti ancora in "Altro", ora sistemabili dal riquadro "To review" della pagina Categorie
+- **Provati da Gio sul live il 13/11:** creazione ed eliminazione di un wallet, "Set cap", colore e icona di una
+  categoria: funzionano. **Non provati** (Gio: va bene cosi' per ora): unione di categorie, regole a mano, modifica ed
+  eliminazione di un movimento
+- **Regola nuova (Gio, 13/11):** un salvadanaio non ha entrate ne' spese proprie, solo trasferimenti con il suo conto.
+  Server: 400 su I/E verso un salvadanaio (al 13/11 nessun movimento cosi'); finestra del movimento: per entrate e spese
+  solo i conti, nei trasferimenti i salvadanai come "Savings · ISP" e solo con il loro conto
+- **Dati di Gio:** 16 movimenti in "Persone — da classificare" e 154 + 19 in "Altro": restano cosi' per scelta di
+  Gio, li sistemera' piano piano dal riquadro "To review" della pagina Categorie
 - **Idee messe da parte da Gio:** riga "non ancora contabilizzato" in Your Bank; rimborsi nell'agente AI; multilingua;
   dominio proprio per le mail; aprire l'app ad altri utenti (secondo processo `/court`: prima prove con utenti veri)
 - **Note tecniche:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo con un conto solo; tabella

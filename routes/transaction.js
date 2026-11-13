@@ -43,6 +43,20 @@ const checkTransactionReferences = async (userId, body) => {
         ? "a refund must use an expense category (type E)"
         : `category type ${category.type} does not match transaction type ${body.type}`;
     }
+    // Un salvadanaio non ha entrate ne' spese proprie (Gio, 13/11/2026): i soldi entrano ed escono
+    // solo con un trasferimento dal suo conto. Al 13/11 nessun movimento I/E stava su un salvadanaio.
+    if (body.wallet_id != null) {
+      const { data: wallet, error: walletError } = await supabase
+        .from("Wallet")
+        .select("id, kind")
+        .eq("id", body.wallet_id)
+        .eq("userid", userId)
+        .maybeSingle();
+      if (walletError) throw new Error(walletError.message);
+      if (wallet?.kind === "pot") {
+        return "a savings pot has no income or expenses of its own: move money with a transfer from its account";
+      }
+    }
     return null;
   }
 

@@ -411,3 +411,26 @@ test("rimborso: un PUT lo riporta a entrata normale solo con una categoria di en
   assert.equal(giusto.status, 200);
   assert.equal(giusto.body.is_refund, false);
 });
+
+test("salvadanaio: niente entrate ne' spese proprie, solo trasferimenti (Gio, 13/11/2026)", async () => {
+  addPotFixtures();
+  const before = fake.state.store.Transaction.length;
+  const spesa = await request("POST", "/transaction", {
+    description: "spesa sul salvadanaio", note: null, amount: 10, type: "E",
+    wallet_id: POT_DI_CONTO, to_wallet_id: null, category_id: CAT_SPESA, date: "2026-11-13",
+  });
+  const entrata = await request("POST", "/transaction", {
+    description: "entrata sul salvadanaio", note: null, amount: 10, type: "I",
+    wallet_id: POT_DI_CONTO, to_wallet_id: null, category_id: CAT_STIPENDIO, date: "2026-11-13",
+  });
+  for (const response of [spesa, entrata]) {
+    assert.equal(response.status, 400);
+    assert.match(response.body.error, /no income or expenses of its own/);
+  }
+  assert.equal(fake.state.store.Transaction.length, before);
+  const sulConto = await request("POST", "/transaction", {
+    description: "spesa sul conto", note: null, amount: 10, type: "E",
+    wallet_id: CONTO, to_wallet_id: null, category_id: CAT_SPESA, date: "2026-11-13",
+  });
+  assert.equal(sulConto.status, 201, "sul conto resta tutto come prima");
+});
