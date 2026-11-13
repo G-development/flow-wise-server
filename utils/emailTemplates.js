@@ -100,10 +100,16 @@ export const renderPasswordResetEmail = ({ resetUrl, frontendUrl, expiresInMinut
     <p style="margin:0 0 24px;font-size:15px;line-height:23px;color:${COLORS.muted};">
       We received a request to reset the password of your Flow Wise account. Click the button below to choose a new one.
     </p>
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+      <tr>
+        <td align="center">
+    <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
       <tr>
         <td align="center" bgcolor="${COLORS.primary}" style="border-radius:10px;">
           <a href="${url}" target="_blank" style="display:inline-block;padding:13px 28px;font-family:${FONT};font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">Choose a new password</a>
+        </td>
+      </tr>
+    </table>
         </td>
       </tr>
     </table>
