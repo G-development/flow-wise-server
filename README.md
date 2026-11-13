@@ -60,6 +60,30 @@ Senza `SMTP_HOST` invece la richiesta di reset fallisce in modo visibile:
 token in `password_reset_tokens`, perché `requestPasswordReset` salva il token
 solo **dopo** che l'email è partita.
 
+### Mail di sistema (recupero password)
+
+Dal 13/11/2026 le mail partono dalla casella dedicata **`gc.dev.app@gmail.com`**, non da un
+indirizzo personale. Su Vercel (progetto `flow-wise-server`) servono `SMTP_HOST=smtp.gmail.com`,
+`SMTP_PORT=587`, `SMTP_SECURE=false`, `SMTP_USER`, `SMTP_PASSWORD` (una **password per le app** di
+Google, non la password dell'account), `SMTP_FROM_EMAIL="Flow Wise <gc.dev.app@gmail.com>"` e
+`FRONTEND_URL` (base del link nella mail). Una variabile cambiata vale dal deploy successivo.
+
+Il testo della mail sta in `utils/emailTemplates.js`: stile di Flow Wise (logo dal sito, card, pulsante
+nel verde primario), solo tabelle e stili inline perché i client di posta tolgono il resto, più la
+versione in testo semplice. La tabella `password_reset_tokens` (migrazione 002) sul progetto live è
+stata applicata solo il 13/11: prima il recupero password non poteva funzionare.
+
+## Backup ed export dei dati
+
+- **Backup notturno cifrato** nel repo **privato** `G-development/flow-wise-backups` (questo repo è
+  pubblico): ogni notte `pg_dump` dello schema `public` + id ed email degli utenti + un manifest con le
+  righe per tabella, cifrato con `age`; restano le ultime 30 copie. Il ripristino è provato con
+  `scripts/restore-check.sh` di quel repo (13/11: righe e saldi uguali al live). La chiave privata la
+  tiene solo Gio. Dettagli e procedura nel README del repo dei backup.
+- **Export per utente**: `GET /export` (JSON con tutte le tabelle dell'utente, senza token della banca
+  né payload grezzi del fornitore) e `GET /export/transactions.csv` (movimenti per l'Excel italiano).
+  Le regole stanno in `utils/exportService.js`; nel client c'è la sezione Settings → "Your data".
+
 ## Avvio
 
 ```bash
