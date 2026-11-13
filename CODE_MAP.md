@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `3c3c751`.
+Forma `express`, radice sorgente `.`, commit `376d54b`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -140,6 +140,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankTokenCrypto.test.js` — test
 - `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
 - `utils/categoryRules.test.js` — test
+- `utils/emailTemplates.js` — exports: const `escapeHtml`, `renderPasswordResetEmail`
+- `utils/emailTemplates.test.js` — test
 - `utils/exportService.js` — exports: const `buildTransactionsCsv`, `buildUserExport`, `CSV_HEADER`, `csvField`, `EXPORT_FORMAT`, `EXPORT_SECTIONS`, `EXPORT_VERSION`, `formatAmountIt`
 - `utils/paginatedSelect.js` — exports: const `DEFAULT_MAX_PAGES`, `DEFAULT_PAGE_SIZE`, `fetchAllRows`, `toListResponse`
 - `utils/paginatedSelect.test.js` — test
@@ -165,7 +167,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 ## migrations/
 
 - `migrations/001_create_bank_tables.sql` — Tabella per le connessioni bancarie
-- `migrations/002_create_password_reset_tokens.sql` — Tabella per i token di reset password
+- `migrations/002_create_password_reset_tokens.sql` — Tabella per i token di reset password.
 - `migrations/002_scope_bank_transaction_ids.sql` — A provider transaction ID is not necessarily unique across users, banks, or accounts.
 - `migrations/003_wallet_opening_balance.sql` — 003_wallet_opening_balance.sql
 - `migrations/004_wallet_invariants.down.sql` — 004_wallet_invariants.down.sql

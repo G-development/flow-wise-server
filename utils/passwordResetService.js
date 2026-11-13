@@ -24,6 +24,7 @@
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { renderPasswordResetEmail } from "./emailTemplates.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -68,34 +69,17 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
       throw new Error("SMTP_HOST is not configured");
     }
 
+    // Template in utils/emailTemplates.js: stile di Flow Wise, HTML inline + versione testo.
+    const { subject, html, text } = renderPasswordResetEmail({
+      resetUrl,
+      frontendUrl: process.env.FRONTEND_URL,
+    });
     const mailOptions = {
       from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
       to: email,
-      subject: "Password Reset Request - Flow Wise",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Password Reset Request</h2>
-          <p>Hello,</p>
-          <p>We received a request to reset your password. Click the button below to reset it:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="
-              background-color: #007bff;
-              color: white;
-              padding: 12px 30px;
-              text-decoration: none;
-              border-radius: 5px;
-              font-weight: bold;
-            ">Reset Password</a>
-          </div>
-          <p>Or copy this link: <a href="${resetUrl}">${resetUrl}</a></p>
-          <p style="color: #999; font-size: 12px;">
-            This link will expire in 1 hour.
-          </p>
-          <p style="color: #999; font-size: 12px;">
-            If you didn't request this, please ignore this email.
-          </p>
-        </div>
-      `,
+      subject,
+      html,
+      text,
     };
 
     const info = await transporter.sendMail(mailOptions);

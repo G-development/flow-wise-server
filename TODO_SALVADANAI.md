@@ -708,7 +708,10 @@ Supabase non sono garantiti né scaricabili, e la stessa documentazione consigli
   provata due volte su un Postgres locale.
   - [x] Gio applica la 002 nel SQL editor di Supabase (13/11)
   - [x] verifica: la tabella risponde sul live con tutte le colonne (200, 0 righe)
-  - [ ] Gio prova "Forgot password?" con la sua email (verifica anche SMTP su Vercel)
+  - [x] Gio prova "Forgot password?" con la sua email (13/11): mail arrivata da `gc.dev.app@gmail.com`
+    (casella di sistema dedicata, password per le app di Google su Vercel), password reimpostata, accesso ok
+  - [x] Pagine forgot/reset con lo stile del login (client `components/auth-shell.tsx`) e mail con lo stile
+    di Flow Wise (`utils/emailTemplates.js`: logo, card, pulsante verde, versione testo)
 - La tabella `Saving` (0 righe) non è usata dal codice: residuo, si può togliere più avanti con una migrazione
 
 **B. Ripristino provato**
