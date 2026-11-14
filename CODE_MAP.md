@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `67e5846`.
+Forma `express`, radice sorgente `.`, commit `8a7a188`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -149,7 +149,7 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `startBankSyncScheduler`, `stopBankSyncScheduler`
 - `utils/bankTokenCrypto.js` — exports: const `decryptToken`, `ENCRYPTED_TOKEN_PREFIX`, `encryptToken`, `isEncryptedToken`
 - `utils/bankTokenCrypto.test.js` — test
-- `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
+- `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `merchantLabel`, `normalizeForRules`, `ruleTextFor`, `upsertRule`
 - `utils/categoryRules.test.js` — test
 - `utils/categoryStyle.js` — exports: const `CATEGORY_COLORS`, `CATEGORY_ICONS`, `STARTER_STYLE`
 - `utils/emailTemplates.js` — exports: const `escapeHtml`, `renderPasswordResetEmail`
@@ -210,6 +210,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/016_transfer_category_english.sql` — Migrazione 016 (13/11/2026): la categoria di sistema dei trasferimenti si chiama "Transfer".
 - `migrations/017_category_color_icon.down.sql` — Annulla la 017: toglie colore e icona delle categorie.
 - `migrations/017_category_color_icon.sql` — Migrazione 017 (13/11/2026): colore e icona per categoria, scelti dall'utente.
+- `migrations/018_drop_saving_table.down.sql` — Annulla la 018: ricrea "Saving" vuota, con le colonne che aveva (lette dallo schema dell'API il 14/11/2026).
+- `migrations/018_drop_saving_table.sql` — Migrazione 018 (14/11/2026): toglie la tabella "Saving", residuo di un primo tentativo di obiettivi di
 
 ## Script di radice
 

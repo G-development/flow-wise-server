@@ -263,6 +263,8 @@ rimozione della colonna fantasma `Wallet.balance`:
 - `017_category_color_icon.sql` — `Category.color` e `Category.icon` (facoltative, solo la forma e' controllata dal
   DB; l'elenco ammesso sta in `utils/categoryStyle.js` e nel client `lib/categoryStyle.ts`). **Va applicata prima
   del server**: le categorie di partenza di un account nuovo nascono con colore e icona. Rollback nel `.down.sql`.
+- `018_drop_saving_table.sql` — toglie la tabella `Saving`, residuo mai usato dal codice e vuota sul live; si
+  ferma se trovasse righe. Rollback (ricrea la tabella vuota) nel `.down.sql`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare

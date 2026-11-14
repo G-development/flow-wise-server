@@ -67,7 +67,7 @@ router.post("/register", createAccountLimiter, validate(userRegisterSchema), asy
     // migrations/005_drop_wallet_balance.sql e non e' mai stata la fonte del saldo
     // (derivato dalle transazioni, utils/walletService.js).
     const { error: walletError } = await supabase.from("Wallet").insert({
-      name: "Default wallet",
+      name: "Main account", // 14/11/2026: nome in inglese come le categorie di partenza
       userid: userId,
       is_default: true,
     });

@@ -83,6 +83,20 @@ export const extractMerchantKey = (description, counterparty = "") => {
 };
 
 /**
+ * Nome leggibile di un movimento arrivato dalla banca (14/11/2026, riquadro "To review"): il negozio
+ * o la controparte riconosciuti da `extractMerchantKey`, con le iniziali maiuscole
+ * ("pagopa" -> "Pagopa", "verso michele scaldarella" -> "To Michele Scaldarella"). "" se non trovato.
+ */
+export const merchantLabel = (description, counterparty = "") => {
+  const key = extractMerchantKey(description, counterparty);
+  if (!key) return "";
+  const words = key.split(" ");
+  const lead = words[0] === "verso" ? "To" : words[0] === "da" ? "From" : null;
+  const rest = (lead ? words.slice(1) : words).map((word) => word.charAt(0).toUpperCase() + word.slice(1));
+  return [lead, ...rest].filter(Boolean).join(" ");
+};
+
+/**
  * Testo libero di un bonifico in entrata, normalizzato, o "". Nei movimenti Intesa sta tra il
  * codice dopo "CASH" e "Bonifico a Vostro favore" ("… CASH NOTPROVIDED Rata 4 tari Bonifico a
  * Vostro favore disposto da: MITT.: …"); "INSTANT TRANSFER" (PayPal) non e' testo dell'utente.

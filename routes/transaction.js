@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../utils/validate.js";
 import { transactionCreateSchema, transactionUpdateSchema } from "../utils/schemas.js";
 import { fetchAllRows, toListResponse } from "../utils/paginatedSelect.js";
-import { learnRuleFromCorrection } from "../utils/categoryRules.js";
+import { learnRuleFromCorrection, merchantLabel } from "../utils/categoryRules.js";
 
 const router = express.Router();
 
@@ -115,6 +115,13 @@ router.get(
       return res.status(400).json({ error: err.message });
     }
 
+    // Per i movimenti arrivati dalla banca un nome leggibile (`merchant`), usato dal riquadro
+    // "To review" della pagina Categorie al posto del testo grezzo (14/11/2026).
+    result.rows = result.rows.map((row) =>
+      row.bank_transaction_id && row.type !== "T"
+        ? { ...row, merchant: merchantLabel(row.description) || null }
+        : row
+    );
     res.status(200).json(toListResponse(result));
   })
 );

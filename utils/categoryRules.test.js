@@ -263,3 +263,16 @@ test("learnRuleFromCorrection: un'entrata normale con una categoria di spesa (se
     null
   );
 });
+
+test("merchantLabel: nome leggibile per il riquadro To review", async () => {
+  const { merchantLabel } = await import("./categoryRules.js");
+  assert.equal(
+    merchantLabel("PAGAM. BANCOMATPAY presso PAGOPA data: 11.11 ore: 20:25 identific.univoco transazione: P2B0003"),
+    "Pagopa"
+  );
+  assert.equal(
+    merchantLabel("INVIO BANCOMAT PAY Verso MICHELE SCALDARELLA data: 09.11 IBAN Benef."),
+    "To Michele Scaldarella"
+  );
+  assert.equal(merchantLabel(""), "");
+});
