@@ -61,7 +61,7 @@ Fasi 0–3, 5 e 6 pubblicate; la 4 e' in corso. Restano:
 - **Note tecniche:** `handleGoCardlessCallback` usa solo `accounts[0]` (V1b), innocuo con un conto solo. Il 14/11
   guardato: un fix vero vuole una migrazione (`bank_connections` e' unica per utente + banca, con un solo
   `account_id`) e route, import automatico e card per conto invece che per banca. Da decidere con Gio, non urgente.
-  Tabella `Saving`: migrazione 018 pronta (**da applicare**)
+  Tabella `Saving`: tolta con la migrazione 018, applicata da Gio il 14/11 (verificato: non e' piu' nello schema)
 - **14/11:** backup notturno partito da solo (GitHub alle 09:08 UTC invece delle 02:30), 2 copie sul ramo `backups`;
   wallet dei nuovi account "Main account"; nel "To review" un nome leggibile (`merchant` in `GET /transaction/all`)
 - **Revolut:** rinviato per scelta di Gio; **Enable Banking** per Trade Republic: fuori piano
