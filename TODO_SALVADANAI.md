@@ -49,8 +49,7 @@ Fasi 0–3, 5 e 6 pubblicate; la 4 e' in corso. Restano:
   + 5ª rata universita' 300, Conad 43,98 + 4,77, Luce e Gas 29,25, McDonald's 18,95, tre tabacchi per 25) e pochi euro
   di categorie diverse (un tabacchi da 8,30 in Spesa, ufficio −4,60, barbiere 17 contro 18, trasporti +1,50, bar +2,
   Casa Idea 1). Confronto definitivo a fine mese; prima va **scritta la soglia** (condizione del processo `/court`)
-- **Prossimo lavoro:** ridisegno della pagina Movements (gerarchia piu' chiara, pensata per il telefono), da progettare
-  con Gio
+- **Ridisegno della pagina Movements:** fatto il 15/11 (vedi la sezione sotto), da provare da Gio sul telefono
 - **Da vedere dal vivo:** il primo backup notturno partito da solo (13→14/11); il primo accantonamento di fine mese
   arrivato dalla banca come trasferimento da assegnare
 - **Provati da Gio sul live il 13/11:** creazione ed eliminazione di un wallet, "Set cap", colore e icona di una
@@ -800,7 +799,7 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
 - [x] Client: nuova pagina (schede, uso, regole visibili, unione, "To review"), vista in locale sui dati veri
 - [x] Colore e icona per categoria (migrazione 017, applicata da Gio il 13/11, colonne verificate), anche nel grafico delle spese della dashboard
 
-## Ridisegno della pagina Movements (deciso con Gio il 15/11/2026, da fare)
+## Ridisegno della pagina Movements (deciso con Gio il 15/11/2026, fatto lo stesso giorno)
 
 Obiettivo: una gerarchia chiara, pensata prima per il telefono. Scelte di Gio:
 - **Ordine dall'alto:** titolo e periodo (selettore compatto "Nov 2026 ▾"), i tre totali (entrate, spese, netto),
@@ -810,9 +809,12 @@ Obiettivo: una gerarchia chiara, pensata prima per il telefono. Scelte di Gio:
   categoria, il nome leggibile (`merchant` o descrizione), categoria e wallet sotto, importo a destra colorato; un
   tocco apre il dettaglio con modifica ed elimina
 - **Ricerca:** su negozio, descrizione e nota, nel periodo scelto, mentre si scrive
-- [ ] Progettare i componenti e la logica (filtri e raggruppamento in `lib/movements.ts`, con test)
-- [ ] Implementare, provare a 375 px e su computer, in chiaro e in scuro
-- [ ] Documentazione e changelog
+- [x] Progettare i componenti e la logica (`searchMovements` e `groupMovementsByDay` in `lib/movements.ts`, con test)
+- [x] Implementare, provare a 375 px e su computer, in chiaro e in scuro (in locale sui dati veri). Differenze dal
+  progetto: il periodo e' un menu "This month ▾" (con Custom… per il calendario) e la ricerca guarda anche il nome
+  della categoria
+- [x] Documentazione e changelog
+- [ ] Prova di Gio sul telefono dopo il deploy
 
 ## Fuori piano — da valutare dopo
 
