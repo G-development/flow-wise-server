@@ -800,6 +800,20 @@ Ordine proposto: A, poi B (un backup che non si è mai ripristinato non conta), 
 - [x] Client: nuova pagina (schede, uso, regole visibili, unione, "To review"), vista in locale sui dati veri
 - [x] Colore e icona per categoria (migrazione 017, applicata da Gio il 13/11, colonne verificate), anche nel grafico delle spese della dashboard
 
+## Ridisegno della pagina Movements (deciso con Gio il 15/11/2026, da fare)
+
+Obiettivo: una gerarchia chiara, pensata prima per il telefono. Scelte di Gio:
+- **Ordine dall'alto:** titolo e periodo (selettore compatto "Nov 2026 ▾"), i tre totali (entrate, spese, netto),
+  "da sistemare" (trasferimenti da assegnare) solo se ce ne sono, filtri compatti (tipo a segmenti, wallet in un menu,
+  **ricerca per testo**), poi l'elenco; i **wallet** in fondo come fila di schede scorrevole e piu' piccola
+- **Elenco per giorno, su telefono e computer:** intestazione del giorno con il totale, righe con l'icona della
+  categoria, il nome leggibile (`merchant` o descrizione), categoria e wallet sotto, importo a destra colorato; un
+  tocco apre il dettaglio con modifica ed elimina
+- **Ricerca:** su negozio, descrizione e nota, nel periodo scelto, mentre si scrive
+- [ ] Progettare i componenti e la logica (filtri e raggruppamento in `lib/movements.ts`, con test)
+- [ ] Implementare, provare a 375 px e su computer, in chiaro e in scuro
+- [ ] Documentazione e changelog
+
 ## Fuori piano — da valutare dopo
 
 - [ ] Enable Banking come provider per Trade Republic (piano gratuito "restricted production", solo conti propri). A novembre 2026 l'integrazione TR risulta recente e con problemi segnalati (consenso massimo 90 giorni, movimenti duplicati, limiti di richieste). PSD2 copre il conto di liquidità, **non il valore del portafoglio**. Da verificare sulla documentazione ufficiale prima di qualsiasi lavoro
