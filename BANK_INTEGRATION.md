@@ -110,7 +110,7 @@ Ogni mattina il workflow `.github/workflows/bank-auto-import.yml` (GitHub Action
 1. `POST /bank/scheduler/sync-now` — scarica i movimenti di tutte le banche connesse;
 2. `POST /bank/scheduler/import?limit=50` — più volte, finché `remaining` è 0 (massimo 20 lotti).
 
-Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l'import riportano errori: per esempio consenso GoCardless scaduto o categoria `Altro` mancante. Si può lanciare a mano dalla scheda **Actions** (`workflow_dispatch`).
+Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l'import riportano errori: per esempio consenso GoCardless scaduto o categoria di ripiego (`Altro` / `Other`) mancante. Si può lanciare a mano dalla scheda **Actions** (`workflow_dispatch`).
 
 **Cosa importa** (`utils/bankAutoImport.js`), per ogni banca con un wallet di destinazione impostato da *Your Bank*:
 - solo movimenti mai importati (`status = 'synced'`) e **contabilizzati** (`booking_status = 'booked'`);
@@ -119,11 +119,11 @@ Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l
 
 **Categorie: regole locali** (`utils/categoryRules.js`, tabella `category_rules` della migrazione `010`). Nessun servizio esterno: descrizioni e importi non escono da Flow-Wise. *(Fino al 2026-11-06 la categoria la sceglieva un LLM esterno, Groq: tolto per tenere i dati in casa e perché i limiti di richieste del piano gratuito mandavano interi lotti su `Altro`.)*
 - Una regola è "parola chiave → categoria" per un tipo (`I`/`E`). Combacia se la parola chiave compare a parole intere nella descrizione o nella controparte normalizzate (minuscole, senza accenti, solo lettere): `conad` trova `PAGAM. TRAMITE POS CONAD SUPERMERCATO`. Tra più regole vince la parola chiave più lunga.
-- Una regola verso una categoria disattivata o di un altro tipo viene ignorata, tranne la categoria di sistema "Trasferimento" (tipo `T`, migrazione `011`), che vale per entrambi i segni.
+- Una regola verso una categoria disattivata o di un altro tipo viene ignorata, tranne la categoria di sistema dei trasferimenti (tipo `T`, migrazione `011`; si chiama "Transfer" dalla `016`), che vale per entrambi i segni.
 - **Rimborsi (fase 5, migrazione 014):** una regola su un movimento in entrata che punta a una categoria di **spesa** lo importa come rimborso (`is_refund`), che riduce quella spesa. Una regola sul testo libero del bonifico ("Rata 4 tari" → `tari`) vince sempre su una regola sulla controparte (`da …`/`verso …`); un rimborso si impara solo dal testo libero, mai dal nome di chi lo manda.
-- **Trasferimenti:** un movimento la cui regola punta a "Trasferimento" entra come `T` **da assegnare**. Il wallet dell'import è il conto: origine per un'uscita (`wallet_id`), destinazione per un'entrata (`to_wallet_id`); l'altro lato resta vuoto e si sceglie nel riquadro dei trasferimenti da assegnare in `/movements` del client (oppure, con "Not a transfer", il movimento diventa spesa o entrata e la regola si riscrive). Il saldo del conto è giusto da subito, quello dell'altro wallet si muove all'assegnazione. Una correzione verso "Trasferimento" impara la categoria (col tipo del segno), mai il wallet.
-- Senza regola il movimento va nella categoria `Altro` del suo tipo; senza una `Altro` attiva non viene importato e resta `synced`.
-- **Le regole si imparano dalle correzioni:** quando cambi la categoria di un movimento importato dalla banca (`PUT /transaction/:id`), il server ricava il nome del negozio o della controparte dal movimento bancario (`extractMerchantKey`, per esempio `conad supermercato`, `verso mario rossi`) e salva o aggiorna la regola (`source = 'learned'`). Non impara mai `Altro`.
+- **Trasferimenti:** un movimento la cui regola punta alla categoria "Transfer" entra come `T` **da assegnare**. Il wallet dell'import è il conto: origine per un'uscita (`wallet_id`), destinazione per un'entrata (`to_wallet_id`); l'altro lato resta vuoto e si sceglie nel riquadro dei trasferimenti da assegnare in `/movements` del client (oppure, con "Not a transfer", il movimento diventa spesa o entrata e la regola si riscrive). Il saldo del conto è giusto da subito, quello dell'altro wallet si muove all'assegnazione. Una correzione verso "Transfer" impara la categoria (col tipo del segno), mai il wallet.
+- Senza regola il movimento va nella categoria di ripiego del suo tipo, `Altro` oppure `Other` (gli account nati dal 13/11/2026 hanno `Other`, entrambi i nomi sono riconosciuti); senza una attiva non viene importato e resta `synced`.
+- **Le regole si imparano dalle correzioni:** quando cambi la categoria di un movimento importato dalla banca (`PUT /transaction/:id`), il server ricava il nome del negozio o della controparte dal movimento bancario (`extractMerchantKey`, per esempio `conad supermercato`, `verso mario rossi`) e salva o aggiorna la regola (`source = 'learned'`). Non impara mai la categoria di ripiego (`Altro` / `Other`). Dal 13/11 le regole si **vedono e si modificano** nella pagina Categorie del client (`GET/POST/DELETE /category-rules`); sono sempre per utente.
 - Le regole iniziali si inseriscono una volta (`source = 'manual'`); non c'è ancora una schermata per gestirle.
 
 **Niente doppioni:** l'indice univoco su `Transaction.bank_transaction_id` fa ignorare (`ON CONFLICT DO NOTHING`) un movimento già importato, anche se import manuale e automatico si sovrappongono. Il conteggio finisce in `alreadyImported`.
@@ -144,11 +144,21 @@ Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l
 2. Le transazioni vengono filtrate per periodo (default: dal 1° del mese corrente a oggi).
 3. L'utente seleziona una o più transazioni (selezione singola o massiva con checkbox header).
 4. Apre il modale di importazione ([ImportTransactionDialog.tsx](../flow-wise-client/app/settings/yourbank/ImportTransactionDialog.tsx)).
-5. Sceglie il **Wallet di destinazione** e, **per ogni movimento**, la **Categoria**: un menu filtrato sul tipo atteso dal segno dell'importo, più "Trasferimento" (il movimento entra come trasferimento da assegnare), precompilato da un suggerimento calcolato nel client (`lib/bankCategorySuggestion.ts` del client — sul server non esiste codice di categorizzazione):
+5. Sceglie il **Wallet di destinazione** e, **per ogni movimento**, la **Categoria**: un menu filtrato sul tipo atteso dal segno dell'importo, più "Transfer" (il movimento entra come trasferimento da assegnare), precompilato da un suggerimento calcolato nel client (`lib/bankCategorySuggestion.ts` del client — sul server non esiste codice di categorizzazione):
    - il suggerimento è *sicuro* solo se il nome di **una sola** categoria attiva del tipo giusto (almeno 3 caratteri) compare come parola intera in descrizione + controparte normalizzate;
-   - altrimenti (nessuna corrispondenza o pareggio) il movimento è marcato **incerto** (icona di avviso) e precompilato con la categoria `Altro` del suo tipo; se `Altro` non esiste il modale propone di crearla, e se l'utente rifiuta la categoria va scelta a mano.
+   - altrimenti (nessuna corrispondenza o pareggio) il movimento è marcato **incerto** (icona di avviso) e precompilato con la categoria di ripiego del suo tipo; se manca il modale propone di creare "Other", e se l'utente rifiuta la categoria va scelta a mano.
 6. All'invio il client raggruppa i movimenti per categoria e chiama `POST /bank/import` con `{ transactionIds, walletId, categoryId }` **una volta per gruppo**, perché la route accetta un solo `categoryId` per chiamata. Se un gruppo fallisce dopo che altri sono andati a buon fine, l'import è parziale e il modale lo segnala. Per ogni chiamata il server:
    - Crea i record nella tabella `Transaction` di Flow Wise. Il tipo è `defaultType` se il campo opzionale è presente nella richiesta, altrimenti è deciso dal segno dell'importo (`amount >= 0` &rarr; Entrata `"I"`, `amount < 0` &rarr; Spesa `"E"`); l'importo viene salvato in valore assoluto. Il client attuale non invia `defaultType`, quindi per l'import da interfaccia vale sempre il segno.
    - Collega ogni riga al movimento di origine (`bank_transaction_id`) e ignora quelli già importati, che finiscono in `alreadyImportedCount`.
    - Aggiorna lo stato in `bank_transactions` a `"imported"`.
    - Invalida la cache TanStack Query per aggiornare istantaneamente Dashboard, Wallet ed elenchi Entrate/Spese.
+
+## Aggiornamenti del 13–14/11/2026
+
+- Il wallet dell'import automatico e dell'import manuale dev'essere un **conto**: un salvadanaio risponde `400
+  POT_NOT_ALLOWED`. In piu' (13/11) nessuna entrata o spesa puo' stare su un salvadanaio, da nessuna parte: i salvadanai
+  si muovono solo con trasferimenti dal o verso il loro conto.
+- `GET /transaction/all` aggiunge ai movimenti arrivati dalla banca `merchant`, un nome leggibile ricavato da
+  `extractMerchantKey` (`merchantLabel` in `utils/categoryRules.js`), usato dal riquadro "To review" del client.
+- V1b: `handleGoCardlessCallback` collega ancora solo il primo conto della requisition; supportarne piu' di uno vuole una
+  migrazione (`bank_connections` e' unica per utente + banca). Non urgente con un conto solo.

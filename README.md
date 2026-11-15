@@ -101,9 +101,9 @@ Tutte le route principali sono montate in `app.js`. Su Vercel l'intera app è un
 
 | Prefisso | Funzioni |
 | --- | --- |
-| `/users` | Registrazione, profilo, avatar e `DELETE /users/me` (elimina account: conferma con la propria email, cancella tutti i dati e il login; `utils/accountDeletion.js`) |
+| `/users` | Registrazione (crea profilo, wallet "Main account" e le categorie di partenza in inglese con colore e icona), profilo, avatar e `DELETE /users/me` (elimina account: conferma con la propria email, cancella tutti i dati e il login; `utils/accountDeletion.js`) |
 | `/auth` | Reset password via email, verifica token e aggiornamento password |
-| `/transaction` | `GET /all`, `GET /:id`, creazione, modifica ed eliminazione transazioni |
+| `/transaction` | `GET /all` (con `merchant` per i movimenti della banca), `GET /:id`, creazione, modifica ed eliminazione; un salvadanaio accetta solo trasferimenti con il suo conto |
 | `/income`, `/expense` | Elenchi filtrabili per data e tipo |
 | `/category`, `/wallet` | CRUD categorie e wallet; `GET /category/stats`, `POST /category/:id/merge` |
 | `/category-rules` | Regole di categoria per utente: elenco, aggiunta a mano, eliminazione |

@@ -40,12 +40,17 @@ Una voce di una fase si apre solo dopo che la fase precedente è chiusa.
   (landing in inglese con la nuova voce del changelog, Privacy in inglese). Nel piano manca la 2ª rata dell'assicurazione
   (3/10/2027): probabilmente eliminata da Gio dall'app, da confermare
 
-## Cosa resta aperto (riepilogo al 13/11/2026 sera)
+## Cosa resta aperto (riepilogo al 15/11/2026)
 
 Fasi 0–3, 5 e 6 pubblicate; la 4 e' in corso. Restano:
 
-- **Fase 4:** novembre e dicembre in parallelo con l'Excel; report a fine novembre quando Gio passa l'Excel, poi la
-  decisione sull'Excel. Prima del confronto va **scritta la soglia** di scarto accettata (condizione del processo `/court`)
+- **Fase 4:** novembre e dicembre in parallelo con l'Excel. **Controllo di meta' novembre (15/11, sola lettura):**
+  Excel 1.415,48 €, app 942,43 €; lo scarto di 473,05 € si spiega tutto con movimenti non ancora contabilizzati (AdE 60
+  + 5ª rata universita' 300, Conad 43,98 + 4,77, Luce e Gas 29,25, McDonald's 18,95, tre tabacchi per 25) e pochi euro
+  di categorie diverse (un tabacchi da 8,30 in Spesa, ufficio −4,60, barbiere 17 contro 18, trasporti +1,50, bar +2,
+  Casa Idea 1). Confronto definitivo a fine mese; prima va **scritta la soglia** (condizione del processo `/court`)
+- **Prossimo lavoro:** ridisegno della pagina Movements (gerarchia piu' chiara, pensata per il telefono), da progettare
+  con Gio
 - **Da vedere dal vivo:** il primo backup notturno partito da solo (13→14/11); il primo accantonamento di fine mese
   arrivato dalla banca come trasferimento da assegnare
 - **Provati da Gio sul live il 13/11:** creazione ed eliminazione di un wallet, "Set cap", colore e icona di una
