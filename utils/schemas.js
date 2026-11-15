@@ -176,6 +176,11 @@ export const bankAutoImportSchema = z.object({
 });
 
 /** DELETE /users/me: la propria email, scritta per conferma (R4, 13/11/2026). */
+/** PUT /users/settings (16/11/2026): per ora solo il giorno di inizio del mese. */
+export const userSettingsSchema = z.object({
+  monthStartDay: z.number().int().min(1, "Pick a day from 1 to 31").max(31, "Pick a day from 1 to 31"),
+});
+
 export const accountDeleteSchema = z.object({
   confirmEmail: z.string().trim().min(1, "Type your email to confirm"),
 });

@@ -49,7 +49,8 @@ Fasi 0–3, 5 e 6 pubblicate; la 4 e' in corso. Restano:
   + 5ª rata universita' 300, Conad 43,98 + 4,77, Luce e Gas 29,25, McDonald's 18,95, tre tabacchi per 25) e pochi euro
   di categorie diverse (un tabacchi da 8,30 in Spesa, ufficio −4,60, barbiere 17 contro 18, trasporti +1,50, bar +2,
   Casa Idea 1). Confronto definitivo a fine mese; prima va **scritta la soglia** (condizione del processo `/court`)
-- **Ridisegno della pagina Movements:** fatto il 15/11 (vedi la sezione sotto), da provare da Gio sul telefono
+- **Ridisegno della pagina Movements:** fatto il 15/11 (vedi la sezione sotto)
+- **Dashboard fissa e inizio del mese:** fatte il 16/11 (sezione sotto), da provare da Gio dopo il deploy
 - **Da vedere dal vivo:** il primo backup notturno partito da solo (13→14/11); il primo accantonamento di fine mese
   arrivato dalla banca come trasferimento da assegnare
 - **Provati da Gio sul live il 13/11:** creazione ed eliminazione di un wallet, "Set cap", colore e icona di una
@@ -815,6 +816,23 @@ Obiettivo: una gerarchia chiara, pensata prima per il telefono. Scelte di Gio:
   della categoria
 - [x] Documentazione e changelog
 - [ ] Prova di Gio sul telefono dopo il deploy
+
+## Dashboard fissa e inizio del mese (deciso con Gio il 16/11/2026)
+
+Gio: "rimuoviamo il layout personalizzabile", pagina fissa. Scelte:
+- **Ordine:** periodo (condiviso con Movements), saldo conti | salvadanai, "To fix" subito sotto il saldo (solo se
+  c'e' qualcosa, **contato nel periodo scelto**: trasferimenti da assegnare e movimenti To review), il periodo con il
+  confronto (con This month lo stesso punto del mese prima), "Coming up" (versamento del mese nei salvadanai e
+  prossime rate del piano), spese per categoria con la variazione, ritmo delle spese. **Niente ultimi movimenti.**
+- **Inizio del mese scelto dall'utente:** giorno fisso 1–31 (nei mesi corti l'ultimo giorno), vale per **tutta
+  l'app** (dashboard e Movements), il **piano annuale resta a calendario**. Si sceglie **al primo accesso** (anche chi
+  ha gia' un account, Gio compreso) e si cambia in Settings
+- [x] Server: `GET`/`PUT /users/settings`, salvato in `Profile.settings.monthStartDay` (JSON gia' esistente, nessuna
+  migrazione), con test
+- [x] Client: `lib/period.ts` e `lib/dashboard.ts` con test; finestra del primo accesso; Settings; dashboard nuova;
+  griglia, widget e dnd-kit tolti. Provato in locale a 375 px e su computer (senza salvare la scelta di Gio)
+- [ ] Gio sceglie l'inizio del mese al primo accesso dopo il deploy e prova la dashboard sul telefono
+- [ ] Piu' avanti, con lista e conferma di Gio: togliere `GET`/`PUT /dashboard-layout` e la tabella `dashboard_layouts`
 
 ## Fuori piano — da valutare dopo
 

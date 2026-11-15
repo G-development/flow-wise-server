@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `41f0e7d`.
+Forma `express`, radice sorgente `.`, commit `b68df88`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -119,8 +119,11 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `routes/user.js` — mount `/users` — exports: default `router`
   - `POST /users/register` — pubblico
   - `GET /users/profile` — `requireAuth`
+  - `GET /users/settings` — `requireAuth`
+  - `PUT /users/settings` — `requireAuth`
   - `POST /users/profile/photo` — `requireAuth`
   - `DELETE /users/me` — `requireAuth`
+- `routes/user.settings.test.js` — test
 - `routes/wallet.balance.test.js` — test
 - `routes/wallet.delete.test.js` — test
 - `routes/wallet.invariants.test.js` — test
@@ -159,8 +162,9 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/paginatedSelect.test.js` — test
 - `utils/passwordResetService.js` — exports: const `createPasswordResetToken`, `findUserByEmail`, `isValidPassword`, `LIST_USERS_MAX_PAGES`, `LIST_USERS_PAGE_SIZE`, `requestPasswordReset`, `resetUserPassword`, `sendPasswordResetEmail`, `verifyResetToken`
 - `utils/passwordResetService.test.js` — test
-- `utils/schemas.js` — exports: const `accountDeleteSchema`, `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryMergeSchema`, `categoryRuleCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `walletCreateSchema`, `walletUpdateSchema`
+- `utils/schemas.js` — exports: const `accountDeleteSchema`, `annualInstallmentSchema`, `annualInstallmentUpdateSchema`, `annualItemCreateSchema`, `annualItemUpdateSchema`, `annualPaymentSchema`, `bankAutoImportSchema`, `categoryCreateSchema`, `categoryMergeSchema`, `categoryRuleCreateSchema`, `categoryUpdateSchema`, `importCsvSchema`, `transactionCreateSchema`, `transactionUpdateSchema`, `userRegisterSchema`, `userSettingsSchema`, `walletCreateSchema`, `walletUpdateSchema`
 - `utils/schemas.test.js` — test
+- `utils/userSettings.js` — exports: fn `mergeSettings`, `publicSettings`, `readMonthStartDay`
 - `utils/validate.js` — exports: const `validate`
 - `utils/walletService.js` — exports: const `getWalletBalance`, `getWalletsWithBalances`, `sumBalancesInCents`
 - `utils/walletService.test.js` — test

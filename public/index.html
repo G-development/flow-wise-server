@@ -342,6 +342,22 @@
           </li>
           <li class="endpoint-item">
             <div class="endpoint-header">
+              <span class="endpoint-method method-GET">GET</span>
+              <code class="endpoint-path">/users/settings</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">User settings: <code>{ monthStartDay }</code>, the day the user's month starts (1–31), <code>null</code> until chosen</div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
+              <span class="endpoint-method method-PUT">PUT</span>
+              <code class="endpoint-path">/users/settings</code>
+              <span class="endpoint-auth auth-bearer">BEARER</span>
+            </div>
+            <div class="endpoint-description">Save <code>{ monthStartDay }</code> (integer 1–31, <code>400</code> otherwise), keeping the other keys of <code>Profile.settings</code></div>
+          </li>
+          <li class="endpoint-item">
+            <div class="endpoint-header">
               <span class="endpoint-method method-DELETE">DELETE</span>
               <code class="endpoint-path">/users/me</code>
               <span class="endpoint-auth auth-bearer">BEARER</span>

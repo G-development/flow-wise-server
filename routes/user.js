@@ -5,10 +5,11 @@ import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 import rateLimit from "express-rate-limit";
 import { validate } from "../utils/validate.js";
-import { userRegisterSchema, accountDeleteSchema } from "../utils/schemas.js";
+import { userRegisterSchema, accountDeleteSchema, userSettingsSchema } from "../utils/schemas.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { deleteUserAccount, emailMatches } from "../utils/accountDeletion.js";
 import { STARTER_STYLE } from "../utils/categoryStyle.js";
+import { mergeSettings, publicSettings } from "../utils/userSettings.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -138,6 +139,47 @@ router.get("/profile", requireAuth, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// GET /users/settings — impostazioni dell'utente (16/11/2026): { monthStartDay: 1–31 | null }.
+// null = non ancora scelto (anche senza riga Profile): il client lo chiede al primo accesso.
+router.get(
+  "/settings",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { data, error } = await supabase.from("Profile").select("settings").eq("id", req.user.id);
+    if (error) throw new Error(error.message);
+    res.json(publicSettings(data?.[0]?.settings));
+  })
+);
+
+// PUT /users/settings — salva il giorno di inizio del mese, tenendo le altre chiavi di `settings`.
+router.put(
+  "/settings",
+  requireAuth,
+  validate(userSettingsSchema),
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { data, error } = await supabase.from("Profile").select("settings").eq("id", userId);
+    if (error) throw new Error(error.message);
+
+    const patch = { monthStartDay: req.body.monthStartDay };
+    if (data?.length) {
+      const settings = mergeSettings(data[0].settings, patch);
+      const { error: updateError } = await supabase.from("Profile").update({ settings }).eq("id", userId);
+      if (updateError) throw new Error(updateError.message);
+      return res.json(publicSettings(settings));
+    }
+
+    // Account senza riga Profile (creato prima che la registrazione la scrivesse): la si crea qui.
+    const email = String(req.user.email ?? "");
+    const name = email.split("@")[0] || "User";
+    const { error: insertError } = await supabase
+      .from("Profile")
+      .insert({ id: userId, name, username: name, email, currency: "EUR", settings: patch });
+    if (insertError) throw new Error(insertError.message);
+    res.json(publicSettings(patch));
+  })
+);
 
 // POST /users/profile/photo
 router.post(
