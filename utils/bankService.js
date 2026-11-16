@@ -1214,7 +1214,7 @@ export const buildAppTransactionFromBank = (
   const base = {
     userid: userId,
     description: bankTxn.description || bankTxn.counterparty || "Movimento Bancario",
-    note: `Importato da banca (${bankTxn.bank_id})`,
+    note: null, // niente nota automatica (16/11/2026): la provenienza la dice gia' bank_transaction_id
     amount: Math.abs(rawAmount),
     date: new Date(bankTxn.date).toISOString(),
     category_id: Number(categoryId),
