@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `b68df88`.
+Forma `express`, radice sorgente `.`, commit `7ac0c10`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -149,7 +149,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `utils/bankAutoImport.test.js` — test
 - `utils/bankService.js` — exports: const `buildAppTransactionFromBank`, `createBankOAuthState`, `disconnectBankConnection`, `ensureValidToken`, `fetchAccountBalance`, `fetchTransactions`, `formatSyncedTransaction`, `generateMockBankTransactions`, `getAuthorizationUrl`, `getBankConnection`, `getBankSetupStatus`, `getGoCardlessToken`, `getSupportedBanks`, `getUserBankConnections`, `getUserBankTransactions`, `handleGoCardlessCallback`, `importBankTransactionsToApp`, `insertImportedTransactions`, `isMockBankModeEnabled`, `markBankTransactionsImported`, `normalizeAccountBalance`, `normalizeGoCardlessTransactions`, `POPULAR_BANKS`, `saveBankConnection`, `syncBankTransactions`, `toAutoImportView`, `updateBankAutoImport`, `verifyBankOAuthState`
 - `utils/bankService.test.js` — test
-- `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `startBankSyncScheduler`, `stopBankSyncScheduler`
+- `utils/bankSyncScheduler.js` — exports: const `forceBankSync`, `getBankSyncStatus`, `isPendingAuthorization`, `startBankSyncScheduler`, `stopBankSyncScheduler`
+- `utils/bankSyncScheduler.test.js` — test
 - `utils/bankTokenCrypto.js` — exports: const `decryptToken`, `ENCRYPTED_TOKEN_PREFIX`, `encryptToken`, `isEncryptedToken`
 - `utils/bankTokenCrypto.test.js` — test
 - `utils/categoryRules.js` — exports: const `categorizeWithRules`, `extractFreeText`, `extractMerchantKey`, `findMatchingRule`, `freeTextKey`, `isValidKeyword`, `learnRuleFromCorrection`, `loadRules`, `merchantLabel`, `normalizeForRules`, `ruleTextFor`, `upsertRule`

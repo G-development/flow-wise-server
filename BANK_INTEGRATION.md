@@ -110,7 +110,7 @@ Ogni mattina il workflow `.github/workflows/bank-auto-import.yml` (GitHub Action
 1. `POST /bank/scheduler/sync-now` — scarica i movimenti di tutte le banche connesse;
 2. `POST /bank/scheduler/import?limit=50` — più volte, finché `remaining` è 0 (massimo 20 lotti).
 
-Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l'import riportano errori: per esempio consenso GoCardless scaduto o categoria di ripiego (`Altro` / `Other`) mancante. Si può lanciare a mano dalla scheda **Actions** (`workflow_dispatch`).
+Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l'import riportano errori: per esempio consenso GoCardless scaduto o categoria di ripiego (`Altro` / `Other`) mancante. Dal 16/11/2026 un errore su una banca **non blocca l'import delle altre**: il passo di import parte comunque e il job fallisce alla fine. Una connessione con l'autorizzazione mai completata (segnaposto `pending_account`, l'utente non è tornato dalla banca) si salta senza errore (`skipped` nella risposta di `sync-now`): il 15 e 16/11 una connessione così, di un altro account, aveva fermato l'import di tutti. Si può lanciare a mano dalla scheda **Actions** (`workflow_dispatch`).
 
 **Cosa importa** (`utils/bankAutoImport.js`), per ogni banca con un wallet di destinazione impostato da *Your Bank*:
 - solo movimenti mai importati (`status = 'synced'`) e **contabilizzati** (`booking_status = 'booked'`);

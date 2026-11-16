@@ -20,7 +20,7 @@
  *    ogni scrittura sulla tabella: senza, un test sul limite di 3 non proverebbe
  *    niente (il fake accetterebbe il quarto wallet).
  *
- * Supporta: filtri `eq`/`is`/`in`, upsert con `on_conflict`, `order` multi-colonna con direzione, `offset`/
+ * Supporta: filtri `eq`/`is`/`in` (anche negati con `not.`), upsert con `on_conflict`, `order` multi-colonna con direzione, `offset`/
  * `limit`, `count=exact` (via header `Content-Range`), `Accept:
  * application/vnd.pgrst.object+json` (il `.single()`), insert/update/delete con
  * `return=representation`. Tutto il resto fallisce esplicitamente invece di
@@ -125,15 +125,18 @@ const applyFilters = (rows, searchParams) => {
       continue;
     }
 
-    const match = /^(eq|is|gte|lte|in)\.(.*)$/.exec(raw);
+    // `not.<op>.<valore>` nega la condizione (es. `.not("user_id", "is", null)` della sincronizzazione)
+    const negated = raw.startsWith("not.");
+    const condition = negated ? raw.slice(4) : raw;
+    const match = /^(eq|is|gte|lte|in)\.(.*)$/.exec(condition);
     if (!match) {
       throw new Error(
-        `fake supabase: operatore non supportato in "${column}=${raw}" (solo eq/is/gte/lte/in)`
+        `fake supabase: operatore non supportato in "${column}=${raw}" (solo eq/is/gte/lte/in, anche con not.)`
       );
     }
 
     const [, operator, expected] = match;
-    out = out.filter((row) => matchesCondition(row, column, operator, expected));
+    out = out.filter((row) => matchesCondition(row, column, operator, expected) !== negated);
   }
 
   return out;

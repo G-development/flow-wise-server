@@ -1,7 +1,9 @@
 # Import automatico giornaliero dei movimenti bancari in Flow-Wise.
 #
-# 1. POST /bank/scheduler/sync-now  -> scarica i movimenti da GoCardless (ultimi 90 giorni)
-# 2. POST /bank/scheduler/import    -> li importa a lotti in entrate/spese, finche' remaining = 0
+# 1. POST /bank/scheduler/sync-now  -> scarica i movimenti da GoCardless (ultimi 90 giorni);
+#    le connessioni mai autorizzate si saltano
+# 2. POST /bank/scheduler/import    -> li importa a lotti in entrate/spese, finche' remaining = 0.
+#    Parte anche se qualche banca ha dato errore nel passo 1; il job fallisce alla fine (16/11/2026)
 #
 # Il repo e' pubblico: i log di questo workflow sono visibili a chiunque. Il server risponde
 # solo con conteggi ed errori per banca, e qui si stampano solo quelli.
@@ -45,10 +47,17 @@ jobs:
             -X POST -H "x-scheduler-secret: $SCHEDULER_SECRET" \
             "$SERVER_URL/bank/scheduler/sync-now")
           echo "HTTP $status"
-          jq '{success, connections, synced, results: [.results[] | {bank, synced, error}]}' sync.json || cat sync.json
-          if [ "$status" != "200" ] || [ "$(jq -r .success sync.json)" != "true" ]; then
-            echo "::error::Sincronizzazione fallita (vedi errori sopra)"
+          jq '{success, connections, synced, results: [.results[] | {bank, synced, error, skipped}]}' sync.json || cat sync.json
+          # Server giu' o risposta illeggibile: niente import.
+          if [ "$status" != "200" ]; then
+            echo "::error::Sincronizzazione fallita: HTTP $status"
             exit 1
+          fi
+          # Errore su qualche banca (16/11/2026): l'import va avanti per le altre, che si sono
+          # sincronizzate; il job fallisce comunque alla fine, cosi' la mail di GitHub arriva.
+          if [ "$(jq -r .success sync.json)" != "true" ]; then
+            echo "::warning::Sincronizzazione con errori su alcune banche (vedi sopra): l'import continua"
+            echo "SYNC_FAILED=1" >> "$GITHUB_ENV"
           fi
 
       - name: Import into Flow-Wise
@@ -70,3 +79,9 @@ jobs:
             echo "::error::Import completato con errori (vedi sopra)"
             exit 1
           fi
+
+      - name: Report sync errors
+        if: env.SYNC_FAILED == '1'
+        run: |
+          echo "::error::Sincronizzazione con errori su alcune banche: l'import delle altre e' stato fatto"
+          exit 1

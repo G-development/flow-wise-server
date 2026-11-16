@@ -14,6 +14,16 @@ const supabase = createClient(
 let scheduledTasks = new Map();
 
 /**
+ * Connessione con l'autorizzazione mai completata (16/11/2026): `GET /bank/connect` salva un
+ * segnaposto `pending_account` in attesa del callback della banca. Se l'utente non torna dalla
+ * banca, la riga resta li': non c'e' un conto da leggere e non e' un errore da segnalare.
+ * Prima la sincronizzazione di tutti la contava come errore e il workflow saltava l'import per
+ * tutti gli utenti (15–16/11).
+ */
+export const isPendingAuthorization = (connection) =>
+  !connection?.account_id || connection.account_id === "pending_account";
+
+/**
  * Sincronizza i movimenti di una connessione.
  * Restituisce un esito con soli conteggi: finisce nella risposta di
  * POST /bank/scheduler/sync-now, letta dai log pubblici di GitHub Actions.
@@ -23,6 +33,9 @@ const syncUserBankTransactions = async (userId, bankId) => {
     const connection = await getBankConnection(userId, bankId);
     if (!connection) {
       return { bank: bankId, synced: 0, error: "Connessione non trovata" };
+    }
+    if (isPendingAuthorization(connection)) {
+      return { bank: bankId, synced: 0, error: null, skipped: "authorization not completed" };
     }
 
     const accessToken = await ensureValidToken(userId, bankId);
@@ -55,8 +68,9 @@ const getAllBankConnections = async () => {
 };
 
 /**
- * Sincronizza tutte le connessioni bancarie.
- * @returns {{ connections: number, synced: number, results: Array<{bank, synced, error}> }}
+ * Sincronizza tutte le connessioni bancarie. Quelle con l'autorizzazione mai completata si
+ * saltano (`skipped`), senza errore.
+ * @returns {{ connections: number, synced: number, results: Array<{bank, synced, error, skipped?}> }}
  */
 const syncAllUserTransactions = async () => {
   const connections = await getAllBankConnections();
