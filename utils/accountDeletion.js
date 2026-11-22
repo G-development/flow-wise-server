@@ -23,7 +23,6 @@ export const DELETION_STEPS = [
   { table: "category_rules", owner: "user_id" },
   { table: "Transaction", owner: "userid" },
   { table: "Budget", owner: "userid" },
-  { table: "dashboard_layouts", owner: "user_id" },
   { table: "password_reset_tokens", owner: "user_id" },
   { table: "bank_transactions", owner: "user_id" },
   { table: "bank_connections", owner: "user_id" },

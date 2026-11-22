@@ -5,7 +5,7 @@
 Indice file-per-file generato dal codice, non dalla documentazione. Serve a sapere **dove** sta una
 cosa senza leggere il repo: architettura e regole locali stanno altrove (vedi `AGENTS.md`).
 
-Forma `express`, radice sorgente `.`, commit `7ac0c10`.
+Forma `express`, radice sorgente `.`, commit `a3a2674`.
 
 ```bash
 node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/flow-wise-server \
@@ -28,7 +28,6 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 | `routes/bank.js` | `/bank` |
 | `routes/category.js` | `/category` |
 | `routes/categoryRules.js` | `/category-rules` |
-| `routes/dashboard-layout.js` | `/dashboard-layout` |
 | `routes/expense.js` | `/expense` |
 | `routes/export.js` | `/export` |
 | `routes/import.js` | `/import` |
@@ -91,9 +90,6 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
   - `GET /category-rules` — `requireAuth`
   - `POST /category-rules` — `requireAuth`
   - `DELETE /category-rules/:id` — `requireAuth`
-- `routes/dashboard-layout.js` — mount `/dashboard-layout` — exports: default `router`
-  - `GET /dashboard-layout` — `requireAuth`
-  - `PUT /dashboard-layout` — `requireAuth`
 - `routes/expense.js` — mount `/expense` — exports: default `router`
   - `GET /expense/all` — `requireAuth`
 - `routes/export.js` — mount `/export` — exports: default `router`
@@ -217,6 +213,8 @@ node <skill repo-context-and-maps>/scripts/repo-map.mjs /Users/giocuo/Projects/f
 - `migrations/017_category_color_icon.sql` — Migrazione 017 (13/11/2026): colore e icona per categoria, scelti dall'utente.
 - `migrations/018_drop_saving_table.down.sql` — Annulla la 018: ricrea "Saving" vuota, con le colonne che aveva (lette dallo schema dell'API il 14/11/2026).
 - `migrations/018_drop_saving_table.sql` — Migrazione 018 (14/11/2026): toglie la tabella "Saving", residuo di un primo tentativo di obiettivi di
+- `migrations/019_drop_dashboard_layouts.down.sql` — Annulla la 019: ricrea "dashboard_layouts" vuota, come era sul live (schema letto il 22/11/2026).
+- `migrations/019_drop_dashboard_layouts.sql` — Migrazione 019 (22/11/2026): toglie la tabella "dashboard_layouts" e la sua funzione di trigger.
 
 ## Script di radice
 

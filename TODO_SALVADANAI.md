@@ -832,7 +832,8 @@ Gio: "rimuoviamo il layout personalizzabile", pagina fissa. Scelte:
 - [x] Client: `lib/period.ts` e `lib/dashboard.ts` con test; finestra del primo accesso; Settings; dashboard nuova;
   griglia, widget e dnd-kit tolti. Provato in locale a 375 px e su computer (senza salvare la scelta di Gio)
 - [ ] Gio sceglie l'inizio del mese al primo accesso dopo il deploy e prova la dashboard sul telefono
-- [ ] Piu' avanti, con lista e conferma di Gio: togliere `GET`/`PUT /dashboard-layout` e la tabella `dashboard_layouts`
+- [x] Tolti `GET`/`PUT /dashboard-layout` e la tabella `dashboard_layouts` (22/11, migrazione 019; sul live aveva 2
+  righe di vecchi layout, cancellate con la conferma di Gio)
 
 ## Fuori piano — da valutare dopo
 

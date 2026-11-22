@@ -31,7 +31,6 @@ const baseline = () => ({
   category_rules: both("user_id", { id: 1, keyword: "bar" }),
   Transaction: both("userid", { id: 1, amount: 5, type: "E" }),
   Budget: both("userid", { id: 1 }),
-  dashboard_layouts: both("user_id", { id: 1, widgets: [] }),
   password_reset_tokens: both("user_id", { id: 1, token: "t" }),
   bank_transactions: both("user_id", { id: 1, amount: 1 }),
   bank_connections: both("user_id", { id: 1, bank_id: "INTESA" }),

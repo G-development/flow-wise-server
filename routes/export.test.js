@@ -45,7 +45,6 @@ const baseline = () => ({
     { id: 2, user_id: U2, item_id: 9, due_date: "2027-01-01", amount_cents: 1, is_paid: false },
   ],
   category_rules: [{ id: 1, user_id: U1, keyword: "panificio", type: "E", category_id: 101 }],
-  dashboard_layouts: [{ user_id: U1, widgets: [] }],
   bank_connections: [
     {
       id: "c1", user_id: U1, bank_id: "INTESA", account_id: "acc-1",
@@ -114,7 +113,7 @@ test("GET /export: tutte le sezioni, solo le righe dell'utente del token", async
   assert.deepEqual(body.user, { id: U1, email: "user1@example.com" });
   assert.deepEqual(body.counts, {
     profile: 1, wallets: 2, categories: 2, transactions: 3, budgets: 0, annual_items: 1,
-    annual_installments: 1, category_rules: 1, dashboard_layouts: 1, bank_connections: 1, bank_transactions: 1,
+    annual_installments: 1, category_rules: 1, bank_connections: 1, bank_transactions: 1,
   });
   for (const [key, rows] of Object.entries(body.data)) {
     assert.equal(rows.length, body.counts[key], `counts.${key} non torna con le righe`);
@@ -129,7 +128,7 @@ test("GET /export: tutte le sezioni, solo le righe dell'utente del token", async
 test("GET /export: ogni query filtra per l'utente del token, mai per quello della richiesta", async () => {
   await get(`/export?userid=${U2}`);
   const queries = fake.restRequests();
-  assert.ok(queries.length >= 11);
+  assert.ok(queries.length >= 10);
   for (const q of queries) {
     const filter = q.params.userid ?? q.params.user_id ?? q.params.id;
     assert.equal(filter, `eq.${U1}`, `query su ${q.table ?? q.path} senza il filtro dell'utente`);

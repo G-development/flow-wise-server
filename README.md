@@ -107,7 +107,6 @@ Tutte le route principali sono montate in `app.js`. Su Vercel l'intera app è un
 | `/income`, `/expense` | Elenchi filtrabili per data e tipo |
 | `/category`, `/wallet` | CRUD categorie e wallet; `GET /category/stats`, `POST /category/:id/merge` |
 | `/category-rules` | Regole di categoria per utente: elenco, aggiunta a mano, eliminazione |
-| `/dashboard-layout` | Lettura/salvataggio layout dashboard |
 | `/import` | Import CSV autenticato |
 | `/bank` | Configurazione provider, OAuth PSD2/Sandbox, sincronizzazione movimenti, filtri data e importazione massiva |
 | `/agents/analytics` | Analisi AI delle spese |
@@ -190,7 +189,7 @@ riuscita `502`. Il codice non salva la conversazione.
 ## Database e Migrazioni
 
 Le route dati assumono che le tabelle applicative Supabase (`Transaction`,
-`Category`, `Wallet`, `Profile`, `dashboard_layouts`, `bank_connections` e
+`Category`, `Wallet`, `Profile`, `bank_connections` e
 `bank_transactions`) siano già predisposte. Le migrazioni incluse nella cartella
 `migrations/` contengono le definizioni SQL per le tabelle bancarie, i token di
 reset password, il saldo di apertura dei wallet, gli invarianti dei wallet e la

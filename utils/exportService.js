@@ -63,7 +63,6 @@ export const EXPORT_SECTIONS = [
   { key: "annual_items", table: "annual_items", owner: "user_id", order: ["id"] },
   { key: "annual_installments", table: "annual_installments", owner: "user_id", order: ["due_date", "id"] },
   { key: "category_rules", table: "category_rules", owner: "user_id", order: ["id"] },
-  { key: "dashboard_layouts", table: "dashboard_layouts", owner: "user_id", order: ["user_id"] },
   {
     key: "bank_connections",
     table: "bank_connections",
