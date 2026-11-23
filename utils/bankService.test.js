@@ -284,8 +284,25 @@ test("buildAppTransactionFromBank: un'entrata con una categoria di spesa diventa
   assert.equal(refund.amount, 30.33);
   assert.equal(refund.wallet_id, 7);
 
-  // Un'uscita con la stessa categoria resta una spesa, e la colonna non viene nemmeno scritta.
+  // Un'uscita con la stessa categoria resta una spesa, con il flag esplicitamente false.
   const expense = buildAppTransactionFromBank({ ...base, amount: -30.33 }, { userId: "u1", walletId: "7", categoryId: 12, categoryType: "E" });
   assert.equal(expense.type, "E");
-  assert.equal("is_refund" in expense, false);
+  assert.equal(expense.is_refund, false);
+});
+
+test("buildAppTransactionFromBank: tutte le varianti hanno le stesse colonne (un lotto misto non manda NULL)", () => {
+  // PostgREST, in un upsert di piu' righe, mette NULL nelle colonne che una riga non ha:
+  // il 23/11/2026 un lotto con un rimborso ha fatto fallire le spese per il NOT NULL di is_refund.
+  const base = { id: "bank-uuid-4", bank_id: "BANK", date: "2026-11-20", counterparty: "", description: "x" };
+  const opts = { userId: "u1", walletId: 7, categoryId: 12 };
+  const rows = [
+    buildAppTransactionFromBank({ ...base, amount: 10 }, { ...opts, categoryType: "E" }), // rimborso
+    buildAppTransactionFromBank({ ...base, amount: -10 }, { ...opts, categoryType: "E" }), // spesa
+    buildAppTransactionFromBank({ ...base, amount: 10 }, { ...opts, categoryType: "I" }), // entrata
+    buildAppTransactionFromBank({ ...base, amount: -10 }, { ...opts, categoryType: "T" }), // trasferimento
+    buildAppTransactionFromBank({ ...base, amount: 10 }, { ...opts, defaultType: "I" }),
+  ];
+  const keys = (row) => Object.keys(row).sort().join(",");
+  for (const row of rows) assert.equal(keys(row), keys(rows[0]));
+  assert.deepEqual(rows.map((r) => r.is_refund), [true, false, false, false, false]);
 });

@@ -1219,6 +1219,10 @@ export const buildAppTransactionFromBank = (
     date: new Date(bankTxn.date).toISOString(),
     category_id: Number(categoryId),
     bank_transaction_id: bankTxn.id,
+    // Sempre presente: l'upsert di un lotto manda a PostgREST l'unione delle colonne di tutte le
+    // righe, e una riga senza la chiave riceve NULL (non il default). Con un rimborso nel lotto le
+    // altre righe violavano il NOT NULL della 014 (run del 23/11/2026).
+    is_refund: false,
   };
 
   if (categoryType === "T") {
@@ -1231,8 +1235,7 @@ export const buildAppTransactionFromBank = (
     };
   }
 
-  // Entrata con una categoria di spesa: e' un rimborso (fase 5, migrazione 014). Il flag si
-  // scrive solo quando serve, cosi' l'import funziona anche prima della 014.
+  // Entrata con una categoria di spesa: e' un rimborso (fase 5, migrazione 014).
   if (categoryType === "E" && rawAmount >= 0 && !defaultType) {
     return { ...base, type: "I", is_refund: true, wallet_id: Number(walletId), to_wallet_id: null };
   }
