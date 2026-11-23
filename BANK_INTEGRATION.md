@@ -115,7 +115,9 @@ Il workflow fallisce, e GitHub lo notifica per email, se la sincronizzazione o l
 **Cosa importa** (`utils/bankAutoImport.js`), per ogni banca con un wallet di destinazione impostato da *Your Bank*:
 - solo movimenti mai importati (`status = 'synced'`) e **contabilizzati** (`booking_status = 'booked'`);
 - solo con data uguale o successiva a `auto_import_from` (attivando senza data si parte da oggi);
-- nel wallet scelto, con importo assoluto e tipo deciso dal segno, collegati al movimento di origine (`Transaction.bank_transaction_id`).
+- nel wallet scelto, con importo assoluto e tipo deciso dal segno, collegati al movimento di origine (`Transaction.bank_transaction_id`);
+- senza nota (fino al 16/11/2026 l'import scriveva "Importato da banca (…)"; il client nasconde quelle vecchie);
+- con `is_refund` sempre presente, `true` o `false`: l'upsert di un lotto manda a PostgREST l'unione delle colonne e a una riga senza la chiave arriva NULL, non il default. Il 23/11 un rimborso nel lotto aveva fatto rifiutare tutte le altre righe di Intesa.
 
 **Categorie: regole locali** (`utils/categoryRules.js`, tabella `category_rules` della migrazione `010`). Nessun servizio esterno: descrizioni e importi non escono da Flow-Wise. *(Fino al 2026-11-06 la categoria la sceglieva un LLM esterno, Groq: tolto per tenere i dati in casa e perché i limiti di richieste del piano gratuito mandavano interi lotti su `Altro`.)*
 - Una regola è "parola chiave → categoria" per un tipo (`I`/`E`). Combacia se la parola chiave compare a parole intere nella descrizione o nella controparte normalizzate (minuscole, senza accenti, solo lettere): `conad` trova `PAGAM. TRAMITE POS CONAD SUPERMERCATO`. Tra più regole vince la parola chiave più lunga.

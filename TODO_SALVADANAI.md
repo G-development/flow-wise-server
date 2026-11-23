@@ -835,6 +835,16 @@ Gio: "rimuoviamo il layout personalizzabile", pagina fissa. Scelte:
 - [x] Tolti `GET`/`PUT /dashboard-layout` e la tabella `dashboard_layouts` (22/11, migrazione 019; sul live aveva 2
   righe di vecchi layout, cancellate con la conferma di Gio)
 
+## Correzioni e pulizie (16–23/11/2026)
+
+- [x] Tolta la nota automatica "Importato da banca (…)" sui movimenti importati (server); il client nasconde quelle
+  gia' salvate, nel dettaglio e nel modulo di modifica (`userNote` in `lib/movements.ts`). Le vecchie restano nel DB
+- [x] Tolti `/dashboard-layout` e `dashboard_layouts` (migrazione 019, 22/11, vedi sopra)
+- [x] Import automatico del 23/11 fallito su Intesa: un rimborso nel lotto mandava `is_refund` NULL alle altre righe.
+  Ora ogni riga importata ha `is_refund`; rilanciato a mano, i 2 movimenti sono entrati
+- [x] Plugin Supabase collegato a Claude (22/11): lettura dello schema live e migrazioni applicate da li'; lo storico
+  delle migrazioni di Supabase parte dalla 019 (le precedenti sono state applicate a mano dall'editor SQL)
+
 ## Fuori piano — da valutare dopo
 
 - [ ] Enable Banking come provider per Trade Republic (piano gratuito "restricted production", solo conti propri). A novembre 2026 l'integrazione TR risulta recente e con problemi segnalati (consenso massimo 90 giorni, movimenti duplicati, limiti di richieste). PSD2 copre il conto di liquidità, **non il valore del portafoglio**. Da verificare sulla documentazione ufficiale prima di qualsiasi lavoro

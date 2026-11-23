@@ -264,6 +264,9 @@ rimozione della colonna fantasma `Wallet.balance`:
   del server**: le categorie di partenza di un account nuovo nascono con colore e icona. Rollback nel `.down.sql`.
 - `018_drop_saving_table.sql` — toglie la tabella `Saving`, residuo mai usato dal codice e vuota sul live; si
   ferma se trovasse righe. Rollback (ricrea la tabella vuota) nel `.down.sql`.
+- `019_drop_dashboard_layouts.sql` — toglie `dashboard_layouts` (layout della vecchia griglia della dashboard, non
+  piu' letto dal 16/11) e la sua funzione di trigger. Applicata il 22/11/2026 dopo il deploy del server che non la
+  usa piu'. Rollback (ricrea la tabella vuota, con RLS e trigger) nel `.down.sql`.
 
 `backfill-opening-balance.mjs` è la versione da terminale della regola di `003`:
 dry-run di default, `--apply` per scrivere, rilettura del DB per verificare
